@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  replicas: 1
+  strategy:
+    type: {{ .Values.deploymentStrategy }}
+  selector:
+    matchLabels:
+      app: {{ template "fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "fullname" . }}
+        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        release: "{{ .Release.Name }}"
+        heritage: "{{ .Release.Service }}"
+    spec:
+      serviceAccountName: minibroker
+      containers:
+      - name: minibroker
+        image: {{ .Values.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command:
+        - minibroker
+        args:
+        - --port
+        - "8080"
+        {{- if .Values.tls.cert}}
+        - --tlsCert
+        - "{{ .Values.tls.cert }}"
+        {{- end}}
+        {{- if .Values.tls.key}}
+        - --tlsKey
+        - "{{ .Values.tls.key }}"
+        {{- end}}
+        - -v
+        - "5"
+        - -logtostderr
+        ports:
+        - containerPort: 8080
+      - name: tiller
+        image: "gcr.io/kubernetes-helm/tiller:v2.8.1"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: TILLER_NAMESPACE
+          value: {{ .Release.Namespace }}
+        - name: TILLER_HISTORY_MAX
+          value: "1"
+        command: ["/tiller"]
+        args: ["--listen=localhost:44134"]
