@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/deis/minibroker/pkg/broker"
 	"github.com/golang/glog"
+	"github.com/osbkit/minibroker/pkg/broker"
 	"github.com/pmorie/osb-broker-lib/pkg/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
 

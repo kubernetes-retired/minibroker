@@ -1,4 +1,4 @@
-REPO ?= github.com/deis/minibroker
+REPO ?= github.com/osbkit/minibroker
 BINARY ?= minibroker
 PKG ?= $(REPO)/cmd/$(BINARY)
 IMAGE ?= carolynvs/minibroker

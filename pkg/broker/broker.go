@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/deis/minibroker/pkg/minibroker"
+	"github.com/osbkit/minibroker/pkg/minibroker"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/pmorie/osb-broker-lib/pkg/broker"
 )

@@ -1,5 +1,5 @@
 language: go
-go_import_path: github.com/deis/minibroker
+go_import_path: github.com/osbkit/minibroker
 go:
   - 1.10.x
 script: "make build test"                                

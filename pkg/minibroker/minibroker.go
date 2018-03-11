@@ -8,9 +8,9 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/deis/minibroker/pkg/helm"
-	"github.com/deis/minibroker/pkg/tiller"
 	"github.com/golang/glog"
+	"github.com/osbkit/minibroker/pkg/helm"
+	"github.com/osbkit/minibroker/pkg/tiller"
 	"github.com/pkg/errors"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"k8s.io/helm/pkg/repo"
