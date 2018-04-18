@@ -11,29 +11,28 @@ import (
 	"github.com/pmorie/osb-broker-lib/pkg/broker"
 )
 
-// NewBusinessLogic is a hook that is called with the Options the program is run
-// with. NewBusinessLogic is the place where you will initialize your
-// BusinessLogic the parameters passed in.
-func NewBusinessLogic(o Options) (*BusinessLogic, error) {
+// NewBroker is a hook that is called with the Options the program is run
+// with. NewBroker is the place where you will initialize your
+// Broker the parameters passed in.
+func NewBroker(o Options) (*Broker, error) {
 	mb := minibroker.NewClient("")
 	err := mb.Init()
 	if err != nil {
 		return nil, err
 	}
 
-	// For example, if your BusinessLogic requires a parameter from the command
+	// For example, if your Broker requires a parameter from the command
 	// line, you would unpack it from the Options and set it on the
-	// BusinessLogic here.
-	return &BusinessLogic{
+	// Broker here.
+	return &Broker{
 		Client:    mb,
 		async:     false,
 		instances: make(map[string]*exampleInstance, 10),
 	}, nil
 }
 
-// BusinessLogic provides an implementation of the broker.BusinessLogic
-// interface.
-type BusinessLogic struct {
+// Broker provides an implementation of broker.Interface
+type Broker struct {
 	Client *minibroker.Client
 
 	// Indiciates if the broker should handle the requests asynchronously.
@@ -44,9 +43,9 @@ type BusinessLogic struct {
 	instances map[string]*exampleInstance
 }
 
-var _ broker.Interface = &BusinessLogic{}
+var _ broker.Interface = &Broker{}
 
-func (b *BusinessLogic) GetCatalog(c *broker.RequestContext) (*osb.CatalogResponse, error) {
+func (b *Broker) GetCatalog(c *broker.RequestContext) (*osb.CatalogResponse, error) {
 	services, err := b.Client.ListServices()
 	if err != nil {
 		return nil, err
@@ -59,7 +58,7 @@ func (b *BusinessLogic) GetCatalog(c *broker.RequestContext) (*osb.CatalogRespon
 	return response, nil
 }
 
-func (b *BusinessLogic) Provision(request *osb.ProvisionRequest, c *broker.RequestContext) (*osb.ProvisionResponse, error) {
+func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestContext) (*osb.ProvisionResponse, error) {
 	b.Lock()
 	defer b.Unlock()
 
@@ -73,7 +72,7 @@ func (b *BusinessLogic) Provision(request *osb.ProvisionRequest, c *broker.Reque
 	return &osb.ProvisionResponse{}, nil
 }
 
-func (b *BusinessLogic) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestContext) (*osb.DeprovisionResponse, error) {
+func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestContext) (*osb.DeprovisionResponse, error) {
 	// Your deprovision business logic goes here
 
 	// example implementation:
@@ -91,13 +90,13 @@ func (b *BusinessLogic) Deprovision(request *osb.DeprovisionRequest, c *broker.R
 	return &response, nil
 }
 
-func (b *BusinessLogic) LastOperation(request *osb.LastOperationRequest, c *broker.RequestContext) (*osb.LastOperationResponse, error) {
+func (b *Broker) LastOperation(request *osb.LastOperationRequest, c *broker.RequestContext) (*osb.LastOperationResponse, error) {
 	// Your last-operation business logic goes here
 
 	return nil, nil
 }
 
-func (b *BusinessLogic) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.BindResponse, error) {
+func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.BindResponse, error) {
 	// Your bind business logic goes here
 
 	// example implementation:
@@ -121,12 +120,12 @@ func (b *BusinessLogic) Bind(request *osb.BindRequest, c *broker.RequestContext)
 	return &response, nil
 }
 
-func (b *BusinessLogic) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*osb.UnbindResponse, error) {
+func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*osb.UnbindResponse, error) {
 	// Your unbind business logic goes here
 	return &osb.UnbindResponse{}, nil
 }
 
-func (b *BusinessLogic) Update(request *osb.UpdateInstanceRequest, c *broker.RequestContext) (*osb.UpdateInstanceResponse, error) {
+func (b *Broker) Update(request *osb.UpdateInstanceRequest, c *broker.RequestContext) (*osb.UpdateInstanceResponse, error) {
 	// Your logic for updating a service goes here.
 	response := osb.UpdateInstanceResponse{}
 	if request.AcceptsIncomplete {
@@ -136,7 +135,7 @@ func (b *BusinessLogic) Update(request *osb.UpdateInstanceRequest, c *broker.Req
 	return &response, nil
 }
 
-func (b *BusinessLogic) ValidateBrokerAPIVersion(version string) error {
+func (b *Broker) ValidateBrokerAPIVersion(version string) error {
 	return nil
 }
 
