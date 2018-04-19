@@ -12,7 +12,7 @@ test:
 	svcat get plans | grep db
 	svcat provision mydb --class mariadb --plan 10-1-31 --namespace minibroker
 	svcat get instances -n minibroker
-	svcat bind mydb
+	svcat bind mydb -n minibroker
 	svcat get bindings -n minibroker
 
 
