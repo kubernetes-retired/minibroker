@@ -2,6 +2,7 @@ package minibroker
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -21,27 +22,47 @@ import (
 	"k8s.io/helm/pkg/repo"
 )
 
+const (
+	InstanceLabel = "minibroker.instance"
+)
+
 type Client struct {
 	helm       *helm.Client
+	namespace  string
 	coreClient kubernetes.Interface
-	instances  map[string]*exampleInstance
 }
 
 func NewClient(repoURL string) *Client {
+	return &Client{
+		helm:       helm.NewClient(repoURL),
+		coreClient: loadInClusterClient(),
+		namespace:  loadNamespace(),
+	}
+}
+
+func loadInClusterClient() kubernetes.Interface {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		panic(err)
 	}
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
 	}
 
-	return &Client{
-		helm:       helm.NewClient(repoURL),
-		coreClient: clientset,
-		instances:  make(map[string]*exampleInstance, 10),
+	return clientset
+}
+
+func loadNamespace() string {
+	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
+		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
+			log.Printf("Current Namespace: %s", ns)
+			return ns
+		}
 	}
+
+	panic("Could not detect current namespace")
 }
 
 func (c *Client) Init() error {
@@ -153,34 +174,45 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		return err
 	}
 
+	// Label the secret with the instance id so that we don't need a datastore
+	opts := metav1.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			"heritage": "Tiller",
+			"release":  resp.Release.Name,
+		}).String(),
+	}
+	secrets, err := c.coreClient.CoreV1().Secrets(resp.Release.Namespace).List(opts)
+	if err != nil {
+		return err
+	}
+
+	for _, secret := range secrets.Items {
+		secret.Labels[InstanceLabel] = instanceID
+		_, err := c.coreClient.CoreV1().Secrets(secret.Namespace).Update(&secret)
+		if err != nil {
+			return errors.Wrapf(err, "failed to label %s/%s with %s", secret.Namespace, secret.Name, instanceID)
+		}
+	}
+
 	glog.Infof("Provision of %v@%v (%v@%v) complete\n%s\n",
 		chartName, chartVersion, resp.Release.Name, resp.Release.Version, spew.Sdump(resp.Release.Manifest))
-	c.instances[instanceID] = &exampleInstance{
-		ID:        instanceID,
-		Release:   resp.Release.Name,
-		Namespace: namespace,
-	}
 
 	return nil
 }
 
-func (c *Client) Bind(instaneID string) (map[string]interface{}, error) {
-	instance, ok := c.instances[instaneID]
-	if !ok {
-		return nil, osb.HTTPStatusCodeError{
-			StatusCode: http.StatusNotFound,
-		}
-	}
-
+func (c *Client) Bind(instanceID string) (map[string]interface{}, error) {
 	opts := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			"heritage": "Tiller",
-			"release":  instance.Release,
+			InstanceLabel: instanceID,
 		}).String(),
 	}
-	secrets, err := c.coreClient.CoreV1().Secrets(instance.Namespace).List(opts)
+	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(opts)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(secrets.Items) == 0 {
+		return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
 	}
 
 	creds := make(map[string]interface{})
