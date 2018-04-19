@@ -118,12 +118,19 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.
 }
 
 func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*osb.UnbindResponse, error) {
-	// Your unbind business logic goes here
-	return &osb.UnbindResponse{}, nil
+	// nothing to do
+
+	response := osb.UnbindResponse{}
+	if request.AcceptsIncomplete {
+		response.Async = b.async
+	}
+
+	return &response, nil
 }
 
 func (b *Broker) Update(request *osb.UpdateInstanceRequest, c *broker.RequestContext) (*osb.UpdateInstanceResponse, error) {
-	// Your logic for updating a service goes here.
+	// Not supported, do nothing
+
 	response := osb.UpdateInstanceResponse{}
 	if request.AcceptsIncomplete {
 		response.Async = b.async
