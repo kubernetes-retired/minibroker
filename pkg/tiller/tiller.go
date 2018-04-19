@@ -2,9 +2,9 @@ package tiller
 
 import (
 	"context"
-	"log"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/golang/glog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v2"
@@ -38,7 +38,7 @@ func (t *Client) Create(ch *chart.Chart, installNS string) (*rls.InstallReleaseR
 		DisableHooks: false,
 		Values:       &chart.Config{Raw: string(valuesYaml)},
 	}
-	log.Printf("installing release for chart %s\n%s", ch.Metadata.Name, spew.Sdump(req))
+	glog.Infof("installing release for chart %s\n%s", ch.Metadata.Name, spew.Sdump(req))
 	return rlsCl.InstallRelease(ctx, req)
 }
 
@@ -49,7 +49,7 @@ func (t *Client) Delete(relName string) (*rls.UninstallReleaseResponse, error) {
 		Name:         relName,
 		DisableHooks: false,
 	}
-	log.Printf("uninstalling release %s", relName)
+	glog.Infof("uninstalling release %s", relName)
 	return rlsCl.UninstallRelease(ctx, req)
 }
 

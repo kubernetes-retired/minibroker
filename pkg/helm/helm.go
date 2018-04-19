@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/getter"
@@ -36,7 +36,7 @@ func NewClient(repoURL string) *Client {
 
 func (c *Client) Init() error {
 	c.home = helmpath.Home(environment.DefaultHelmHome)
-	log.Printf("Helm Home: %s", c.home)
+	glog.Infof("Helm Home: %s", c.home)
 	f, err := repo.LoadRepositoriesFile(c.home.RepositoryFile())
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
 func LoadChart(chart *repo.ChartVersion) (*chart.Chart, error) {
 	chartURL := chart.URLs[0]
 
-	log.Printf("downloading chart from %s", chartURL)
+	glog.Infof("downloading chart from %s", chartURL)
 	resp, err := http.Get(chartURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download chart from %s", chartURL)
@@ -133,16 +133,16 @@ func LoadChart(chart *repo.ChartVersion) (*chart.Chart, error) {
 	}
 	defer func() {
 		if err := fd.Close(); err != nil {
-			log.Println(
+			glog.Errorln(
 				errors.Wrapf(err, "failed to close file descriptor for chart at %s (%s)", fullChartPath))
 		}
 	}()
 
-	log.Printf("copying chart to %s", fullChartPath)
+	glog.Infof("copying chart to %s", fullChartPath)
 	if _, err := io.Copy(fd, resp.Body); err != nil {
 		return nil, errors.Wrapf(err, "failed to copy chart contents to %s", fullChartPath)
 	}
 
-	log.Printf("loading chart from %s on disk", fullChartPath)
+	glog.Infof("loading chart from %s on disk", fullChartPath)
 	return chartutil.Load(fullChartPath)
 }

@@ -3,7 +3,6 @@ package minibroker
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -57,12 +56,12 @@ func loadInClusterClient() kubernetes.Interface {
 func loadNamespace() string {
 	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
 		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-			log.Printf("Current Namespace: %s", ns)
+			glog.Infof("namespace: %s", ns)
 			return ns
 		}
 	}
 
-	panic("Could not detect current namespace")
+	panic("could not detect current namespace")
 }
 
 func (c *Client) Init() error {
@@ -142,7 +141,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 	chartVersion := strings.Replace(planID, serviceID+"-", "", 1)
 	chartVersion = strings.Replace(chartVersion, "-", ".", -1)
 
-	glog.Infof("Provisioning %s/%s using stable helm chart %s@%s...", serviceID, planID, chartName, chartVersion)
+	glog.Infof("provisioning %s/%s using stable helm chart %s@%s...", serviceID, planID, chartName, chartVersion)
 
 	chartDef, err := c.helm.GetChart(chartName, chartVersion)
 	if err != nil {
@@ -194,7 +193,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		}
 	}
 
-	glog.Infof("Provision of %v@%v (%v@%v) complete\n%s\n",
+	glog.Infof("provision of %v@%v (%v@%v) complete\n%s\n",
 		chartName, chartVersion, resp.Release.Name, resp.Release.Version, spew.Sdump(resp.Release.Manifest))
 
 	return nil

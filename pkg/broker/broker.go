@@ -2,9 +2,9 @@ package broker
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
+	"github.com/golang/glog"
 	"github.com/osbkit/minibroker/pkg/minibroker"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/pmorie/osb-broker-lib/pkg/broker"
@@ -61,7 +61,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 	namespace := fmt.Sprintf("%v", request.Context["namespace"])
 	err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace)
 	if err != nil {
-		log.Println(err)
+		glog.Errorln(err)
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.
 
 	creds, err := b.Client.Bind(request.InstanceID)
 	if err != nil {
-		log.Println(err)
+		glog.Errorln(err)
 		return nil, err
 	}
 
