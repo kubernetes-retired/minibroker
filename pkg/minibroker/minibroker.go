@@ -14,15 +14,23 @@ import (
 	"github.com/osbkit/minibroker/pkg/tiller"
 	"github.com/pkg/errors"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/helm/pkg/repo"
+	"encoding/json"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
 const (
-	InstanceLabel = "minibroker.instance"
+	InstanceLabel        = "minibroker.instance"
+	HeritageLabel        = "heritage"
+	ReleaseLabel         = "release"
+	TillerHeritage       = "Tiller"
 )
 
 type Client struct {
@@ -137,7 +145,7 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 
 func (c *Client) Provision(instanceID, serviceID, planID, namespace string) error {
 	chartName := serviceID
-	// TODO: The way I'm turning charts into plans is not reversible. Need a data store.
+	// The way I'm turning charts into plans is not reversible
 	chartVersion := strings.Replace(planID, serviceID+"-", "", 1)
 	chartVersion = strings.Replace(chartVersion, "-", ".", -1)
 
@@ -148,20 +156,11 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		return err
 	}
 
-	config := tiller.Config{
-		Host: "localhost",
-		Port: 44134,
-	}
-	tc, err := config.NewClient()
+	tc, close, err := c.connectTiller()
 	if err != nil {
 		return err
 	}
-	defer func() {
-		err := tc.Close()
-		if err != nil {
-			log.Print(errors.Wrapf(err, "failed to disconnect tiller client"))
-		}
-	}()
+	defer close()
 
 	chart, err := helm.LoadChart(chartDef)
 	if err != nil {
@@ -173,23 +172,33 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		return err
 	}
 
-	// Label the secret with the instance id so that we don't need a datastore
+	// Label the deployment with the instance id so that we don't need a datastore for deprovision
 	opts := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			"heritage": "Tiller",
-			"release":  resp.Release.Name,
+			HeritageLabel: TillerHeritage,
+			ReleaseLabel:  resp.Release.Name,
 		}).String(),
 	}
-	secrets, err := c.coreClient.CoreV1().Secrets(resp.Release.Namespace).List(opts)
+	deploys, err := c.coreClient.AppsV1().Deployments(c.namespace).List(opts)
 	if err != nil {
 		return err
 	}
-
-	for _, secret := range secrets.Items {
-		secret.Labels[InstanceLabel] = instanceID
-		_, err := c.coreClient.CoreV1().Secrets(secret.Namespace).Update(&secret)
+	for _, deploy := range deploys.Items {
+		err := c.labelDeployment(deploy, instanceID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to label %s/%s with %s", secret.Namespace, secret.Name, instanceID)
+			return err
+		}
+	}
+
+	// Label the secret with the instance id so that we don't need a datastore for bind
+	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(opts)
+	if err != nil {
+		return err
+	}
+	for _, secret := range secrets.Items {
+		err := c.labelSecret(secret, instanceID)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -197,6 +206,75 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		chartName, chartVersion, resp.Release.Name, resp.Release.Version, spew.Sdump(resp.Release.Manifest))
 
 	return nil
+}
+
+func (c *Client) labelDeployment(deploy appsv1.Deployment, instanceID string) error {
+	labeledDeploy := deploy.DeepCopy()
+	labeledDeploy.Labels[InstanceLabel] = instanceID
+
+	original, err := json.Marshal(deploy)
+	if err != nil {
+		return err
+	}
+	modified, err := json.Marshal(labeledDeploy)
+	if err != nil {
+		return err
+	}
+	patch, err := strategicpatch.CreateTwoWayMergePatch(original, modified, labeledDeploy)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.coreClient.AppsV1().Deployments(c.namespace).Patch(deploy.Name, types.StrategicMergePatchType, patch)
+	if err != nil {
+		return errors.Wrapf(err, "failed to label deployment %s/%s with %s", deploy.Namespace, deploy.Name, instanceID)
+	}
+
+	return nil
+}
+
+func (c *Client) labelSecret(secret corev1.Secret, instanceID string) error {
+	labeledSecret := secret.DeepCopy()
+	labeledSecret.Labels[InstanceLabel] = instanceID
+
+	original, err := json.Marshal(secret)
+	if err != nil {
+		return err
+	}
+	modified, err := json.Marshal(labeledSecret)
+	if err != nil {
+		return err
+	}
+	patch, err := strategicpatch.CreateTwoWayMergePatch(original, modified, labeledSecret)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.coreClient.CoreV1().Secrets(c.namespace).Patch(secret.Name, types.StrategicMergePatchType, patch)
+	if err != nil {
+		return errors.Wrapf(err, "failed to label secret %s/%s with %s", secret.Namespace, secret.Name, instanceID)
+	}
+
+	return nil
+}
+
+func (c *Client) connectTiller() (*tiller.Client, func(), error) {
+	config := tiller.Config{
+		Host: "localhost",
+		Port: 44134,
+	}
+	tc, err := config.NewClient()
+	if err != nil {
+		return nil, nil, err
+	}
+	close := func() {
+		err := tc.Close()
+		if err != nil {
+			glog.Errorln(errors.Wrapf(err, "failed to disconnect tiller client"))
+		}
+	}
+
+	return tc, close, nil
 }
 
 func (c *Client) Bind(instanceID string) (map[string]interface{}, error) {
@@ -222,6 +300,42 @@ func (c *Client) Bind(instanceID string) (map[string]interface{}, error) {
 	}
 
 	return creds, nil
+}
+
+func (c *Client) Deprovision(instanceID string) error {
+	opts := metav1.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			InstanceLabel: instanceID,
+		}).String(),
+	}
+	deploys, err := c.coreClient.AppsV1().Deployments(c.namespace).List(opts)
+	if err != nil {
+		return err
+	}
+
+	if len(deploys.Items) == 0 {
+		return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+	}
+
+	release, ok := deploys.Items[0].Labels[ReleaseLabel]
+	if !ok {
+		return errors.Errorf("deployment is missing the release label")
+	}
+
+	tc, close, err := c.connectTiller()
+	if err != nil {
+		return err
+	}
+	defer close()
+
+	_, err = tc.Delete(release)
+	if err != nil {
+		return err
+	}
+
+	glog.Infof("deprovision of %s complete", release)
+
+	return nil
 }
 
 func boolPtr(value bool) *bool {

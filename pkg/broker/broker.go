@@ -74,16 +74,16 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 }
 
 func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestContext) (*osb.DeprovisionResponse, error) {
-	// Your deprovision business logic goes here
-
-	// example implementation:
 	b.Lock()
 	defer b.Unlock()
 
+	err := b.Client.Deprovision(request.InstanceID)
+	if err != nil {
+		glog.Errorln(err)
+		return nil, err
+	}
+
 	response := osb.DeprovisionResponse{}
-
-	//delete(b.instances, request.InstanceID)
-
 	if request.AcceptsIncomplete {
 		response.Async = b.async
 	}

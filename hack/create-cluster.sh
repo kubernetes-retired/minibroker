@@ -14,4 +14,4 @@ kubectl apply -f https://raw.githubusercontent.com/Azure/helm-charts/master/docs
 helm init --service-account tiller --wait
 
 helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
-helm upgrade --install catalog --namespace svc-cat --wait svc-cat/catalog --wait
+helm upgrade --install catalog --namespace svc-cat svc-cat/catalog --wait
