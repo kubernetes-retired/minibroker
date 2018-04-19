@@ -3,6 +3,7 @@ package minibroker
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -13,16 +14,33 @@ import (
 	"github.com/osbkit/minibroker/pkg/tiller"
 	"github.com/pkg/errors"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/helm/pkg/repo"
 )
 
 type Client struct {
-	helm *helm.Client
+	helm       *helm.Client
+	coreClient kubernetes.Interface
+	instances  map[string]*exampleInstance
 }
 
 func NewClient(repoURL string) *Client {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err)
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Client{
-		helm: helm.NewClient(repoURL),
+		helm:       helm.NewClient(repoURL),
+		coreClient: clientset,
+		instances:  make(map[string]*exampleInstance, 10),
 	}
 }
 
@@ -97,8 +115,7 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 	return services, nil
 }
 
-func (c *Client) Provision(serviceID, planID, namespace string) error {
-
+func (c *Client) Provision(instanceID, serviceID, planID, namespace string) error {
 	chartName := serviceID
 	// TODO: The way I'm turning charts into plans is not reversible. Need a data store.
 	chartVersion := strings.Replace(planID, serviceID+"-", "", 1)
@@ -138,8 +155,42 @@ func (c *Client) Provision(serviceID, planID, namespace string) error {
 
 	glog.Infof("Provision of %v@%v (%v@%v) complete\n%s\n",
 		chartName, chartVersion, resp.Release.Name, resp.Release.Version, spew.Sdump(resp.Release.Manifest))
+	c.instances[instanceID] = &exampleInstance{
+		ID:        instanceID,
+		Release:   resp.Release.Name,
+		Namespace: namespace,
+	}
 
 	return nil
+}
+
+func (c *Client) Bind(instaneID string) (map[string]interface{}, error) {
+	instance, ok := c.instances[instaneID]
+	if !ok {
+		return nil, osb.HTTPStatusCodeError{
+			StatusCode: http.StatusNotFound,
+		}
+	}
+
+	opts := metav1.ListOptions{
+		LabelSelector: labels.SelectorFromSet(map[string]string{
+			"heritage": "Tiller",
+			"release":  instance.Release,
+		}).String(),
+	}
+	secrets, err := c.coreClient.CoreV1().Secrets(instance.Namespace).List(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	creds := make(map[string]interface{})
+	for _, secret := range secrets.Items {
+		for key, value := range secret.Data {
+			creds[key] = string(value)
+		}
+	}
+
+	return creds, nil
 }
 
 func boolPtr(value bool) *bool {

@@ -12,6 +12,8 @@ test:
 	svcat get plans | grep db
 	svcat provision mydb --class mariadb --plan 10-1-31 --namespace minibroker
 	svcat get instances -n minibroker
+	svcat bind mydb
+	svcat get bindings
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \

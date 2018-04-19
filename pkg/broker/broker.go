@@ -3,7 +3,6 @@ package broker
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"sync"
 
 	"github.com/osbkit/minibroker/pkg/minibroker"
@@ -25,9 +24,8 @@ func NewBroker(o Options) (*Broker, error) {
 	// line, you would unpack it from the Options and set it on the
 	// Broker here.
 	return &Broker{
-		Client:    mb,
-		async:     false,
-		instances: make(map[string]*exampleInstance, 10),
+		Client: mb,
+		async:  false,
 	}, nil
 }
 
@@ -39,8 +37,6 @@ type Broker struct {
 	async bool
 	// Synchronize go routines.
 	sync.RWMutex
-	// Add fields here! These fields are provided purely as an example
-	instances map[string]*exampleInstance
 }
 
 var _ broker.Interface = &Broker{}
@@ -63,13 +59,18 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 	defer b.Unlock()
 
 	namespace := fmt.Sprintf("%v", request.Context["namespace"])
-	err := b.Client.Provision(request.ServiceID, request.PlanID, namespace)
+	err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	return &osb.ProvisionResponse{}, nil
+	response := osb.ProvisionResponse{}
+	if request.AcceptsIncomplete {
+		response.Async = b.async
+	}
+
+	return &response, nil
 }
 
 func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestContext) (*osb.DeprovisionResponse, error) {
@@ -81,7 +82,7 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 
 	response := osb.DeprovisionResponse{}
 
-	delete(b.instances, request.InstanceID)
+	//delete(b.instances, request.InstanceID)
 
 	if request.AcceptsIncomplete {
 		response.Async = b.async
@@ -97,21 +98,17 @@ func (b *Broker) LastOperation(request *osb.LastOperationRequest, c *broker.Requ
 }
 
 func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.BindResponse, error) {
-	// Your bind business logic goes here
-
-	// example implementation:
 	b.Lock()
 	defer b.Unlock()
 
-	instance, ok := b.instances[request.InstanceID]
-	if !ok {
-		return nil, osb.HTTPStatusCodeError{
-			StatusCode: http.StatusNotFound,
-		}
+	creds, err := b.Client.Bind(request.InstanceID)
+	if err != nil {
+		log.Println(err)
+		return nil, err
 	}
 
 	response := osb.BindResponse{
-		Credentials: instance.Params,
+		Credentials: creds,
 	}
 	if request.AcceptsIncomplete {
 		response.Async = b.async
@@ -137,12 +134,4 @@ func (b *Broker) Update(request *osb.UpdateInstanceRequest, c *broker.RequestCon
 
 func (b *Broker) ValidateBrokerAPIVersion(version string) error {
 	return nil
-}
-
-// example types
-
-// exampleInstance is intended as an example of a type that holds information about a service instance
-type exampleInstance struct {
-	ID     string
-	Params map[string]interface{}
 }
