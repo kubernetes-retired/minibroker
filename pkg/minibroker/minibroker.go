@@ -409,11 +409,17 @@ func (c *Client) Deprovision(instanceID string) error {
 
 	_, err = tc.Delete(release)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "could not delete release %s", release)
 	}
 
-	glog.Infof("deprovision of %s complete", release)
+	glog.Infof("release %s deleted", release)
 
+	err = c.coreClient.CoreV1().ConfigMaps(c.namespace).Delete(instanceID, &metav1.DeleteOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "could not delete configmap %s/%s", c.namespace, instanceID)
+	}
+
+	glog.Infof("deprovision of %q is complete", instanceID)
 	return nil
 }
 
