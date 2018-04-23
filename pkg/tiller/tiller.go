@@ -47,6 +47,7 @@ func (t *Client) Delete(relName string) (*rls.UninstallReleaseResponse, error) {
 	req := &rls.UninstallReleaseRequest{
 		Name:         relName,
 		DisableHooks: false,
+		Purge:        true,
 	}
 	glog.Infof("uninstalling release %s", relName)
 	return rlsCl.UninstallRelease(ctx, req)
