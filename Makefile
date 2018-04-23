@@ -7,14 +7,25 @@ TAG ?= latest
 build:
 	go build $(PKG)
 
-test:
+test-unit:
 	go test -v ./...
-	svcat get plans | grep db
-	svcat provision mydb --class mariadb --plan 10-1-31 --namespace minibroker
-	svcat get instances -n minibroker
-	svcat bind mydb -n minibroker
-	svcat get bindings -n minibroker
 
+test: test-unit setup-mysqldb teardown-mysqldb
+
+setup-mysqldb:
+	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
+	
+	svcat provision mysqldb --class mysql --plan 5-7-14 --namespace minibroker
+	until svcat get instance mysqldb | grep -m 1 Ready; do : ; done
+	svcat get instance mysqldb -n minibroker
+
+	svcat bind mysqldb -n minibroker
+	until svcat get binding mysqldb | grep -m 1 Ready; do : ; done
+	svcat describe binding mysqldb -n minibroker
+
+teardown-mysqldb:
+	svcat unbind mysqldb
+	svcat deprovision mysqldb
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \

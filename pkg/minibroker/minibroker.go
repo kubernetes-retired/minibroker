@@ -1,6 +1,7 @@
 package minibroker
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,29 +15,28 @@ import (
 	"github.com/osbkit/minibroker/pkg/tiller"
 	"github.com/pkg/errors"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/helm/pkg/repo"
-	"encoding/json"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
 const (
-	InstanceLabel        = "minibroker.instance"
-	HeritageLabel        = "heritage"
-	ReleaseLabel         = "release"
-	TillerHeritage       = "Tiller"
+	InstanceLabel  = "minibroker.instance"
+	HeritageLabel  = "heritage"
+	ReleaseLabel   = "release"
+	TillerHeritage = "Tiller"
 )
 
 type Client struct {
 	helm       *helm.Client
 	namespace  string
 	coreClient kubernetes.Interface
+	providers  map[string]Provider
 }
 
 func NewClient(repoURL string) *Client {
@@ -44,6 +44,9 @@ func NewClient(repoURL string) *Client {
 		helm:       helm.NewClient(repoURL),
 		coreClient: loadInClusterClient(),
 		namespace:  loadNamespace(),
+		providers: map[string]Provider{
+			"mysql": MySQLProvider{},
+		},
 	}
 }
 
@@ -172,26 +175,25 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		return err
 	}
 
-	// Label the deployment with the instance id so that we don't need a datastore for deprovision
-	opts := metav1.ListOptions{
+	// Store any required metadata necessary for bind and deprovision as labels on the resources itself
+	filterByRelease := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			HeritageLabel: TillerHeritage,
 			ReleaseLabel:  resp.Release.Name,
 		}).String(),
 	}
-	deploys, err := c.coreClient.AppsV1().Deployments(c.namespace).List(opts)
+	services, err := c.coreClient.CoreV1().Services(c.namespace).List(filterByRelease)
 	if err != nil {
 		return err
 	}
-	for _, deploy := range deploys.Items {
-		err := c.labelDeployment(deploy, instanceID)
+	for _, service := range services.Items {
+		err := c.labelService(service, instanceID)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Label the secret with the instance id so that we don't need a datastore for bind
-	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(opts)
+	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(filterByRelease)
 	if err != nil {
 		return err
 	}
@@ -208,26 +210,26 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 	return nil
 }
 
-func (c *Client) labelDeployment(deploy appsv1.Deployment, instanceID string) error {
-	labeledDeploy := deploy.DeepCopy()
-	labeledDeploy.Labels[InstanceLabel] = instanceID
+func (c *Client) labelService(service corev1.Service, instanceID string) error {
+	labeledService := service.DeepCopy()
+	labeledService.Labels[InstanceLabel] = instanceID
 
-	original, err := json.Marshal(deploy)
+	original, err := json.Marshal(service)
 	if err != nil {
 		return err
 	}
-	modified, err := json.Marshal(labeledDeploy)
+	modified, err := json.Marshal(labeledService)
 	if err != nil {
 		return err
 	}
-	patch, err := strategicpatch.CreateTwoWayMergePatch(original, modified, labeledDeploy)
+	patch, err := strategicpatch.CreateTwoWayMergePatch(original, modified, labeledService)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.coreClient.AppsV1().Deployments(c.namespace).Patch(deploy.Name, types.StrategicMergePatchType, patch)
+	_, err = c.coreClient.CoreV1().Services(c.namespace).Patch(service.Name, types.StrategicMergePatchType, patch)
 	if err != nil {
-		return errors.Wrapf(err, "failed to label deployment %s/%s with %s", deploy.Namespace, deploy.Name, instanceID)
+		return errors.Wrapf(err, "failed to label service %s/%s with service metadata", service.Namespace, service.Name)
 	}
 
 	return nil
@@ -252,7 +254,7 @@ func (c *Client) labelSecret(secret corev1.Secret, instanceID string) error {
 
 	_, err = c.coreClient.CoreV1().Secrets(c.namespace).Patch(secret.Name, types.StrategicMergePatchType, patch)
 	if err != nil {
-		return errors.Wrapf(err, "failed to label secret %s/%s with %s", secret.Namespace, secret.Name, instanceID)
+		return errors.Wrapf(err, "failed to label secret %s/%s with service metadata", secret.Namespace, secret.Name)
 	}
 
 	return nil
@@ -277,49 +279,73 @@ func (c *Client) connectTiller() (*tiller.Client, func(), error) {
 	return tc, close, nil
 }
 
-func (c *Client) Bind(instanceID string) (map[string]interface{}, error) {
-	opts := metav1.ListOptions{
+func (c *Client) Bind(instanceID, serviceID string, params map[string]interface{}) (map[string]interface{}, error) {
+	filterByInstance := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			InstanceLabel: instanceID,
 		}).String(),
 	}
-	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(opts)
+
+	services, err := c.coreClient.CoreV1().Services(c.namespace).List(filterByInstance)
 	if err != nil {
 		return nil, err
 	}
+	if len(services.Items) == 0 {
+		return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+	}
+	if len(services.Items) > 1 {
+		return nil, errors.Errorf("more than one service labeled with %q", filterByInstance.LabelSelector)
+	}
+	service := services.Items[0]
 
+	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(filterByInstance)
+	if err != nil {
+		return nil, err
+	}
 	if len(secrets.Items) == 0 {
 		return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
 	}
 
-	creds := make(map[string]interface{})
+	data := make(map[string]interface{})
 	for _, secret := range secrets.Items {
 		for key, value := range secret.Data {
-			creds[key] = string(value)
+			data[key] = string(value)
 		}
 	}
 
-	return creds, nil
+	// Apply additional provisioning logic for registered services
+	provider, ok := c.providers[serviceID]
+	if ok {
+		creds, err := provider.Bind(service, params, data)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to bind service %s/%s (%s)", service.Namespace, service.Name, instanceID)
+		}
+		for k, v := range creds.ToMap() {
+			data[k] = v
+		}
+	}
+
+	return data, nil
 }
 
 func (c *Client) Deprovision(instanceID string) error {
-	opts := metav1.ListOptions{
+	filterByInstance := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			InstanceLabel: instanceID,
 		}).String(),
 	}
-	deploys, err := c.coreClient.AppsV1().Deployments(c.namespace).List(opts)
+	services, err := c.coreClient.CoreV1().Services(c.namespace).List(filterByInstance)
 	if err != nil {
 		return err
 	}
 
-	if len(deploys.Items) == 0 {
+	if len(services.Items) == 0 {
 		return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
 	}
 
-	release, ok := deploys.Items[0].Labels[ReleaseLabel]
+	release, ok := services.Items[0].Labels[ReleaseLabel]
 	if !ok {
-		return errors.Errorf("deployment is missing the release label")
+		return errors.Errorf("service is missing the release label")
 	}
 
 	tc, close, err := c.connectTiller()

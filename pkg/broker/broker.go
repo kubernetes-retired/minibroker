@@ -101,7 +101,7 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.
 	b.Lock()
 	defer b.Unlock()
 
-	creds, err := b.Client.Bind(request.InstanceID)
+	creds, err := b.Client.Bind(request.InstanceID, request.ServiceID, request.Parameters)
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err
