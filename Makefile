@@ -10,7 +10,15 @@ build:
 test-unit:
 	go test -v ./...
 
-test: test-unit test-mariadb test-mysqldb test-postgresql
+test: test-unit test-mariadb test-mysqldb test-postgresql test-wordpress
+
+test-wordpress: setup-wordpress teardown-wordpress
+
+setup-wordpress:
+	helm install --name minipress charts/wordpress
+
+teardown-wordpress:
+	helm delete --purge minipress
 
 test-mysqldb: setup-mysqldb teardown-mysqldb
 

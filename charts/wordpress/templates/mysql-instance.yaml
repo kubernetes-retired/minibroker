@@ -1,0 +1,16 @@
+apiVersion: servicecatalog.k8s.io/v1beta1
+kind: ServiceInstance
+metadata:
+  name: {{ template "fullname" . }}-mysql-instance
+  labels:
+    app: {{ template "fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+spec:
+  clusterServiceClassExternalName: mysql
+  clusterServicePlanExternalName: {{ .Values.externalDatabase.minibroker.servicePlan }}
+  parameters:
+  {{- if .Values.externalDatabase.minibroker.parameters }}
+  {{ toYaml .Values.externalDatabase.minibroker.parameters | indent 2 }}{{- end }}
+

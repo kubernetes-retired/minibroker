@@ -9,9 +9,6 @@ from a cloud provider, Minibroker provisions services in containers on the clust
 Minibroker uses the [Kubernetes Helm Charts](https://github.com/kubernetes/charts) 
 its source of provisionable services.
 
-## Status
-This is still a work-in-progress, it's not usable yet. 😊
-
 # Install
 
 ```
@@ -21,7 +18,7 @@ make deploy
 # Use
 
 ```
-make test
+make setup-wordpress
 ```
 
 # Local Development
@@ -54,6 +51,10 @@ The default Minikube driver is virtualbox, to use xhyve specify it in
 ## Deploy
 
 Compile and deploy the broker to your local cluster: `make deploy`.
+
+## Test
+
+`make test`
 
 ## Dependency Management
 
