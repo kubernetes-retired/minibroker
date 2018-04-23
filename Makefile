@@ -10,7 +10,9 @@ build:
 test-unit:
 	go test -v ./...
 
-test: test-unit setup-mysqldb teardown-mysqldb
+test: test-unit test-mariadb test-mysqldb
+
+test-mysqldb: setup-mysqldb teardown-mysqldb
 
 setup-mysqldb:
 	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
@@ -27,6 +29,24 @@ setup-mysqldb:
 teardown-mysqldb:
 	svcat unbind mysqldb
 	svcat deprovision mysqldb
+
+test-mariadb: setup-mariadb teardown-mariadb
+
+setup-mariadb:
+	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
+
+	svcat provision mariadb --class mariadb --plan 10-1-32 --namespace minibroker \
+		-p mariadbDatabase=mydb -p mariadbUser=admin
+	until svcat get instance mariadb -n minibroker | grep -m 1 Ready; do : ; done
+	svcat get instance mariadb -n minibroker
+
+	svcat bind mariadb -n minibroker
+	until svcat get binding mariadb -n minibroker | grep -m 1 Ready; do : ; done
+	svcat describe binding mariadb -n minibroker
+
+teardown-mariadb:
+	svcat unbind mariadb
+	svcat deprovision mariadb
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \

@@ -31,7 +31,6 @@ const (
 	ServiceKey         = "service-id"
 	PlanKey            = "plan-id"
 	ProvisionParamsKey = "provision-params"
-	ParamsLabelPrefix  = "minibroker.params"
 	HeritageLabel      = "heritage"
 	ReleaseLabel       = "release"
 	TillerHeritage     = "Tiller"
@@ -50,7 +49,8 @@ func NewClient(repoURL string) *Client {
 		coreClient: loadInClusterClient(),
 		namespace:  loadNamespace(),
 		providers: map[string]Provider{
-			"mysql": MySQLProvider{},
+			"mysql":   MySQLProvider{},
+			"mariadb": MariadbProvider{},
 		},
 	}
 }
