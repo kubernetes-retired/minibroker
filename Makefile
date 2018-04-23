@@ -10,7 +10,7 @@ build:
 test-unit:
 	go test -v ./...
 
-test: test-unit test-mariadb test-mysqldb
+test: test-unit test-mariadb test-mysqldb test-postgresql
 
 test-mysqldb: setup-mysqldb teardown-mysqldb
 
@@ -47,6 +47,24 @@ setup-mariadb:
 teardown-mariadb:
 	svcat unbind mariadb
 	svcat deprovision mariadb
+
+test-postgresql: setup-postgresql teardown-postgresql
+
+setup-postgresql:
+	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
+
+	svcat provision postgresql --class postgresql --plan 9-6-2 --namespace minibroker \
+		-p postgresDatabase=mydb -p postgresUser=admin
+	until svcat get instance postgresql -n minibroker | grep -m 1 Ready; do : ; done
+	svcat get instance postgresql -n minibroker
+
+	svcat bind postgresql -n minibroker
+	until svcat get binding postgresql -n minibroker | grep -m 1 Ready; do : ; done
+	svcat describe binding postgresql -n minibroker
+
+teardown-postgresql:
+	svcat unbind postgresql
+	svcat deprovision postgresql
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \

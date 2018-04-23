@@ -49,8 +49,9 @@ func NewClient(repoURL string) *Client {
 		coreClient: loadInClusterClient(),
 		namespace:  loadNamespace(),
 		providers: map[string]Provider{
-			"mysql":   MySQLProvider{},
-			"mariadb": MariadbProvider{},
+			"mysql":      MySQLProvider{},
+			"mariadb":    MariadbProvider{},
+			"postgresql": PostgresProvider{},
 		},
 	}
 }
