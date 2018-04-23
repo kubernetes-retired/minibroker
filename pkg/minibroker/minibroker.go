@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,10 +27,14 @@ import (
 )
 
 const (
-	InstanceLabel  = "minibroker.instance"
-	HeritageLabel  = "heritage"
-	ReleaseLabel   = "release"
-	TillerHeritage = "Tiller"
+	InstanceLabel      = "minibroker.instance"
+	ServiceKey         = "service-id"
+	PlanKey            = "plan-id"
+	ProvisionParamsKey = "provision-params"
+	ParamsLabelPrefix  = "minibroker.params"
+	HeritageLabel      = "heritage"
+	ReleaseLabel       = "release"
+	TillerHeritage     = "Tiller"
 )
 
 type Client struct {
@@ -146,7 +151,7 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 	return services, nil
 }
 
-func (c *Client) Provision(instanceID, serviceID, planID, namespace string) error {
+func (c *Client) Provision(instanceID, serviceID, planID, namespace string, provisionParams map[string]interface{}) error {
 	chartName := serviceID
 	// The way I'm turning charts into plans is not reversible
 	chartVersion := strings.Replace(planID, serviceID+"-", "", 1)
@@ -170,12 +175,13 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		return err
 	}
 
-	resp, err := tc.Create(chart, namespace)
+	resp, err := tc.Create(chart, namespace, provisionParams)
 	if err != nil {
 		return err
 	}
 
 	// Store any required metadata necessary for bind and deprovision as labels on the resources itself
+	glog.Info("Labeling chart resources with instance %q...", instanceID)
 	filterByRelease := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			HeritageLabel: TillerHeritage,
@@ -187,12 +193,11 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		return err
 	}
 	for _, service := range services.Items {
-		err := c.labelService(service, instanceID)
+		err := c.labelService(service, instanceID, provisionParams)
 		if err != nil {
 			return err
 		}
 	}
-
 	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(filterByRelease)
 	if err != nil {
 		return err
@@ -204,13 +209,38 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string) erro
 		}
 	}
 
+	glog.Info("persisting the provisioning parameters...")
+	paramsJson, err := json.Marshal(provisionParams)
+	if err != nil {
+		return errors.Wrapf(err, "could not marshall provisioning parameters %v", provisionParams)
+	}
+	config := corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instanceID,
+			Namespace: c.namespace,
+			Labels: map[string]string{
+				ServiceKey: serviceID,
+				PlanKey:    planID,
+			},
+		},
+		Data: map[string]string{
+			ProvisionParamsKey: string(paramsJson),
+			ServiceKey:         serviceID,
+			PlanKey:            planID,
+		},
+	}
+	_, err = c.coreClient.CoreV1().ConfigMaps(config.Namespace).Create(&config)
+	if err != nil {
+		return errors.Wrapf(err, "could not persist the instance configmap for %q", instanceID)
+	}
+
 	glog.Infof("provision of %v@%v (%v@%v) complete\n%s\n",
 		chartName, chartVersion, resp.Release.Name, resp.Release.Version, spew.Sdump(resp.Release.Manifest))
 
 	return nil
 }
 
-func (c *Client) labelService(service corev1.Service, instanceID string) error {
+func (c *Client) labelService(service corev1.Service, instanceID string, params map[string]interface{}) error {
 	labeledService := service.DeepCopy()
 	labeledService.Labels[InstanceLabel] = instanceID
 
@@ -279,7 +309,30 @@ func (c *Client) connectTiller() (*tiller.Client, func(), error) {
 	return tc, close, nil
 }
 
-func (c *Client) Bind(instanceID, serviceID string, params map[string]interface{}) (map[string]interface{}, error) {
+func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interface{}) (map[string]interface{}, error) {
+	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+		}
+		return nil, err
+	}
+
+	var provisionParams map[string]interface{}
+	err = json.Unmarshal([]byte(config.Data[ProvisionParamsKey]), &provisionParams)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not unmarshall provision parameters for instance %q", instanceID)
+	}
+
+	// Smoosh all the params together
+	params := make(map[string]interface{}, len(bindParams)+len(provisionParams))
+	for k, v := range provisionParams {
+		params[k] = v
+	}
+	for k, v := range bindParams {
+		params[k] = v
+	}
+
 	filterByInstance := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			InstanceLabel: instanceID,

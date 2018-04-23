@@ -13,24 +13,41 @@ func (p MySQLProvider) Bind(service corev1.Service, params map[string]interface{
 	}
 	svcPort := service.Spec.Ports[0]
 
-	rootPwd, ok := chartSecrets["mysql-root-password"]
-	if !ok {
-		return nil, errors.Errorf("mysql-root-password not found in secret keys")
+	host := buildHostFromService(service)
+
+	database := ""
+	dbVal, ok := params["mysqlDatabase"]
+	if ok {
+		database = dbVal.(string)
 	}
 
-	db, ok := params["mysqlDatabase"]
-	if !ok {
-		// The database name may not be populated, it's okay to return an empty string
-		db = ""
+	var user, password string
+	userVal, ok := params["mysqlUser"]
+	if ok {
+		user = userVal.(string)
+
+		passwordVal, ok := chartSecrets["mysql-password"]
+		if !ok {
+			return nil, errors.Errorf("mysql-password not found in secret keys")
+		}
+		password = passwordVal.(string)
+	} else {
+		user = "root"
+
+		rootPassword, ok := chartSecrets["mysql-root-password"]
+		if !ok {
+			return nil, errors.Errorf("mysql-root-password not found in secret keys")
+		}
+		password = rootPassword.(string)
 	}
 
 	creds := Credentials{
 		Protocol: svcPort.Name,
 		Port:     svcPort.Port,
-		Host:     buildHostFromService(service),
-		Username: "root",
-		Password: rootPwd.(string),
-		Database: db.(string),
+		Host:     host,
+		Username: user,
+		Password: password,
+		Database: database,
 	}
 
 	return &creds, nil

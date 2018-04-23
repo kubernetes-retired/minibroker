@@ -58,7 +58,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 	defer b.Unlock()
 
 	namespace := request.Context["namespace"].(string)
-	err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace)
+	err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.Parameters)
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err

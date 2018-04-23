@@ -15,12 +15,13 @@ test: test-unit setup-mysqldb teardown-mysqldb
 setup-mysqldb:
 	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
 
-	svcat provision mysqldb --class mysql --plan 5-7-14 --namespace minibroker
-	until svcat get instance mysqldb | grep -m 1 Ready; do : ; done
+	svcat provision mysqldb --class mysql --plan 5-7-14 --namespace minibroker \
+		-p mysqlDatabase=mydb -p mysqlUser=admin
+	until svcat get instance mysqldb -n minibroker | grep -m 1 Ready; do : ; done
 	svcat get instance mysqldb -n minibroker
 
 	svcat bind mysqldb -n minibroker
-	until svcat get binding mysqldb | grep -m 1 Ready; do : ; done
+	until svcat get binding mysqldb -n minibroker | grep -m 1 Ready; do : ; done
 	svcat describe binding mysqldb -n minibroker
 
 teardown-mysqldb:

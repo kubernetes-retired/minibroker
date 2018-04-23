@@ -25,9 +25,8 @@ func (t *Client) Close() error {
 	return t.conn.Close()
 }
 
-func (t *Client) Create(ch *chart.Chart, installNS string) (*rls.InstallReleaseResponse, error) {
-	baseValues := map[string]interface{}{}
-	valuesYaml, _ := yaml.Marshal(baseValues)
+func (t *Client) Create(ch *chart.Chart, installNS string, values map[string]interface{}) (*rls.InstallReleaseResponse, error) {
+	valuesYaml, _ := yaml.Marshal(values)
 
 	rlsCl := rls.NewReleaseServiceClient(t.conn)
 	ctx := newContext()
