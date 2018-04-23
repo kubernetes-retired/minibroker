@@ -1,7 +1,6 @@
 package broker
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/golang/glog"
@@ -58,7 +57,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 	b.Lock()
 	defer b.Unlock()
 
-	namespace := fmt.Sprintf("%v", request.Context["namespace"])
+	namespace := request.Context["namespace"].(string)
 	err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace)
 	if err != nil {
 		glog.Errorln(err)

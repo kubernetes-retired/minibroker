@@ -14,7 +14,7 @@ test: test-unit setup-mysqldb teardown-mysqldb
 
 setup-mysqldb:
 	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
-	
+
 	svcat provision mysqldb --class mysql --plan 5-7-14 --namespace minibroker
 	until svcat get instance mysqldb | grep -m 1 Ready; do : ; done
 	svcat get instance mysqldb -n minibroker
