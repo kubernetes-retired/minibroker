@@ -10,7 +10,7 @@ build:
 test-unit:
 	go test -v ./...
 
-test: test-unit test-mariadb test-mysqldb test-postgresql test-wordpress
+test: test-unit test-mariadb test-mysqldb test-postgresql test-mongodb test-wordpress
 
 test-wordpress: setup-wordpress teardown-wordpress
 
@@ -73,6 +73,24 @@ setup-postgresql:
 teardown-postgresql:
 	svcat unbind postgresql
 	svcat deprovision postgresql
+
+test-mongodb: setup-mongodb teardown-mongodb
+
+setup-mongodb:
+	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
+
+	svcat provision mongodb --class mongodb --plan 3-7-1 --namespace minibroker \
+		-p mongodbDatabase=mydb -p postgresUsername=admin
+	until svcat get instance mongodb -n minibroker | grep -m 1 Ready; do : ; done
+	svcat get instance mongodb -n minibroker
+
+	svcat bind mongodb -n minibroker
+	until svcat get binding mongodb -n minibroker | grep -m 1 Ready; do : ; done
+	svcat describe binding mongodb -n minibroker
+
+teardown-mongodb:
+	svcat unbind mongodb
+	svcat deprovision mongodb
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \

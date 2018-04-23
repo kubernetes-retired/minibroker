@@ -52,6 +52,7 @@ func NewClient(repoURL string) *Client {
 			"mysql":      MySQLProvider{},
 			"mariadb":    MariadbProvider{},
 			"postgresql": PostgresProvider{},
+			"mongodb":    MongodbProvider{},
 		},
 	}
 }
