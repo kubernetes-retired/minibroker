@@ -6,7 +6,7 @@ minikube addons enable heapster
 
 if [[ "$(minikube status)" != *"Running"* ]]; then
     minikube start --vm-driver=virtualbox \
-    --kubernetes-version=v1.9.2 \
+    --kubernetes-version=v1.9.6 \
     --bootstrapper=kubeadm
 fi
 
