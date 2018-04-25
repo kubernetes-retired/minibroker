@@ -15,7 +15,7 @@ test: test-unit test-mariadb test-mysqldb test-postgresql test-mongodb test-word
 test-wordpress: setup-wordpress teardown-wordpress
 
 setup-wordpress:
-	helm install --name minipress charts/wordpress
+	helm install --name minipress charts/wordpress --wait
 
 teardown-wordpress:
 	helm delete --purge minipress
