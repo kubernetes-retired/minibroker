@@ -27,13 +27,14 @@ import (
 )
 
 const (
-	InstanceLabel      = "minibroker.instance"
-	ServiceKey         = "service-id"
-	PlanKey            = "plan-id"
-	ProvisionParamsKey = "provision-params"
-	HeritageLabel      = "heritage"
-	ReleaseLabel       = "release"
-	TillerHeritage     = "Tiller"
+	InstanceLabel       = "minibroker.instance"
+	ServiceKey          = "service-id"
+	PlanKey             = "plan-id"
+	ProvisionParamsKey  = "provision-params"
+	ReleaseNamespaceKey = "release-namespace"
+	HeritageLabel       = "heritage"
+	ReleaseLabel        = "release"
+	TillerHeritage      = "Tiller"
 )
 
 type Client struct {
@@ -190,7 +191,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, prov
 			ReleaseLabel:  resp.Release.Name,
 		}).String(),
 	}
-	services, err := c.coreClient.CoreV1().Services(c.namespace).List(filterByRelease)
+	services, err := c.coreClient.CoreV1().Services(namespace).List(filterByRelease)
 	if err != nil {
 		return err
 	}
@@ -200,7 +201,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, prov
 			return err
 		}
 	}
-	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(filterByRelease)
+	secrets, err := c.coreClient.CoreV1().Secrets(namespace).List(filterByRelease)
 	if err != nil {
 		return err
 	}
@@ -226,9 +227,11 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, prov
 			},
 		},
 		Data: map[string]string{
-			ProvisionParamsKey: string(paramsJson),
-			ServiceKey:         serviceID,
-			PlanKey:            planID,
+			ProvisionParamsKey:  string(paramsJson),
+			ServiceKey:          serviceID,
+			PlanKey:             planID,
+			ReleaseLabel:        resp.Release.Name,
+			ReleaseNamespaceKey: resp.Release.Namespace,
 		},
 	}
 	_, err = c.coreClient.CoreV1().ConfigMaps(config.Namespace).Create(&config)
@@ -259,7 +262,7 @@ func (c *Client) labelService(service corev1.Service, instanceID string, params 
 		return err
 	}
 
-	_, err = c.coreClient.CoreV1().Services(c.namespace).Patch(service.Name, types.StrategicMergePatchType, patch)
+	_, err = c.coreClient.CoreV1().Services(service.Namespace).Patch(service.Name, types.StrategicMergePatchType, patch)
 	if err != nil {
 		return errors.Wrapf(err, "failed to label service %s/%s with service metadata", service.Namespace, service.Name)
 	}
@@ -284,7 +287,7 @@ func (c *Client) labelSecret(secret corev1.Secret, instanceID string) error {
 		return err
 	}
 
-	_, err = c.coreClient.CoreV1().Secrets(c.namespace).Patch(secret.Name, types.StrategicMergePatchType, patch)
+	_, err = c.coreClient.CoreV1().Secrets(secret.Namespace).Patch(secret.Name, types.StrategicMergePatchType, patch)
 	if err != nil {
 		return errors.Wrapf(err, "failed to label secret %s/%s with service metadata", secret.Namespace, secret.Name)
 	}
@@ -315,13 +318,19 @@ func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interf
 	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+			msg := fmt.Sprintf("could not find configmap %s/%s", c.namespace, instanceID)
+			return nil, osb.HTTPStatusCodeError{
+				StatusCode:   http.StatusNotFound,
+				ErrorMessage: &msg,
+			}
 		}
 		return nil, err
 	}
+	releaseNamespace := config.Data[ReleaseNamespaceKey]
+	rawProvisionParams := config.Data[ProvisionParamsKey]
 
 	var provisionParams map[string]interface{}
-	err = json.Unmarshal([]byte(config.Data[ProvisionParamsKey]), &provisionParams)
+	err = json.Unmarshal([]byte(rawProvisionParams), &provisionParams)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not unmarshall provision parameters for instance %q", instanceID)
 	}
@@ -341,7 +350,7 @@ func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interf
 		}).String(),
 	}
 
-	services, err := c.coreClient.CoreV1().Services(c.namespace).List(filterByInstance)
+	services, err := c.coreClient.CoreV1().Services(releaseNamespace).List(filterByInstance)
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +362,7 @@ func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interf
 	}
 	service := services.Items[0]
 
-	secrets, err := c.coreClient.CoreV1().Secrets(c.namespace).List(filterByInstance)
+	secrets, err := c.coreClient.CoreV1().Secrets(releaseNamespace).List(filterByInstance)
 	if err != nil {
 		return nil, err
 	}
@@ -384,24 +393,14 @@ func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interf
 }
 
 func (c *Client) Deprovision(instanceID string) error {
-	filterByInstance := metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			InstanceLabel: instanceID,
-		}).String(),
-	}
-	services, err := c.coreClient.CoreV1().Services(c.namespace).List(filterByInstance)
+	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+		}
 		return err
 	}
-
-	if len(services.Items) == 0 {
-		return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
-	}
-
-	release, ok := services.Items[0].Labels[ReleaseLabel]
-	if !ok {
-		return errors.Errorf("service is missing the release label")
-	}
+	release := config.Data[ReleaseLabel]
 
 	tc, close, err := c.connectTiller()
 	if err != nil {

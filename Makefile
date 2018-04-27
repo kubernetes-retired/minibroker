@@ -106,6 +106,9 @@ clean:
 push: image
 	docker push "$(IMAGE):$(TAG)"
 
+log:
+	kubectl log -n minibroker deploy/minibroker-minibroker -c minibroker
+
 create-cluster:
 	./hack/create-cluster.sh
 
@@ -114,4 +117,4 @@ deploy: push
 	--recreate-pods --force charts/minibroker \
 	--set image="$(IMAGE):$(TAG)",imagePullPolicy="Always",deploymentStrategy="Recreate"
 
-.PHONY: build build-linux test image clean push create-cluster deploy
+.PHONY: build log build-linux test image clean push create-cluster deploy
