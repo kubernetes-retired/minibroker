@@ -50,6 +50,13 @@ helm install --name minibroker --namespace minibroker charts/minibroker
 By default only Service Catalog Enabled services are included with Minibroker,
 to include all available charts install the helm chart with `--set serviceCatalogEnabledOnly=false`.
 
+# Update Minibroker
+
+```
+helm upgrade --install minibroker \
+	--recreate-pods --force charts/minibroker \
+	--set imagePullPolicy="Always",deploymentStrategy="Recreate"
+```
 
 # Examples
 
