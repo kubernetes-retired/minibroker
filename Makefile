@@ -1,7 +1,7 @@
 REPO ?= github.com/osbkit/minibroker
 BINARY ?= minibroker
 PKG ?= $(REPO)/cmd/$(BINARY)
-REGISTRY ?= carolynvs/
+REGISTRY ?= osbkit/
 IMAGE ?= $(REGISTRY)minibroker
 TAG ?= canary
 

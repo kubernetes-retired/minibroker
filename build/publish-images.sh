@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-IMAGE=${IMAGE:-carolynvs/minibroker}
+IMAGE=${IMAGE:-osbkit/minibroker}
 TAG=${TAG:-canary}
 
 if [[ -v DOCKER_PASSWORD && -v DOCKER_USERNAME ]]; then
