@@ -32,7 +32,7 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 
 	passwordVal, ok := chartSecrets["postgres-password"]
 	if !ok {
-		return nil, errors.Errorf("mysql-password not found in secret keys")
+		return nil, errors.Errorf("postgres-password not found in secret keys")
 	}
 	password = passwordVal.(string)
 
