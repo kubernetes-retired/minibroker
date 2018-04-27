@@ -363,10 +363,6 @@ func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interf
 	if len(services.Items) == 0 {
 		return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
 	}
-	if len(services.Items) > 1 {
-		return nil, errors.Errorf("more than one service labeled with %q", filterByInstance.LabelSelector)
-	}
-	service := services.Items[0]
 
 	secrets, err := c.coreClient.CoreV1().Secrets(releaseNamespace).List(filterByInstance)
 	if err != nil {
@@ -386,9 +382,9 @@ func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interf
 	// Apply additional provisioning logic for Service Catalog Enabled services
 	provider, ok := c.providers[serviceID]
 	if ok {
-		creds, err := provider.Bind(service, params, data)
+		creds, err := provider.Bind(services.Items, params, data)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to bind service %s/%s (%s)", service.Namespace, service.Name, instanceID)
+			return nil, errors.Wrapf(err, "unable to bind instance %s", instanceID)
 		}
 		for k, v := range creds.ToMap() {
 			data[k] = v

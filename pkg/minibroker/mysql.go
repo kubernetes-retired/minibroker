@@ -7,7 +7,8 @@ import (
 
 type MySQLProvider struct{}
 
-func (p MySQLProvider) Bind(service corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+func (p MySQLProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+	service := services[0]
 	if len(service.Spec.Ports) == 0 {
 		return nil, errors.Errorf("no ports found")
 	}
@@ -49,6 +50,7 @@ func (p MySQLProvider) Bind(service corev1.Service, params map[string]interface{
 		Password: password,
 		Database: database,
 	}
+	creds.URI = buildURI(creds)
 
 	return &creds, nil
 }

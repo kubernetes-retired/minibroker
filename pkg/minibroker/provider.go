@@ -1,22 +1,24 @@
 package minibroker
 
 import (
+	"encoding/json"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
 type Provider interface {
-	Bind(service corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error)
+	Bind(service []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error)
 }
 
 type Credentials struct {
 	Protocol string
-	Username string
-	Password string
-	Host     string
-	Port     int32
-	Database string
+	URI      string `json:"uri,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+	Host     string `json:"host,omitempty"`
+	Port     int32  `json:"port,omitempty"`
+	Database string `json:"database,omitempty"`
 }
 
 // ToMap converts the credentials into the OSB API credentials response
@@ -32,17 +34,18 @@ type Credentials struct {
 //     }
 // }
 func (c Credentials) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"uri":      c.URI(),
-		"username": c.Username,
-		"password": c.Password,
-		"host":     c.Host,
-		"port":     c.Port,
-		"database": c.Database,
-	}
+	var result map[string]interface{}
+	j, _ := json.Marshal(c)
+	json.Unmarshal(j, &result)
+	return result
 }
 
-func (c Credentials) URI() string {
+func buildURI(c Credentials) string {
+	if c.Database == "" {
+		return fmt.Sprintf("%s://%s:%s@%s:%d",
+			c.Protocol, c.Username, c.Password, c.Host, c.Port)
+	}
+
 	return fmt.Sprintf("%s://%s:%s@%s:%d/%s",
 		c.Protocol, c.Username, c.Password, c.Host, c.Port, c.Database)
 }

@@ -7,7 +7,8 @@ import (
 
 type MariadbProvider struct{}
 
-func (p MariadbProvider) Bind(service corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+func (p MariadbProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+	service := services[0]
 	if len(service.Spec.Ports) == 0 {
 		return nil, errors.Errorf("no ports found")
 	}
@@ -49,6 +50,7 @@ func (p MariadbProvider) Bind(service corev1.Service, params map[string]interfac
 		Password: password,
 		Database: database,
 	}
+	creds.URI = buildURI(creds)
 
 	return &creds, nil
 }
