@@ -9,17 +9,120 @@ from a cloud provider, Minibroker provisions services in containers on the clust
 Minibroker uses the [Kubernetes Helm Charts](https://github.com/kubernetes/charts) 
 its source of provisionable services.
 
-# Install
+While it can deploy any stable chart, Minibroker provides the following Service Catalog Enabled
+services:
+
+* mysql
+* postgres
+* mariadb
+* mongodb
+
+Minibroker has built-in support for these charts so that the credentials are formatted
+in a format that Service Catalog Ready charts expect.
+
+# Prerequisites
+
+* Kubernetes 1.9+ cluster
+* [Helm](https://helm.sh)
+* [Service Catalog](https://svc-cat.io/docs/install)
+* [Service Catalog CLI (svcat)](http://svc-cat.io/docs/install/#installing-the-service-catalog-cli)
+
+Run the following commands to set up a cluster:
 
 ```
-make deploy
+minikube start --kubernetes-version=v1.9.6 --bootstrapper=kubeadm
+
+kubectl apply -f https://raw.githubusercontent.com/Azure/helm-charts/master/docs/prerequisities/helm-rbac-config.yaml
+helm init --service-account tiller --wait
+
+helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
+helm upgrade --install catalog --namespace svc-cat svc-cat/catalog --wait
 ```
 
-# Use
+# Install Minibroker
 
 ```
-make setup-wordpress
+git clone https://github.com/osbkit/minibroker.git
+cd minibroker
+helm install --name minibroker --namespace minibroker charts/minibroker
 ```
+
+By default only Service Catalog Enabled services are included with Minibroker,
+to include all available charts install the helm chart with `--set serviceCatalogEnabledOnly=false`.
+
+
+# Examples
+
+```
+$ svcat get classes
+     NAME             DESCRIPTION
++------------+---------------------------+
+  mariadb      Helm Chart for mariadb
+  mongodb      Helm Chart for mongodb
+  mysql        Helm Chart for mysql
+  postgresql   Helm Chart for postgresql
+
+$ svcat describe class mysql
+  Name:          mysql
+  Description:   Helm Chart for mysql
+  UUID:          mysql
+  Status:        Active
+  Tags:
+  Broker:        minibroker
+
+Plans:
+   NAME             DESCRIPTION
++--------+--------------------------------+
+  5-7-14   Fast, reliable, scalable,
+           and easy to use open-source
+           relational database system.
+
+$ svcat provision mysqldb --class mysql --plan 5-7-14 -p mysqlDatabase=mydb -p mysqlUser=admin
+  Name:        mysqldb
+  Namespace:   minibroker
+  Status:
+  Class:       mysql
+  Plan:        5-7-14
+
+Parameters:
+  mysqlDatabase: mydb
+  mysqlUser: admin
+
+$ svcat bind mysqldb
+  Name:        mysqldb
+  Namespace:   minibroker
+  Status:
+  Secret:      mysqldb
+  Instance:    mysqldb
+
+$ svcat describe binding mysqldb --show-secrets
+  Name:        mysqldb
+  Namespace:   minibroker
+  Status:      Ready - Injected bind result @ 2018-04-27 03:53:09 +0000 UTC
+  Secret:      mysqldb
+  Instance:    mysqldb
+
+Parameters:
+  {}
+
+Secret Data:
+  database              mydb
+  host                  lucky-dragon-mysql.minibroker.svc.cluster.local
+  mysql-password        gsIpB8dBEn
+  mysql-root-password   F8aBHuo8zb
+  password              gsIpB8dBEn
+  port                  3306
+  uri                   mysql://admin:gsIpB8dBEn@lucky-dragon-mysql.minibroker.svc.cluster.local:3306/mydb
+  username              admin
+
+$ svcat unbind mysqldb
+$ svcat deprovision mysqldb
+```
+
+## Helm Chart Parameters
+Minibroker passes parameters specified during provisioning to the underlying
+Helm Chart. This lets you customize the service to specify a non-root user, or the name of
+the database to create, etc.
 
 # Local Development
 
@@ -30,31 +133,26 @@ make setup-wordpress
 * [Helm v2.8.2+](https://helm.sh)
 * [Service Catalog CLI (svcat)](https://github.com/kubernetes-incubator/service-catalog/cmd/svcat)
 
-On a Mac you will also need either VirtualBox installed,
-or the [Minikube xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver)
-which uses the hypervisor that comes with Docker for Mac.
+## Setup
 
-The default Minikube driver is virtualbox, to use xhyve specify it in
-**~/.minikube/config/config.json**:
-
-```json
-{
-    "vm-driver": "xhyve"
-}
-```
-
-## Initial Setup
-
-1. Edit the Makefile and change the IMAGE to something that you can push to.
 1. Create a Minikube cluster for local development: `make create-cluster`.
+2. Identify where you will push Docker images with your changes and set the `REGISTRY`
+   environment variable. For example to push your dev images to Docker Hub, use
+   `export REGISTRY=myusername/`.
 
 ## Deploy
 
-Compile and deploy the broker to your local cluster: `make deploy`.
+Compile and deploy the broker to your local cluster: `make push deploy`.
 
 ## Test
 
 `make test`
+
+Each of the tests is broken down into steps, so if you'd like to see what was
+created before the testdata is removed just just the setup-* target, e.g. `make setup-mysql`.
+
+There is an example chart for Wordpress that has been tweaked to use Minibroker for the
+database provider, run `make setup-wordpress` to try it out.
 
 ## Dependency Management
 
