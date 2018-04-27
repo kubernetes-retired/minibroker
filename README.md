@@ -36,7 +36,7 @@ kubectl apply -f https://raw.githubusercontent.com/Azure/helm-charts/master/docs
 helm init --service-account tiller --wait
 
 helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
-helm upgrade --install catalog --namespace svc-cat svc-cat/catalog --wait
+helm install --name catalog --namespace svc-cat svc-cat/catalog --wait
 ```
 
 # Install Minibroker
@@ -131,6 +131,8 @@ to supply a database:
 ```
 helm install --name minipress minibroker/wordpress
 ```
+
+Follow the instructions output to the console to log into Wordpress.
 
 ## Helm Chart Parameters
 Minibroker passes parameters specified during provisioning to the underlying
