@@ -118,4 +118,15 @@ deploy:
 	--recreate-pods --force charts/minibroker \
 	--set image="$(IMAGE):$(TAG)",imagePullPolicy="Always",deploymentStrategy="Recreate"
 
+release: release-prep release-images release-charts
+
+release-prep:
+	docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD"
+
+release-images: push
+
+release-charts:
+	./charts/publish-charts.sh
+
+
 .PHONY: build log build-linux test image clean push create-cluster deploy

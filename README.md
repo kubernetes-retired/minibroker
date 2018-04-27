@@ -42,9 +42,8 @@ helm upgrade --install catalog --namespace svc-cat svc-cat/catalog --wait
 # Install Minibroker
 
 ```
-git clone https://github.com/osbkit/minibroker.git
-cd minibroker
-helm install --name minibroker --namespace minibroker charts/minibroker
+helm repo add minibroker https://minibroker.blob.core.windows.net/charts
+helm install --name minibroker --namespace minibroker minibroker/minibroker
 ```
 
 By default only Service Catalog Enabled services are included with Minibroker,
@@ -124,6 +123,13 @@ Secret Data:
 
 $ svcat unbind mysqldb
 $ svcat deprovision mysqldb
+```
+
+To see Minibroker in action try out our Wordpress chart, that relies on Minibroker
+to supply a database:
+
+```
+helm install --name minipress minibroker/wordpress
 ```
 
 ## Helm Chart Parameters
