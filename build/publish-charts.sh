@@ -35,7 +35,7 @@ helm repo index --url "$REPO_ROOT/$AZURE_STORAGE_CONTAINER" --merge index.yaml .
 # upload to Azure blob storage
 #####
 
-if [ -z "$AZURE_STORAGE_CONNECTION_STRING" ]; then
+if [ ! -v AZURE_STORAGE_CONNECTION_STRING ]; then
     echo "AZURE_STORAGE_CONNECTION_STRING env var required to publish"
     exit 1
 fi
