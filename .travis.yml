@@ -5,9 +5,8 @@ go:
 
 sudo: required
 services:
-  - docker
+- docker
 
-script: make build test-unit push
 env:
   global:
   # DOCKER_EMAIL
@@ -16,3 +15,14 @@ env:
   - secure: AOkUdtjcADBtnv5gmxpjyIjKm3SI0tYTxG1x/pVEIRDVOB4oPePbhd2JeEMDuNZiKke+MeNHXO28x4VsKCqjWzEpO47iu5DC3FQPBDW3hB5545PrgaHANrMsYIa2qpfJ9PmhneJYeHj0YaDmsPaYoNIrtkBk8dqt+qzk2wHv/70o/VMRkRgcFT8ixoCIJsgGgiiV0JUevXBEqDffqMNKoBn5hGmCT/YFCvAXTkGXMkM5ohQEp8Yjgw+UWNwrZoZPkGxG2b4HZxkXa4nWqK9sPSCltITw2tt2ALbxyJHCRkcxkTD7LeBXBexuxFWkvVBKNLeUOL/mfcxo5sutmPczHjmrMpSp/4kVo/bM0xfJaOJ3vTgxS5/0flZODJ0YnGEB7c9aOVW+YokHTpt3h998mAT0W3QW2XTR9u/HQaiJ//fTLm+Q6k7LoT4gKyQN0BDZFQ5xjIXwOl7qIHILGAcvZ9c7R80L2NRr8VqTx1RcD5DWn+rU5AuYdYFsHjgm4r5gfnp/U6UAYFKu29ILOk7vB85i0YBhKNuxJCGIs775HSw3beC+nZlkEXsk8O0xCiWbs2SqsWtw+OgLNWr8B3ZXdur/g1k4baPhTJaRotsoZmeKqcfRU5BwLghym9pjcYL5A3DR10hJRf6sqAxmmTKtNLnpJXLn0TGpn4ZECpDvmDo=
   # DOCKER_PASSWORD
   - secure: hmFUa0ZC3fPbbf2umWPWYY58n/ABXg2JDO/Mr8BK6hYgLcC2+G5jOJfyxvbXNc/VI4Xb/ErsmX7auZhxIOxbzArjiXGQSVs5j1ocWKrf/Cdl5sdtVIOG2LXBqxAxqGp8pcQEgIDjHjeegJ5rKMGyPpGbpHi9m2MeP1oALWU2qzi2F6FW97ZhMPN0G40kjs9ZLEiWo9WffokH5dwubm/4sXgsfSK+TY2EPh4A3O6MV6FoZ8/0l7MFJ61TT6hzo3Rr913DobWop5rJeap71618+YmhDzgcDaerwyag8jXjGDlJvtiYEMVpdAPsXkcEvk2qBiIMM4e5KPdnS+M61ktn7Q10y1Y0E/U3Yo6mzFPSYkoRa68LZ0G9XIgANs+i42+k6wCEi4UZMIxKv0fn3Gkg0LvibFYBbczKavCSRJOWFXzgv4pxdZVLDQPSlyI0lx+lMdL/yeaScFOuTzQsCLUBPggFebXWmiKGNKjvcGEWf/R7lbnfZ60FedeSEShnrUA/iPQNyfQ9mOoXSLOpttFenhrkZbYSEGHt7QbU7lVY7/96XmW2zzmeU0zNP9/Da7p3yj0PGgLtkBI1+wK7k0JLXueeLLHIXxBaYn7loTxCPHTT1tMck6Dp/d1/gGlp4omzV8H2MoV0fxeynWNNdNyCGVLkz7zfeqNM3Be4JbgEEc0=
+
+script:
+- make build test-unit
+
+deploy:
+  provider: script
+  script:
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - make push
+  on:
+    branch: master
