@@ -56,6 +56,7 @@ func NewClient(repoURL string, serviceCatalogEnabledOnly bool) *Client {
 			"mariadb":    MariadbProvider{},
 			"postgresql": PostgresProvider{},
 			"mongodb":    MongodbProvider{},
+			"redis":      RedisProvider{},
 		},
 	}
 }
