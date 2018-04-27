@@ -1,5 +1,6 @@
 package broker
 
 type Options struct {
-	CatalogPath string
+	CatalogPath               string
+	ServiceCatalogEnabledOnly bool
 }

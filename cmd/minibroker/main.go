@@ -28,10 +28,16 @@ var options struct {
 }
 
 func init() {
-	flag.IntVar(&options.Port, "port", 8005, "use '--port' option to specify the port for broker to listen on")
-	flag.StringVar(&options.TLSCert, "tlsCert", "", "base-64 encoded PEM block to use as the certificate for TLS. If '--tlsCert' is used, then '--tlsKey' must also be used. If '--tlsCert' is not used, then TLS will not be used.")
-	flag.StringVar(&options.TLSKey, "tlsKey", "", "base-64 encoded PEM block to use as the private key matching the TLS certificate. If '--tlsKey' is used, then '--tlsCert' must also be used")
-	flag.StringVar(&options.CatalogPath, "catalogPath", "", "The path to the catalog")
+	flag.BoolVar(&options.ServiceCatalogEnabledOnly, "service-catalog-enabled-only", false,
+		"Only list Service Catalog Enabled services")
+	flag.IntVar(&options.Port, "port", 8005,
+		"use '--port' option to specify the port for broker to listen on")
+	flag.StringVar(&options.TLSCert, "tlsCert", "",
+		"base-64 encoded PEM block to use as the certificate for TLS. If '--tlsCert' is used, then '--tlsKey' must also be used. If '--tlsCert' is not used, then TLS will not be used.")
+	flag.StringVar(&options.TLSKey, "tlsKey", "",
+		"base-64 encoded PEM block to use as the private key matching the TLS certificate. If '--tlsKey' is used, then '--tlsCert' must also be used")
+	flag.StringVar(&options.CatalogPath, "catalogPath", "",
+		"The path to the catalog")
 	flag.Parse()
 }
 

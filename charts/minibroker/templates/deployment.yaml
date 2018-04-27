@@ -30,16 +30,19 @@ spec:
         command:
         - minibroker
         args:
+        {{- if .Values.serviceCatalogEnabledOnly }}
+        - --service-catalog-enabled-only
+        {{- end }}
         - --port
         - "8080"
-        {{- if .Values.tls.cert}}
+        {{- if .Values.tls.cert }}
         - --tlsCert
         - "{{ .Values.tls.cert }}"
-        {{- end}}
-        {{- if .Values.tls.key}}
+        {{- end }}
+        {{- if .Values.tls.key }}
         - --tlsKey
         - "{{ .Values.tls.key }}"
-        {{- end}}
+        {{- end }}
         - -v
         - "5"
         - -logtostderr

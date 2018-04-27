@@ -38,17 +38,19 @@ const (
 )
 
 type Client struct {
-	helm       *helm.Client
-	namespace  string
-	coreClient kubernetes.Interface
-	providers  map[string]Provider
+	helm                      *helm.Client
+	namespace                 string
+	coreClient                kubernetes.Interface
+	providers                 map[string]Provider
+	serviceCatalogEnabledOnly bool
 }
 
-func NewClient(repoURL string) *Client {
+func NewClient(repoURL string, serviceCatalogEnabledOnly bool) *Client {
 	return &Client{
-		helm:       helm.NewClient(repoURL),
-		coreClient: loadInClusterClient(),
-		namespace:  loadNamespace(),
+		helm:                      helm.NewClient(repoURL),
+		coreClient:                loadInClusterClient(),
+		namespace:                 loadNamespace(),
+		serviceCatalogEnabledOnly: serviceCatalogEnabledOnly,
 		providers: map[string]Provider{
 			"mysql":      MySQLProvider{},
 			"mariadb":    MariadbProvider{},
@@ -97,6 +99,10 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 	}
 
 	for chart, chartVersions := range charts {
+		if _, ok := c.providers[chart]; !ok && c.serviceCatalogEnabledOnly {
+			continue
+		}
+
 		svc := osb.Service{
 			ID:          chart,
 			Name:        chart,
@@ -377,7 +383,7 @@ func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interf
 		}
 	}
 
-	// Apply additional provisioning logic for registered services
+	// Apply additional provisioning logic for Service Catalog Enabled services
 	provider, ok := c.providers[serviceID]
 	if ok {
 		creds, err := provider.Bind(service, params, data)
