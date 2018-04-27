@@ -9,8 +9,6 @@ services:
 
 env:
   global:
-  # DOCKER_EMAIL
-  - secure: DtUO0opTjlIgw+Y7ETucMW8YbcuFY3JW6SaB4p4vt1nOjLifHK1v7UIbzOLh086h1qwpF1b0db3gCJK1nRw3Xl7542DvbhUn7l4roA9XSD1S4ePaf72EOxY1C2+QtZApt+wk3tFr0rSA3Lj+tIOKuKfn6GtWOuuUy+GeKcBYzlTEx0GMbu6Uo8yIk/z0Uuklx03FD4G5fD1Tw717QWLVbnlcB6KUKO2wR3ZlmxRXc1eV4X6k5FL4fQKFe4TbseI9wdokyoY2THZMxdoiHaQ2+XglyMZKX9ntEgsHRyEBe3lvqe81Nhyq0u+nLmTnfCyoPtMDMsX1gnpRqt16yRMZu6L7/t8uOVmQbxTuYnOgIw842smQ1C9Dck9z7KY73kmei+4iogtcFzv3vi4G66i8R8oFjg+fmXnunseujYSe326Nbf9Oa8A63u4HSQhp2ATFdWMEoUNLH9h6L2TOCoTp9yYbFcPz1UwIFx9Ibs9X8oSNcLTjuh1TzwAequ6kXKwgAZHJ8ohjeoc1aAAdScUvJplMr7YtWYkIpR407oln7VrD8hg7AWZI5xO7vEV3e62h5A733lZpuH4tkYIfIEukAizaqKHW7CxKQm7e0xrkHr0kpshYSizow9qgletcNClX4Ijumz2dtDFXYaCns6fwHw3iheG/+hIBts99bIm1x24=
   # DOCKER_USER
   - secure: AOkUdtjcADBtnv5gmxpjyIjKm3SI0tYTxG1x/pVEIRDVOB4oPePbhd2JeEMDuNZiKke+MeNHXO28x4VsKCqjWzEpO47iu5DC3FQPBDW3hB5545PrgaHANrMsYIa2qpfJ9PmhneJYeHj0YaDmsPaYoNIrtkBk8dqt+qzk2wHv/70o/VMRkRgcFT8ixoCIJsgGgiiV0JUevXBEqDffqMNKoBn5hGmCT/YFCvAXTkGXMkM5ohQEp8Yjgw+UWNwrZoZPkGxG2b4HZxkXa4nWqK9sPSCltITw2tt2ALbxyJHCRkcxkTD7LeBXBexuxFWkvVBKNLeUOL/mfcxo5sutmPczHjmrMpSp/4kVo/bM0xfJaOJ3vTgxS5/0flZODJ0YnGEB7c9aOVW+YokHTpt3h998mAT0W3QW2XTR9u/HQaiJ//fTLm+Q6k7LoT4gKyQN0BDZFQ5xjIXwOl7qIHILGAcvZ9c7R80L2NRr8VqTx1RcD5DWn+rU5AuYdYFsHjgm4r5gfnp/U6UAYFKu29ILOk7vB85i0YBhKNuxJCGIs775HSw3beC+nZlkEXsk8O0xCiWbs2SqsWtw+OgLNWr8B3ZXdur/g1k4baPhTJaRotsoZmeKqcfRU5BwLghym9pjcYL5A3DR10hJRf6sqAxmmTKtNLnpJXLn0TGpn4ZECpDvmDo=
   # DOCKER_PASSWORD
@@ -22,7 +20,7 @@ script:
 deploy:
   provider: script
   script:
-  - bash -c "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+  - docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD"
   - make push
   on:
     branch: master
