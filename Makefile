@@ -105,7 +105,7 @@ clean:
 	-rm -f $(BINARY)
 
 push: image
-	docker push "$(IMAGE):$(TAG)"
+	IMAGE=$(IMAGE) TAG=$(TAG) ./build/publish-images.sh
 
 log:
 	kubectl log -n minibroker deploy/minibroker-minibroker -c minibroker
@@ -118,15 +118,12 @@ deploy:
 	--recreate-pods --force charts/minibroker \
 	--set image="$(IMAGE):$(TAG)",imagePullPolicy="Always",deploymentStrategy="Recreate"
 
-release: release-prep release-images release-charts
-
-release-prep:
-	docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD"
+release: release-images release-charts
 
 release-images: push
 
 release-charts:
-	./charts/publish-charts.sh
+	./build/publish-charts.sh
 
 
-.PHONY: build log build-linux test image clean push create-cluster deploy
+.PHONY: build log build-linux test image clean push create-cluster deploy release
