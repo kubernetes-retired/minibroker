@@ -2,6 +2,11 @@ language: go
 go_import_path: github.com/osbkit/minibroker
 go:
 - 1.10.x
+
+sudo: required
+services:
+  - docker
+
 script: make build test-unit push
 env:
   global:
