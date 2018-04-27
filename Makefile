@@ -1,8 +1,9 @@
 REPO ?= github.com/osbkit/minibroker
 BINARY ?= minibroker
 PKG ?= $(REPO)/cmd/$(BINARY)
-IMAGE ?= carolynvs/minibroker
-TAG ?= latest
+REGISTRY ?= carolynvs/
+IMAGE ?= $(REGISTRY)minibroker
+TAG ?= canary
 
 build:
 	go build $(PKG)
@@ -112,7 +113,7 @@ log:
 create-cluster:
 	./hack/create-cluster.sh
 
-deploy: push
+deploy:
 	helm upgrade --install minibroker --namespace minibroker \
 	--recreate-pods --force charts/minibroker \
 	--set image="$(IMAGE):$(TAG)",imagePullPolicy="Always",deploymentStrategy="Recreate"
