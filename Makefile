@@ -8,6 +8,9 @@ TAG ?= canary
 build:
 	go build $(PKG)
 
+build-image:
+	docker build -t minibroker-build ./build/build-image
+
 test-unit:
 	go test -v ./...
 
@@ -122,8 +125,8 @@ release: release-images release-charts
 
 release-images: push
 
-release-charts:
-	./build/publish-charts.sh
+release-charts: build-image
+	docker run --rm -it -v `pwd`:/go/src/$(REPO) -e AZURE_STORAGE_CONNECTION_STRING minibroker-build ./build/publish-charts.sh
 
 
 .PHONY: build log build-linux test image clean push create-cluster deploy release
