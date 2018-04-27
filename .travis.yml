@@ -19,8 +19,6 @@ script:
 
 deploy:
   provider: script
-  script:
-  - docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD"
-  - make push
+  script: docker login -u="$DOCKER_USER" -p="$DOCKER_PASSWORD" && make push
   on:
     branch: master
