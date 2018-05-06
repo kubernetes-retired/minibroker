@@ -40,20 +40,22 @@ type Broker struct {
 
 var _ broker.Interface = &Broker{}
 
-func (b *Broker) GetCatalog(c *broker.RequestContext) (*osb.CatalogResponse, error) {
+func (b *Broker) GetCatalog(c *broker.RequestContext) (*broker.CatalogResponse, error) {
 	services, err := b.Client.ListServices()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &osb.CatalogResponse{
-		Services: services,
+	response := &broker.CatalogResponse{
+		CatalogResponse: osb.CatalogResponse{
+			Services: services,
+		},
 	}
 
 	return response, nil
 }
 
-func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestContext) (*osb.ProvisionResponse, error) {
+func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestContext) (*broker.ProvisionResponse, error) {
 	b.Lock()
 	defer b.Unlock()
 
@@ -64,7 +66,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 		return nil, err
 	}
 
-	response := osb.ProvisionResponse{}
+	response := broker.ProvisionResponse{}
 	if request.AcceptsIncomplete {
 		response.Async = b.async
 	}
@@ -72,7 +74,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 	return &response, nil
 }
 
-func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestContext) (*osb.DeprovisionResponse, error) {
+func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestContext) (*broker.DeprovisionResponse, error) {
 	b.Lock()
 	defer b.Unlock()
 
@@ -82,7 +84,7 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 		return nil, err
 	}
 
-	response := osb.DeprovisionResponse{}
+	response := broker.DeprovisionResponse{}
 	if request.AcceptsIncomplete {
 		response.Async = b.async
 	}
@@ -90,13 +92,13 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 	return &response, nil
 }
 
-func (b *Broker) LastOperation(request *osb.LastOperationRequest, c *broker.RequestContext) (*osb.LastOperationResponse, error) {
+func (b *Broker) LastOperation(request *osb.LastOperationRequest, c *broker.RequestContext) (*broker.LastOperationResponse, error) {
 	// Your last-operation business logic goes here
 
 	return nil, nil
 }
 
-func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.BindResponse, error) {
+func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*broker.BindResponse, error) {
 	b.Lock()
 	defer b.Unlock()
 
@@ -106,8 +108,10 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.
 		return nil, err
 	}
 
-	response := osb.BindResponse{
-		Credentials: creds,
+	response := broker.BindResponse{
+		BindResponse: osb.BindResponse{
+			Credentials: creds,
+		},
 	}
 	if request.AcceptsIncomplete {
 		response.Async = b.async
@@ -116,10 +120,10 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*osb.
 	return &response, nil
 }
 
-func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*osb.UnbindResponse, error) {
+func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*broker.UnbindResponse, error) {
 	// nothing to do
 
-	response := osb.UnbindResponse{}
+	response := broker.UnbindResponse{}
 	if request.AcceptsIncomplete {
 		response.Async = b.async
 	}
@@ -127,10 +131,10 @@ func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*
 	return &response, nil
 }
 
-func (b *Broker) Update(request *osb.UpdateInstanceRequest, c *broker.RequestContext) (*osb.UpdateInstanceResponse, error) {
+func (b *Broker) Update(request *osb.UpdateInstanceRequest, c *broker.RequestContext) (*broker.UpdateInstanceResponse, error) {
 	// Not supported, do nothing
 
-	response := osb.UpdateInstanceResponse{}
+	response := broker.UpdateInstanceResponse{}
 	if request.AcceptsIncomplete {
 		response.Async = b.async
 	}
