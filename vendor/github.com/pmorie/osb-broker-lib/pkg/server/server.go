@@ -30,6 +30,27 @@ type Server struct {
 func New(api *rest.APISurface, reg prom.Gatherer) *Server {
 	router := mux.NewRouter()
 
+	if api.EnableCORS {
+		router.Methods("OPTIONS").HandlerFunc(api.OptionsHandler)
+	}
+
+	registerAPIHandlers(router, api)
+	router.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+
+	return &Server{
+		Router: router,
+	}
+}
+
+// NewHTTPHandler creates a new Router and registers API handlers
+func NewHTTPHandler(api *rest.APISurface) http.Handler {
+	router := mux.NewRouter()
+	registerAPIHandlers(router, api)
+	return router
+}
+
+// registerAPIHandlers registers the APISurface endpoints and handlers.
+func registerAPIHandlers(router *mux.Router, api *rest.APISurface) {
 	router.HandleFunc("/v2/catalog", api.GetCatalogHandler).Methods("GET")
 	router.HandleFunc("/v2/service_instances/{instance_id}/last_operation", api.LastOperationHandler).Methods("GET")
 	router.HandleFunc("/v2/service_instances/{instance_id}", api.ProvisionHandler).Methods("PUT")
@@ -37,12 +58,9 @@ func New(api *rest.APISurface, reg prom.Gatherer) *Server {
 	router.HandleFunc("/v2/service_instances/{instance_id}", api.UpdateHandler).Methods("PATCH")
 	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{binding_id}", api.BindHandler).Methods("PUT")
 	router.HandleFunc("/v2/service_instances/{instance_id}/service_bindings/{binding_id}", api.UnbindHandler).Methods("DELETE")
-
-	router.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-
-	return &Server{
-		Router: router,
-	}
+	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("OK"))
+	})
 }
 
 // Run creates the HTTP handler and begins to listen on the specified address.
@@ -75,6 +93,15 @@ func (s *Server) RunTLS(ctx context.Context, addr string, cert string, key strin
 		srv.TLSConfig = new(tls.Config)
 		srv.TLSConfig.Certificates = []tls.Certificate{tlsCert}
 		return srv.ListenAndServeTLS("", "")
+	}
+	return s.run(ctx, addr, listenAndServe)
+}
+
+// RunTLSWithTLSFiles creates the HTTPS handler based on the certification
+// files that were passed and begins to listen on the specified address.
+func (s *Server) RunTLSWithTLSFiles(ctx context.Context, addr string, certFilePath string, keyFilePath string) error {
+	listenAndServe := func(srv *http.Server) error {
+		return srv.ListenAndServeTLS(certFilePath, keyFilePath)
 	}
 	return s.run(ctx, addr, listenAndServe)
 }

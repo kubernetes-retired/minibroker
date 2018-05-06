@@ -33,7 +33,7 @@ type Interface interface {
 	// For more information, see:
 	//
 	// https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md#catalog-management
-	GetCatalog(c *RequestContext) (*osb.CatalogResponse, error)
+	GetCatalog(c *RequestContext) (*CatalogResponse, error)
 	// Provision encapsulates the business logic for a provision operation and
 	// returns a osb.ProvisionResponse or an error. Provisioning creates a new
 	// instance of a particular service.
@@ -53,7 +53,7 @@ type Interface interface {
 	// For more information, see:
 	//
 	// https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md#provisioning
-	Provision(request *osb.ProvisionRequest, c *RequestContext) (*osb.ProvisionResponse, error)
+	Provision(request *osb.ProvisionRequest, c *RequestContext) (*ProvisionResponse, error)
 	// Deprovision encapsulates the business logic for a deprovision operation
 	// and returns a osb.DeprovisionResponse or an error. Deprovisioning deletes
 	// an instance of a service and releases the resources associated with it.
@@ -74,7 +74,7 @@ type Interface interface {
 	// For more information, see:
 	//
 	// https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md#deprovisioning
-	Deprovision(request *osb.DeprovisionRequest, c *RequestContext) (*osb.DeprovisionResponse, error)
+	Deprovision(request *osb.DeprovisionRequest, c *RequestContext) (*DeprovisionResponse, error)
 	// LastOperation encapsulates the business logic for a last operation
 	// request and returns a osb.LastOperationResponse or an error.
 	// LastOperation is called when a platform checks the status of an ongoing
@@ -96,7 +96,7 @@ type Interface interface {
 	// For more information, see:
 	//
 	// https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md#polling-last-operation
-	LastOperation(request *osb.LastOperationRequest, c *RequestContext) (*osb.LastOperationResponse, error)
+	LastOperation(request *osb.LastOperationRequest, c *RequestContext) (*LastOperationResponse, error)
 	// Bind encapsulates the business logic for a bind operation and returns a
 	// osb.BindResponse or an error. Binding creates a new set of credentials for
 	// a consumer to use an instance of a service. Not all services are
@@ -119,7 +119,7 @@ type Interface interface {
 	// For more information, see:
 	//
 	// https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md#binding
-	Bind(request *osb.BindRequest, c *RequestContext) (*osb.BindResponse, error)
+	Bind(request *osb.BindRequest, c *RequestContext) (*BindResponse, error)
 	// Unbind encapsulates the business logic for an unbind operation and
 	// returns a osb.UnbindResponse or an error. Unbind deletes a binding and the
 	// resources associated with it.
@@ -139,7 +139,7 @@ type Interface interface {
 	// For more information, see:
 	//
 	// https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md#unbinding
-	Unbind(request *osb.UnbindRequest, c *RequestContext) (*osb.UnbindResponse, error)
+	Unbind(request *osb.UnbindRequest, c *RequestContext) (*UnbindResponse, error)
 	// Update encapsulates the business logic for an update operation and
 	// returns a osb.UpdateInstanceResponse or an error. Update updates the
 	// instance.
@@ -159,7 +159,7 @@ type Interface interface {
 	// For more information, see:
 	//
 	// https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md#updating-a-service-instance
-	Update(request *osb.UpdateInstanceRequest, c *RequestContext) (*osb.UpdateInstanceResponse, error)
+	Update(request *osb.UpdateInstanceRequest, c *RequestContext) (*UpdateInstanceResponse, error)
 }
 
 // RequestContext encapsulates the following parameters:
