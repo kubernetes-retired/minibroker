@@ -13,4 +13,4 @@
 
 [[constraint]]
   name = "github.com/pmorie/osb-broker-lib"
-  branch = "master"
+  version = "0.0.10"
