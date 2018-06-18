@@ -33,6 +33,10 @@ spec:
         {{- if .Values.serviceCatalogEnabledOnly }}
         - --service-catalog-enabled-only
         {{- end }}
+        {{- if .Values.helmRepoUrl }}
+        - -helmUrl
+        - "{{ .Values.helmRepoUrl }}"
+        {{- end }}
         - --port
         - "8080"
         {{- if .Values.tls.cert }}

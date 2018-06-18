@@ -13,7 +13,7 @@ import (
 // with. NewBroker is the place where you will initialize your
 // Broker the parameters passed in.
 func NewBroker(o Options) (*Broker, error) {
-	mb := minibroker.NewClient("", o.ServiceCatalogEnabledOnly)
+	mb := minibroker.NewClient(o.HelmRepoUrl, o.ServiceCatalogEnabledOnly)
 	err := mb.Init()
 	if err != nil {
 		return nil, err

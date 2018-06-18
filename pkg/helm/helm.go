@@ -46,7 +46,7 @@ func (c *Client) Init() error {
 	cr := repo.Entry{
 		Name:  "stable",
 		Cache: cif,
-		URL:   stableURL,
+		URL:   c.repoURL,
 	}
 
 	var settings environment.EnvSettings
@@ -56,7 +56,7 @@ func (c *Client) Init() error {
 	}
 
 	if err := r.DownloadIndexFile(c.home.Cache()); err != nil {
-		return errors.Wrapf(err, "Looks like %q is not a valid chart repository or cannot be reached", stableURL)
+		return errors.Wrapf(err, "Looks like %q is not a valid chart repository or cannot be reached", cr.URL)
 	}
 
 	f.Update(&cr)
