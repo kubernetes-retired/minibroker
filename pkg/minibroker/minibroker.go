@@ -90,6 +90,54 @@ func (c *Client) Init() error {
 	return c.helm.Init()
 }
 
+func hasTag(tag string, list []string) bool {
+	for _, listTag := range list {
+		if listTag == tag {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getTagIntersection(chartVersions repo.ChartVersions) []string {
+	tagList := make([][]string, 0)
+
+	for _, chartVersion := range chartVersions {
+		tagList = append(tagList, chartVersion.Metadata.Keywords)
+	}
+
+	if len(tagList) == 0 {
+		return []string{}
+	}
+
+	intersection := make([]string, 0)
+
+	// There's only one chart version, so just return its tags
+	if len(tagList) == 1 {
+		for _, tag := range tagList[0] {
+			intersection = append(intersection, tag)
+		}
+
+		return intersection
+	}
+
+Search:
+	for _, searchTag := range tagList[0] {
+		for _, other := range tagList[1:] {
+			if !hasTag(searchTag, other) {
+				// Stop searching for that tag if it isn't found in one of the charts
+				continue Search
+			}
+		}
+
+		// The tag has been found in all of the other keyword lists, so add it
+		intersection = append(intersection, searchTag)
+	}
+
+	return intersection
+}
+
 func (c *Client) ListServices() ([]osb.Service, error) {
 	glog.Info("Listing services...")
 	var services []osb.Service
@@ -104,12 +152,15 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 			continue
 		}
 
+		tags := getTagIntersection(chartVersions)
+
 		svc := osb.Service{
 			ID:          chart,
 			Name:        chart,
 			Description: "Helm Chart for " + chart,
 			Bindable:    true,
 			Plans:       make([]osb.Plan, 0, len(chartVersions)),
+			Tags:        tags,
 		}
 		appVersions := map[string]*repo.ChartVersion{}
 		for _, chartVersion := range chartVersions {
