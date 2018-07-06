@@ -21,7 +21,7 @@ func TestHasTag(t *testing.T) {
 	for _, tt := range tagTests {
 		actual := hasTag(tt.tag, tt.list)
 		if actual != tt.expected {
-			t.Errorf("hasTag(%s %v): expected %s, actual %s",
+			t.Errorf("hasTag(%s %v): expected %t, actual %t",
 				tt.tag, tt.list, tt.expected, actual)
 		}
 	}
