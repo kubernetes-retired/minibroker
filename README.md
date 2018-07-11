@@ -6,7 +6,7 @@ Minibroker is an implementation of the [Open Service Broker API](https://openser
 suited for local development and testing. Rather than provisioning services
 from a cloud provider, Minibroker provisions services in containers on the cluster.
 
-Minibroker uses the [Kubernetes Helm Charts](https://github.com/kubernetes/charts) 
+Minibroker uses the [Kubernetes Helm Charts](https://github.com/kubernetes/charts)
 its source of provisionable services.
 
 While it can deploy any stable chart, Minibroker provides the following Service Catalog Enabled
@@ -46,8 +46,12 @@ helm repo add minibroker https://minibroker.blob.core.windows.net/charts
 helm install --name minibroker --namespace minibroker minibroker/minibroker
 ```
 
-By default only Service Catalog Enabled services are included with Minibroker,
-to include all available charts install the helm chart with `--set serviceCatalogEnabledOnly=false`.
+## Installation Options
+* Only Service Catalog Enabled services are included with Minibroker by default,
+  to include all available charts specify `--set serviceCatalogEnabledOnly=false`.
+* The stable Helm chart repository is the default source for services, to changes
+  the source Helm repository, specify
+  `--set helmRepoUrl=https://example.com/custom-chart-repo/`.
 
 # Update Minibroker
 
@@ -181,7 +185,7 @@ actively changing dependencies, you don't need to do anything extra.
     * Import the dependency in the code OR
     * Run `dep ensure --add github.com/pkg/example@v1.0.0` to add an explicit constraint
        to Gopkg.toml.
-       
+
        This is only necessary when we want to stick with a particular branch
        or version range, otherwise the lock will keep us on the same version and track what's used.
 2. Run `dep ensure`.
