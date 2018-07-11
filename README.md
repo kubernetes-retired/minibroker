@@ -7,7 +7,7 @@ suited for local development and testing. Rather than provisioning services
 from a cloud provider, Minibroker provisions services in containers on the cluster.
 
 Minibroker uses the [Kubernetes Helm Charts](https://github.com/kubernetes/charts)
-its source of provisionable services.
+as its source of provisionable services.
 
 While it can deploy any stable chart, Minibroker provides the following Service Catalog Enabled
 services:
