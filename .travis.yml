@@ -11,5 +11,5 @@ deploy:
   provider: script
   script: make release
   on:
-    branch: master
-    tags: true
+    repo: osbkit/minibroker
+    all_branches: true
