@@ -31,10 +31,9 @@ RUN curl -sLO https://github.com/golang/dep/releases/download/$DEP_VERSION/dep-l
     chmod +x ./dep-linux-amd64 && \
     mv ./dep-linux-amd64 /usr/local/bin/dep
 
-# Install the azure client
-ENV AZCLI_VERSION=2.0.25
-RUN apt-get update && apt-get install -y python-pip && \
-    rm -rf /var/lib/apt/lists/*
-RUN pip install --disable-pip-version-check --no-cache-dir --upgrade cryptography azure-cli==${AZCLI_VERSION}
+# Install the azure client, used to publish svcat binaries
+ENV AZCLI_VERSION=v0.1.2
+RUN curl -sLo /usr/local/bin/az https://github.com/carolynvs/az-cli/releases/download/$AZCLI_VERSION/az-linux-amd64 && \
+chmod +x /usr/local/bin/az
 
 WORKDIR /go/src/github.com/osbkit/minibroker
