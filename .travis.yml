@@ -12,3 +12,4 @@ deploy:
   script: make release
   on:
     branch: master
+    tags: true
