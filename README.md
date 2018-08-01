@@ -61,6 +61,59 @@ helm upgrade --install minibroker \
 	--set imagePullPolicy="Always",deploymentStrategy="Recreate"
 ```
 
+# Usage with Cloud Foundry
+
+The Open Service Broker API is compatible with Cloud Foundry, and minibroker
+can be used to respond to requests from a CF system.
+
+## Installation
+
+CF doesn't use a service catalog as the Cloud Controller handles the request
+for services.
+
+```
+helm repo add minibroker https://example.com/minibroker-charts
+helm install --name minibroker --namespace minibroker minibroker/minibroker \
+	--set "deployServiceCatalog=false" \
+        --set "defaultNamespace=minibroker"
+```
+
+## Usage
+
+The following usage instructions assume a successful login to the CF system,
+with an Org and Space available. It also assumes a CF system like [SUSE CAP](https://github.com/SUSE/scf)
+that runs in the same Kubernetes cluster as the minibroker. It should be
+possible to run the minibroker separately, but this would need a proper
+ingress setup.
+
+```
+cf create-service-broker minibroker user pass http://minibroker-minibroker.minibroker.svc.cluster.local
+cf enable-service-access redis
+echo > redis.json '[{ "protocol": "tcp", "destination": "10.0.0.0/8", "ports": "6379", "description": "Allow Redis traffic" }]'
+cf create-security-group redis_networking redis.json
+cf bind-security-group   redis_networking org space
+cf create-service redis 4-0-10 redis-example-svc
+```
+
+The service is then available for users of the CF system.
+
+```
+git clone https://github.com/scf-samples/cf-redis-example-app
+cd cf-redis-example-app
+cf push --no-start
+cf bind-service redis-example-app redis-example-svc
+cf start redis-example-app
+```
+
+The app can then be tested to confirm it can access the Redis service.
+
+```
+export APP=redis-example-app.cf-dev.io
+curl -X GET $APP/foo # Returns 'key not present'
+curl -X PUT $APP/foo -d 'data=bar'
+curl -X GET $APP/foo # Returns 'bar'
+```
+
 # Examples
 
 ```
