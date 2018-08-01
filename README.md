@@ -49,7 +49,7 @@ helm install --name minibroker --namespace minibroker minibroker/minibroker
 ## Installation Options
 * Only Service Catalog Enabled services are included with Minibroker by default,
   to include all available charts specify `--set serviceCatalogEnabledOnly=false`.
-* The stable Helm chart repository is the default source for services, to changes
+* The stable Helm chart repository is the default source for services, to change
   the source Helm repository, specify
   `--set helmRepoUrl=https://example.com/custom-chart-repo/`.
 
