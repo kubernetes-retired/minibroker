@@ -32,7 +32,7 @@ RUN curl -sLO https://github.com/golang/dep/releases/download/$DEP_VERSION/dep-l
     mv ./dep-linux-amd64 /usr/local/bin/dep
 
 # Install the azure client, used to publish svcat binaries
-ENV AZCLI_VERSION=v0.1.2
+ENV AZCLI_VERSION=v0.3.1
 RUN curl -sLo /usr/local/bin/az https://github.com/carolynvs/az-cli/releases/download/$AZCLI_VERSION/az-linux-amd64 && \
 chmod +x /usr/local/bin/az
 
