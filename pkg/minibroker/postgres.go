@@ -32,7 +32,13 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 
 	passwordVal, ok := chartSecrets["postgres-password"]
 	if !ok {
-		return nil, errors.Errorf("postgres-password not found in secret keys")
+		// Chart versions 2.0+ use postgresqlPassword instead of postresPassword
+		// See https://github.com/osbkit/minibroker/issues/17
+		passwordVal, ok = chartSecrets["postgresql-password"]
+
+		if !ok {
+			return nil, errors.Errorf("neither postgres-password nor postgresql-password not found in secret keys")
+		}
 	}
 	password = passwordVal.(string)
 

@@ -65,7 +65,7 @@ test-postgresql: setup-postgresql teardown-postgresql
 setup-postgresql:
 	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
 
-	svcat provision postgresql --class postgresql --plan 9-6-2 --namespace minibroker \
+	svcat provision postgresql --class postgresql --plan 11-0-0 --namespace minibroker \
 		-p postgresDatabase=mydb -p postgresUser=admin
 	until svcat get instance postgresql -n minibroker | grep -m 1 Ready; do : ; done
 	svcat get instance postgresql -n minibroker
@@ -75,8 +75,8 @@ setup-postgresql:
 	svcat describe binding postgresql -n minibroker
 
 teardown-postgresql:
-	svcat unbind postgresql
-	svcat deprovision postgresql
+	svcat unbind postgresql -n minibroker
+	svcat deprovision postgresql -n minibroker
 
 test-mongodb: setup-mongodb teardown-mongodb
 
