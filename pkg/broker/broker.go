@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/golang/glog"
@@ -23,8 +24,9 @@ func NewBroker(o Options) (*Broker, error) {
 	// line, you would unpack it from the Options and set it on the
 	// Broker here.
 	return &Broker{
-		Client: mb,
-		async:  false,
+		Client:           mb,
+		async:            false,
+		defaultNamespace: o.DefaultNamespace,
 	}, nil
 }
 
@@ -36,6 +38,8 @@ type Broker struct {
 	async bool
 	// Synchronize go routines.
 	sync.RWMutex
+	// Default namespace to run brokers if not specified during request
+	defaultNamespace string
 }
 
 var _ broker.Interface = &Broker{}
@@ -59,7 +63,17 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 	b.Lock()
 	defer b.Unlock()
 
-	namespace := request.Context["namespace"].(string)
+	namespace := b.defaultNamespace
+	if request.Context["namespace"] != nil {
+		namespace = request.Context["namespace"].(string)
+	}
+
+	if namespace == "" {
+		err := errors.New("Cannot provision with empty namespace")
+		glog.Errorln(err)
+		return nil, err
+	}
+
 	err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.Parameters)
 	if err != nil {
 		glog.Errorln(err)

@@ -40,6 +40,8 @@ func init() {
 		"The path to the catalog")
 	flag.StringVar(&options.HelmRepoUrl, "helmUrl", "",
 		"The url to the helm repo")
+	flag.StringVar(&options.DefaultNamespace, "defaultNamespace", "",
+		"The default namespace for brokers when the request doesn't specify")
 	flag.Parse()
 }
 

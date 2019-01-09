@@ -37,6 +37,10 @@ spec:
         - -helmUrl
         - "{{ .Values.helmRepoUrl }}"
         {{- end }}
+        {{- if .Values.defaultNamespace }}
+        - -defaultNamespace
+        - "{{ .Values.defaultNamespace }}"
+        {{- end }}
         - --port
         - "8080"
         {{- if .Values.tls.cert }}
