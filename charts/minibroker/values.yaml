@@ -12,3 +12,5 @@ tls:
   key:
 
 serviceCatalogEnabledOnly: true
+
+deployServiceCatalog: true
