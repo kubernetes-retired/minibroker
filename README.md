@@ -72,7 +72,7 @@ CF doesn't use a service catalog as the Cloud Controller handles the request
 for services.
 
 ```
-helm repo add minibroker https://example.com/minibroker-charts
+helm repo add minibroker https://minibroker.blob.core.windows.net/charts
 helm install --name minibroker --namespace minibroker minibroker/minibroker \
 	--set "deployServiceCatalog=false" \
         --set "defaultNamespace=minibroker"
