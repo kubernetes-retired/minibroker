@@ -48,7 +48,7 @@ setup-mariadb:
 	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
 
 	svcat provision mariadb --class mariadb --plan 10-1-32 --namespace minibroker \
-		-p mariadbDatabase=mydb -p mariadbUser=admin
+		--params-json '{"db": {"name": "mydb", "user": "admin"}}'
 	until svcat get instance mariadb -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat get instance mariadb -n minibroker
 
