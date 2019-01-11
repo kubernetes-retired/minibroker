@@ -138,6 +138,34 @@ Search:
 	return intersection
 }
 
+// updateConfigMap will update the config map data for the given instance; it is
+// expected that the config map already exists.
+// Each value in data may be either a string (in which case it is set), or nil
+// (in which case it is removed); any other value will panic.
+func (c *Client) updateConfigMap(instanceID string, data map[string]interface{}) error {
+	configMapInterface := c.coreClient.CoreV1().ConfigMaps(c.namespace)
+	config, err := configMapInterface.Get(instanceID, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to get config for instance %q", instanceID)
+	}
+
+	for name, value := range data {
+		if value == nil {
+			delete(config.Data, name)
+		} else if stringValue, ok := value.(string); ok {
+			config.Data[name] = stringValue
+		} else {
+			panic(fmt.Sprintf("Invalid data (key %s), has value %+v", name, value))
+		}
+	}
+
+	_, err = configMapInterface.Update(config)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to update config for instance %q", instanceID)
+	}
+	return nil
+}
+
 func (c *Client) ListServices() ([]osb.Service, error) {
 	glog.Info("Listing services...")
 	var services []osb.Service
@@ -218,6 +246,41 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, prov
 	chartVersion := strings.Replace(planID, serviceID+"-", "", 1)
 	chartVersion = strings.Replace(chartVersion, "-", ".", -1)
 
+	glog.Info("persisting the provisioning parameters...")
+	paramsJSON, err := json.Marshal(provisionParams)
+	if err != nil {
+		return errors.Wrapf(err, "could not marshall provisioning parameters %v", provisionParams)
+	}
+	config := corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      instanceID,
+			Namespace: c.namespace,
+			Labels: map[string]string{
+				ServiceKey: serviceID,
+				PlanKey:    planID,
+			},
+		},
+		Data: map[string]string{
+			ProvisionParamsKey: string(paramsJSON),
+			ServiceKey:         serviceID,
+			PlanKey:            planID,
+		},
+	}
+	_, err = c.coreClient.CoreV1().ConfigMaps(config.Namespace).Create(&config)
+	if err != nil {
+		return errors.Wrapf(err, "could not persist the instance configmap for %q", instanceID)
+	}
+
+	err = c.provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// provisionSynchronously will provision the service instance synchronously.
+func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams map[string]interface{}) error {
 	glog.Infof("provisioning %s/%s using stable helm chart %s@%s...", serviceID, planID, chartName, chartVersion)
 
 	chartDef, err := c.helm.GetChart(chartName, chartVersion)
@@ -270,31 +333,12 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, prov
 		}
 	}
 
-	glog.Info("persisting the provisioning parameters...")
-	paramsJson, err := json.Marshal(provisionParams)
+	err = c.updateConfigMap(instanceID, map[string]interface{}{
+		ReleaseLabel:        resp.Release.Name,
+		ReleaseNamespaceKey: resp.Release.Namespace,
+	})
 	if err != nil {
-		return errors.Wrapf(err, "could not marshall provisioning parameters %v", provisionParams)
-	}
-	config := corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      instanceID,
-			Namespace: c.namespace,
-			Labels: map[string]string{
-				ServiceKey: serviceID,
-				PlanKey:    planID,
-			},
-		},
-		Data: map[string]string{
-			ProvisionParamsKey:  string(paramsJson),
-			ServiceKey:          serviceID,
-			PlanKey:             planID,
-			ReleaseLabel:        resp.Release.Name,
-			ReleaseNamespaceKey: resp.Release.Namespace,
-		},
-	}
-	_, err = c.coreClient.CoreV1().ConfigMaps(config.Namespace).Create(&config)
-	if err != nil {
-		return errors.Wrapf(err, "could not persist the instance configmap for %q", instanceID)
+		return errors.Wrapf(err, "could not update the instance configmap for %q", instanceID)
 	}
 
 	glog.Infof("provision of %v@%v (%v@%v) complete\n%s\n",
