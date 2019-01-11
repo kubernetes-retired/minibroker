@@ -450,7 +450,7 @@ func (c *Client) Deprovision(instanceID string) error {
 	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+			return osb.HTTPStatusCodeError{StatusCode: http.StatusGone}
 		}
 		return err
 	}
