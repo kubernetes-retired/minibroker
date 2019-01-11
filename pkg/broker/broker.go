@@ -74,6 +74,8 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 		return nil, err
 	}
 
+	glog.V(5).Infof("Provisioning %s (%s/%s) in %s", request.InstanceID, request.ServiceID, request.PlanID, namespace)
+
 	err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.Parameters)
 	if err != nil {
 		glog.Errorln(err)
@@ -85,10 +87,12 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 		response.Async = b.async
 	}
 
+	glog.V(5).Infof("Successfully provisioning %s (%s/%s) in %s", request.InstanceID, request.ServiceID, request.PlanID, namespace)
 	return &response, nil
 }
 
 func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestContext) (*broker.DeprovisionResponse, error) {
+	glog.V(5).Infof("Deprovisioning %s (%s/%s)", request.InstanceID, request.ServiceID, request.PlanID)
 	b.Lock()
 	defer b.Unlock()
 
@@ -103,16 +107,19 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 		response.Async = b.async
 	}
 
+	glog.V(5).Infof("Successfully deprovisioning %s (%s/%s)", request.InstanceID, request.ServiceID, request.PlanID)
 	return &response, nil
 }
 
 func (b *Broker) LastOperation(request *osb.LastOperationRequest, c *broker.RequestContext) (*broker.LastOperationResponse, error) {
 	// Your last-operation business logic goes here
 
+	glog.V(5).Infof("Last operation for %s not implemented", request.InstanceID)
 	return nil, nil
 }
 
 func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*broker.BindResponse, error) {
+	glog.V(5).Infof("Binding %s (%s)", request.InstanceID, request.ServiceID)
 	b.Lock()
 	defer b.Unlock()
 
@@ -131,10 +138,13 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*brok
 		response.Async = b.async
 	}
 
+	glog.V(5).Infof("Successfully binding %s (%s)", request.InstanceID, request.ServiceID)
+
 	return &response, nil
 }
 
 func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*broker.UnbindResponse, error) {
+	glog.V(5).Infof("Unbinding %s (%s)", request.InstanceID, request.ServiceID)
 	// nothing to do
 
 	response := broker.UnbindResponse{}
@@ -142,6 +152,7 @@ func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*
 		response.Async = b.async
 	}
 
+	glog.V(5).Infof("Successfully unbinding %s (%s)", request.InstanceID, request.ServiceID)
 	return &response, nil
 }
 

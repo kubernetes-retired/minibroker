@@ -52,7 +52,7 @@ spec:
         - "{{ .Values.tls.key }}"
         {{- end }}
         - -v
-        - "5"
+        - {{ default "5" .Values.logLevel | quote }}
         - -logtostderr
         ports:
         - containerPort: 8080
