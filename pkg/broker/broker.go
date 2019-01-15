@@ -98,15 +98,17 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 	b.Lock()
 	defer b.Unlock()
 
-	err := b.Client.Deprovision(request.InstanceID)
+	operationName, err := b.Client.Deprovision(request.InstanceID, request.AcceptsIncomplete)
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err
 	}
 
 	response := broker.DeprovisionResponse{}
-	if request.AcceptsIncomplete {
-		response.Async = b.async && false
+	if request.AcceptsIncomplete && operationName != "" {
+		response.Async = b.async
+		operationKey := osb.OperationKey(operationName)
+		response.OperationKey = &operationKey
 	}
 
 	glog.V(5).Infof("Successfully deprovisioning %s (%s/%s)", request.InstanceID, request.ServiceID, request.PlanID)

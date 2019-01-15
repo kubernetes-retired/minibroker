@@ -563,16 +563,52 @@ func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interf
 	return data, nil
 }
 
-func (c *Client) Deprovision(instanceID string) error {
+func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string, error) {
 	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			return osb.HTTPStatusCodeError{StatusCode: http.StatusGone}
+			return "", osb.HTTPStatusCodeError{StatusCode: http.StatusGone}
 		}
-		return err
+		return "", err
 	}
 	release := config.Data[ReleaseLabel]
 
+	if !acceptsIncomplete {
+		err = c.deprovisionSynchronously(instanceID, release)
+		if err != nil {
+			return "", err
+		}
+		return "", nil
+	}
+
+	operationKey := generateOperationName(OperationPrefixDeprovision)
+	err = c.updateConfigMap(instanceID, map[string]interface{}{
+		OperationStateKey:       string(osb.StateInProgress),
+		OperationNameKey:        operationKey,
+		OperationDescriptionKey: fmt.Sprintf("deprovisioning service instance %q", instanceID),
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "Failed to set operation key when deprovisioning instance %s", instanceID)
+	}
+	go func() {
+		err = c.deprovisionSynchronously(instanceID, release)
+		if err == nil {
+			// After deprovisioning, there is no config map to update
+			return
+		}
+		glog.Errorf("Failed to deprovision %q: %s", instanceID, err)
+		err = c.updateConfigMap(instanceID, map[string]interface{}{
+			OperationStateKey:       string(osb.StateFailed),
+			OperationDescriptionKey: fmt.Sprintf("service instance %q failed to deprovision", instanceID),
+		})
+		if err != nil {
+			glog.Errorf("Could not update operation state when deprovisioning asynchronously: %s", err)
+		}
+	}()
+	return operationKey, nil
+}
+
+func (c *Client) deprovisionSynchronously(instanceID, release string) error {
 	tc, close, err := c.connectTiller()
 	if err != nil {
 		return err
