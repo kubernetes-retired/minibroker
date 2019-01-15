@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"strings"
@@ -48,6 +49,12 @@ const (
 const (
 	ConcurrencyErrorMessage     = "ConcurrencyError"
 	ConcurrencyErrorDescription = "Concurrent modification not supported"
+)
+
+// Last operation name prefixes for various operations
+const (
+	OperationPrefixProvision   = "provision-"
+	OperationPrefixDeprovision = "deprovision-"
 )
 
 type Client struct {
@@ -151,17 +158,28 @@ Search:
 	return intersection
 }
 
+func generateOperationName(prefix string) string {
+	return fmt.Sprintf("%s%x", prefix, rand.Int31())
+}
+
+func (c *Client) getConfigMap(instanceID string) (*corev1.ConfigMap, error) {
+	configMapInterface := c.coreClient.CoreV1().ConfigMaps(c.namespace)
+	config, err := configMapInterface.Get(instanceID, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get config for instance %q", instanceID)
+	}
+	return config, nil
+}
+
 // updateConfigMap will update the config map data for the given instance; it is
 // expected that the config map already exists.
 // Each value in data may be either a string (in which case it is set), or nil
 // (in which case it is removed); any other value will panic.
 func (c *Client) updateConfigMap(instanceID string, data map[string]interface{}) error {
-	configMapInterface := c.coreClient.CoreV1().ConfigMaps(c.namespace)
-	config, err := configMapInterface.Get(instanceID, metav1.GetOptions{})
+	config, err := c.getConfigMap(instanceID)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get config for instance %q", instanceID)
+		return err
 	}
-
 	for name, value := range data {
 		if value == nil {
 			delete(config.Data, name)
@@ -172,6 +190,7 @@ func (c *Client) updateConfigMap(instanceID string, data map[string]interface{})
 		}
 	}
 
+	configMapInterface := c.coreClient.CoreV1().ConfigMaps(c.namespace)
 	_, err = configMapInterface.Update(config)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update config for instance %q", instanceID)
@@ -253,7 +272,9 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 	return services, nil
 }
 
-func (c *Client) Provision(instanceID, serviceID, planID, namespace string, provisionParams map[string]interface{}) error {
+// Provision a new service instance.  Returns the async operation key (if
+// acceptsIncomplete is set).
+func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acceptsIncomplete bool, provisionParams map[string]interface{}) (string, error) {
 	chartName := serviceID
 	// The way I'm turning charts into plans is not reversible
 	chartVersion := strings.Replace(planID, serviceID+"-", "", 1)
@@ -262,7 +283,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, prov
 	glog.Info("persisting the provisioning parameters...")
 	paramsJSON, err := json.Marshal(provisionParams)
 	if err != nil {
-		return errors.Wrapf(err, "could not marshall provisioning parameters %v", provisionParams)
+		return "", errors.Wrapf(err, "could not marshall provisioning parameters %v", provisionParams)
 	}
 	config := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -281,15 +302,54 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, prov
 	}
 	_, err = c.coreClient.CoreV1().ConfigMaps(config.Namespace).Create(&config)
 	if err != nil {
-		return errors.Wrapf(err, "could not persist the instance configmap for %q", instanceID)
+		// TODO: compare provision parameters and ignore this call if it's the same
+		if apierrors.IsAlreadyExists(err) {
+			return "", osb.HTTPStatusCodeError{
+				StatusCode:   http.StatusConflict,
+				ErrorMessage: &[]string{ConcurrencyErrorMessage}[0],
+				Description:  &[]string{ConcurrencyErrorDescription}[0],
+			}
+		}
+		return "", errors.Wrapf(err, "could not persist the instance configmap for %q", instanceID)
+	}
+
+	if acceptsIncomplete {
+		operationKey := generateOperationName(OperationPrefixProvision)
+		err = c.updateConfigMap(instanceID, map[string]interface{}{
+			OperationStateKey:       string(osb.StateInProgress),
+			OperationNameKey:        operationKey,
+			OperationDescriptionKey: fmt.Sprintf("provisioning service instance %q", instanceID),
+		})
+		if err != nil {
+			return "", errors.Wrapf(err, "Failed to set operation key when provisioning instance %s", instanceID)
+		}
+		go func() {
+			err = c.provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
+			if err == nil {
+				err = c.updateConfigMap(instanceID, map[string]interface{}{
+					OperationStateKey:       string(osb.StateSucceeded),
+					OperationDescriptionKey: fmt.Sprintf("service instance %q provisioned", instanceID),
+				})
+			} else {
+				glog.Errorf("Failed to provision %q: %s", instanceID, err)
+				err = c.updateConfigMap(instanceID, map[string]interface{}{
+					OperationStateKey:       string(osb.StateFailed),
+					OperationDescriptionKey: fmt.Sprintf("service instance %q failed to provision", instanceID),
+				})
+				if err != nil {
+					glog.Errorf("Could not update operation state when provisioning asynchronously: %s", err)
+				}
+			}
+		}()
+		return operationKey, nil
 	}
 
 	err = c.provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return "", nil
 }
 
 // provisionSynchronously will provision the service instance synchronously.

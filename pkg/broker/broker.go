@@ -25,7 +25,7 @@ func NewBroker(o Options) (*Broker, error) {
 	// Broker here.
 	return &Broker{
 		Client:           mb,
-		async:            false,
+		async:            true,
 		defaultNamespace: o.DefaultNamespace,
 	}, nil
 }
@@ -76,15 +76,17 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 
 	glog.V(5).Infof("Provisioning %s (%s/%s) in %s", request.InstanceID, request.ServiceID, request.PlanID, namespace)
 
-	err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.Parameters)
+	operationName, err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.AcceptsIncomplete, request.Parameters)
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err
 	}
 
 	response := broker.ProvisionResponse{}
-	if request.AcceptsIncomplete {
-		response.Async = b.async
+	if request.AcceptsIncomplete && operationName != "" {
+		response.Async = true
+		operationKey := osb.OperationKey(operationName)
+		response.OperationKey = &operationKey
 	}
 
 	glog.V(5).Infof("Successfully provisioning %s (%s/%s) in %s", request.InstanceID, request.ServiceID, request.PlanID, namespace)
@@ -104,7 +106,7 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 
 	response := broker.DeprovisionResponse{}
 	if request.AcceptsIncomplete {
-		response.Async = b.async
+		response.Async = b.async && false
 	}
 
 	glog.V(5).Infof("Successfully deprovisioning %s (%s/%s)", request.InstanceID, request.ServiceID, request.PlanID)
@@ -146,7 +148,7 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*brok
 		},
 	}
 	if request.AcceptsIncomplete {
-		response.Async = b.async
+		response.Async = b.async && false
 	}
 
 	glog.V(5).Infof("Successfully binding %s (%s)", request.InstanceID, request.ServiceID)
@@ -160,7 +162,7 @@ func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*
 
 	response := broker.UnbindResponse{}
 	if request.AcceptsIncomplete {
-		response.Async = b.async
+		response.Async = b.async && false
 	}
 
 	glog.V(5).Infof("Successfully unbinding %s (%s)", request.InstanceID, request.ServiceID)
@@ -172,7 +174,7 @@ func (b *Broker) Update(request *osb.UpdateInstanceRequest, c *broker.RequestCon
 
 	response := broker.UpdateInstanceResponse{}
 	if request.AcceptsIncomplete {
-		response.Async = b.async
+		response.Async = b.async && false
 	}
 
 	return &response, nil
