@@ -37,6 +37,19 @@ const (
 	TillerHeritage      = "Tiller"
 )
 
+// ConfigMap keys for tracking the last operation
+const (
+	OperationNameKey        = "last-operation-name"
+	OperationStateKey       = "last-operation-state"
+	OperationDescriptionKey = "last-operation-description"
+)
+
+// Error code constants missing from go-open-service-broker-client
+const (
+	ConcurrencyErrorMessage     = "ConcurrencyError"
+	ConcurrencyErrorDescription = "Concurrent modification not supported"
+)
+
 type Client struct {
 	helm                      *helm.Client
 	namespace                 string
@@ -520,6 +533,36 @@ func (c *Client) Deprovision(instanceID string) error {
 
 	glog.Infof("deprovision of %q is complete", instanceID)
 	return nil
+}
+
+// LastOperationState returns the status of the last asynchronous operation.
+func (c *Client) LastOperationState(instanceID string, operationKey *osb.OperationKey) (*osb.LastOperationResponse, error) {
+	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			glog.V(5).Infof("last operation on missing instance \"%s\"", instanceID)
+			return nil, osb.HTTPStatusCodeError{
+				StatusCode: http.StatusGone,
+			}
+		}
+		glog.Infof("could not get instance state of \"%s\": %s", instanceID, err)
+		return nil, err
+	}
+
+	if operationKey != nil && config.Data[OperationNameKey] != string(*operationKey) {
+		// Got unexpected operation key
+		return nil, osb.HTTPStatusCodeError{
+			StatusCode:   http.StatusBadRequest,
+			ErrorMessage: &[]string{ConcurrencyErrorMessage}[0],
+			Description:  &[]string{ConcurrencyErrorDescription}[0],
+		}
+	}
+
+	description := config.Data[OperationDescriptionKey]
+	return &osb.LastOperationResponse{
+		State:       osb.LastOperationState(config.Data[OperationStateKey]),
+		Description: &description,
+	}, nil
 }
 
 func boolPtr(value bool) *bool {

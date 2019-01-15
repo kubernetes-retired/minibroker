@@ -111,11 +111,22 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 	return &response, nil
 }
 
+// LastOperation provides information on the state of the last asynchronous operation
 func (b *Broker) LastOperation(request *osb.LastOperationRequest, c *broker.RequestContext) (*broker.LastOperationResponse, error) {
-	// Your last-operation business logic goes here
+	glog.V(5).Infof("Getting last operation of %s (%v/%v)", request.InstanceID, request.ServiceID, request.PlanID)
+	b.Lock()
+	defer b.Unlock()
 
-	glog.V(5).Infof("Last operation for %s not implemented", request.InstanceID)
-	return nil, nil
+	response, err := b.Client.LastOperationState(request.InstanceID, request.OperationKey)
+	if err != nil {
+		glog.Errorln(err)
+		return nil, err
+	}
+
+	wrappedResponse := broker.LastOperationResponse{LastOperationResponse: *response}
+
+	glog.V(5).Infof("Successfully got last operation of %s (%v/%v): %+v", request.InstanceID, request.ServiceID, request.PlanID, response)
+	return &wrappedResponse, nil
 }
 
 func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*broker.BindResponse, error) {
