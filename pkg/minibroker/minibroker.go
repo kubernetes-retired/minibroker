@@ -242,7 +242,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, prov
 	}
 
 	// Store any required metadata necessary for bind and deprovision as labels on the resources itself
-	glog.Info("Labeling chart resources with instance %q...", instanceID)
+	glog.Infof("Labeling chart resources with instance %q...", instanceID)
 	filterByRelease := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			HeritageLabel: TillerHeritage,

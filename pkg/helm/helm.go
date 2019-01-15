@@ -134,7 +134,7 @@ func LoadChart(chart *repo.ChartVersion) (*chart.Chart, error) {
 	defer func() {
 		if err := fd.Close(); err != nil {
 			glog.Errorln(
-				errors.Wrapf(err, "failed to close file descriptor for chart at %s (%s)", fullChartPath))
+				errors.Wrapf(err, "failed to close file descriptor for chart at %s", fullChartPath))
 		}
 	}()
 
