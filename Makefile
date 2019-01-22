@@ -65,7 +65,7 @@ test-postgresql: setup-postgresql teardown-postgresql
 setup-postgresql:
 	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
 
-	svcat provision postgresql --class postgresql --plan 9-6-2 --namespace minibroker \
+	svcat provision postgresql --class postgresql --plan 11-0-0 --namespace minibroker \
 		-p postgresDatabase=mydb -p postgresUser=admin
 	until svcat get instance postgresql -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat get instance postgresql -n minibroker
