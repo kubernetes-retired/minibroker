@@ -16,14 +16,19 @@ func (p MariadbProvider) Bind(services []corev1.Service, params map[string]inter
 
 	host := buildHostFromService(service)
 
+	dbParams, ok := params["db"].(map[string]interface{})
+	if !ok {
+		dbParams = make(map[string]interface{})
+	}
+
 	database := ""
-	dbVal, ok := params["mariadbDatabase"]
+	dbVal, ok := dbParams["name"]
 	if ok {
 		database = dbVal.(string)
 	}
 
 	var user, password string
-	userVal, ok := params["mariadbUser"]
+	userVal, ok := dbParams["user"]
 	if ok {
 		user = userVal.(string)
 

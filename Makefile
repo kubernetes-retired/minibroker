@@ -27,74 +27,74 @@ teardown-wordpress:
 test-mysqldb: setup-mysqldb teardown-mysqldb
 
 setup-mysqldb:
-	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
+	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
 
 	svcat provision mysqldb --class mysql --plan 5-7-14 --namespace minibroker \
 		-p mysqlDatabase=mydb -p mysqlUser=admin
-	until svcat get instance mysqldb -n minibroker | grep -m 1 Ready; do : ; done
+	until svcat get instance mysqldb -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat get instance mysqldb -n minibroker
 
 	svcat bind mysqldb -n minibroker
-	until svcat get binding mysqldb -n minibroker | grep -m 1 Ready; do : ; done
+	until svcat get binding mysqldb -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat describe binding mysqldb -n minibroker
 
 teardown-mysqldb:
-	svcat unbind mysqldb
-	svcat deprovision mysqldb
+	svcat unbind mysqldb -n minibroker
+	svcat deprovision mysqldb -n minibroker
 
 test-mariadb: setup-mariadb teardown-mariadb
 
 setup-mariadb:
-	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
+	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
 
 	svcat provision mariadb --class mariadb --plan 10-1-32 --namespace minibroker \
-		-p mariadbDatabase=mydb -p mariadbUser=admin
-	until svcat get instance mariadb -n minibroker | grep -m 1 Ready; do : ; done
+		--params-json '{"db": {"name": "mydb", "user": "admin"}}'
+	until svcat get instance mariadb -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat get instance mariadb -n minibroker
 
 	svcat bind mariadb -n minibroker
-	until svcat get binding mariadb -n minibroker | grep -m 1 Ready; do : ; done
+	until svcat get binding mariadb -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat describe binding mariadb -n minibroker
 
 teardown-mariadb:
-	svcat unbind mariadb
-	svcat deprovision mariadb
+	svcat unbind mariadb -n minibroker
+	svcat deprovision mariadb -n minibroker
 
 test-postgresql: setup-postgresql teardown-postgresql
 
 setup-postgresql:
-	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
+	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
 
 	svcat provision postgresql --class postgresql --plan 9-6-2 --namespace minibroker \
 		-p postgresDatabase=mydb -p postgresUser=admin
-	until svcat get instance postgresql -n minibroker | grep -m 1 Ready; do : ; done
+	until svcat get instance postgresql -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat get instance postgresql -n minibroker
 
 	svcat bind postgresql -n minibroker
-	until svcat get binding postgresql -n minibroker | grep -m 1 Ready; do : ; done
+	until svcat get binding postgresql -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat describe binding postgresql -n minibroker
 
 teardown-postgresql:
-	svcat unbind postgresql
-	svcat deprovision postgresql
+	svcat unbind postgresql -n minibroker
+	svcat deprovision postgresql -n minibroker
 
 test-mongodb: setup-mongodb teardown-mongodb
 
 setup-mongodb:
-	until svcat get broker minibroker | grep -m 1 Ready; do : ; done
+	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
 
 	svcat provision mongodb --class mongodb --plan 3-7-1 --namespace minibroker \
 		-p mongodbDatabase=mydb -p postgresUsername=admin
-	until svcat get instance mongodb -n minibroker | grep -m 1 Ready; do : ; done
+	until svcat get instance mongodb -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat get instance mongodb -n minibroker
 
 	svcat bind mongodb -n minibroker
-	until svcat get binding mongodb -n minibroker | grep -m 1 Ready; do : ; done
+	until svcat get binding mongodb -n minibroker | grep -w -m 1 Ready; do : ; done
 	svcat describe binding mongodb -n minibroker
 
 teardown-mongodb:
-	svcat unbind mongodb
-	svcat deprovision mongodb
+	svcat unbind mongodb -n minibroker
+	svcat deprovision mongodb -n minibroker
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
@@ -117,6 +117,7 @@ create-cluster:
 	./hack/create-cluster.sh
 
 deploy:
+	until svcat version | grep -m 1 'Server Version: v' ; do : ; done
 	helm upgrade --install minibroker --namespace minibroker \
 	--recreate-pods --force charts/minibroker \
 	--set image="$(IMAGE):$(TAG)",imagePullPolicy="Always",deploymentStrategy="Recreate"
