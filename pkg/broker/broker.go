@@ -150,7 +150,7 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*brok
 		},
 	}
 	if request.AcceptsIncomplete {
-		response.Async = b.async && false
+		response.Async = false // We do not currently accept asynchronous operations on bind
 	}
 
 	glog.V(5).Infof("Successfully binding %s (%s)", request.InstanceID, request.ServiceID)
@@ -164,7 +164,7 @@ func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*
 
 	response := broker.UnbindResponse{}
 	if request.AcceptsIncomplete {
-		response.Async = b.async && false
+		response.Async = false // We do not currently accept asynchronous operations on unbind
 	}
 
 	glog.V(5).Infof("Successfully unbinding %s (%s)", request.InstanceID, request.ServiceID)
@@ -176,7 +176,7 @@ func (b *Broker) Update(request *osb.UpdateInstanceRequest, c *broker.RequestCon
 
 	response := broker.UpdateInstanceResponse{}
 	if request.AcceptsIncomplete {
-		response.Async = b.async && false
+		response.Async = false // We do not currently accept asynchronous operations on update
 	}
 
 	return &response, nil

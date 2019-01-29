@@ -46,6 +46,7 @@ const (
 )
 
 // Error code constants missing from go-open-service-broker-client
+// See https://github.com/pmorie/go-open-service-broker-client/pull/136
 const (
 	ConcurrencyErrorMessage     = "ConcurrencyError"
 	ConcurrencyErrorDescription = "Concurrent modification not supported"
