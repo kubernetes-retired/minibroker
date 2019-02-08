@@ -83,13 +83,13 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 	}
 
 	response := broker.ProvisionResponse{}
-	if request.AcceptsIncomplete && operationName != "" {
+	if request.AcceptsIncomplete {
 		response.Async = true
 		operationKey := osb.OperationKey(operationName)
 		response.OperationKey = &operationKey
 	}
 
-	glog.V(5).Infof("Successfully provisioning %s (%s/%s) in %s", request.InstanceID, request.ServiceID, request.PlanID, namespace)
+	glog.V(5).Infof("Successfully initiated provisioning %s (%s/%s) in %s", request.InstanceID, request.ServiceID, request.PlanID, namespace)
 	return &response, nil
 }
 
@@ -105,13 +105,13 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 	}
 
 	response := broker.DeprovisionResponse{}
-	if request.AcceptsIncomplete && operationName != "" {
+	if request.AcceptsIncomplete {
 		response.Async = b.async
 		operationKey := osb.OperationKey(operationName)
 		response.OperationKey = &operationKey
 	}
 
-	glog.V(5).Infof("Successfully deprovisioning %s (%s/%s)", request.InstanceID, request.ServiceID, request.PlanID)
+	glog.V(5).Infof("Successfully initiated deprovisioning %s (%s/%s)", request.InstanceID, request.ServiceID, request.PlanID)
 	return &response, nil
 }
 
