@@ -11,6 +11,9 @@ tls:
   # base-64 encoded PEM data for the private key matching the certificate
   key:
 
+# The logging level to use; higher values emit more information
+logLevel: 5
+
 serviceCatalogEnabledOnly: true
 
 deployServiceCatalog: true
