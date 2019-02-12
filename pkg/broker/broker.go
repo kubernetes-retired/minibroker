@@ -154,34 +154,91 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*brok
 	b.Lock()
 	defer b.Unlock()
 
-	creds, err := b.Client.Bind(request.InstanceID, request.ServiceID, request.Parameters)
+	operationName, err := b.Client.Bind(request.InstanceID, request.ServiceID, request.BindingID, request.AcceptsIncomplete, request.Parameters)
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err
 	}
 
-	response := broker.BindResponse{
-		BindResponse: osb.BindResponse{
-			Credentials: creds,
-		},
-	}
 	if request.AcceptsIncomplete {
-		response.Async = false // We do not currently accept asynchronous operations on bind
+		// If we accept incomplete, we can just return directly
+		glog.V(5).Infof("Starting asynchronous binding for %s (%s): operation %s", request.InstanceID, request.ServiceID, operationName)
+		operationKey := osb.OperationKey(operationName)
+		response := broker.BindResponse{
+			BindResponse: osb.BindResponse{
+				Async:        true,
+				OperationKey: &operationKey,
+			},
+		}
+		return &response, nil
+	}
+
+	// Get the response back out of the configmaps
+	operationKey := osb.OperationKey(operationName)
+	operationState, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID, &operationKey)
+	if err != nil {
+		glog.Errorln(err)
+		return nil, err
+	}
+	if operationState.State != osb.StateSucceeded {
+		glog.Errorf("Synchronous binding of %s failed: %s (%s)", request.InstanceID, *operationState.Description, request.ServiceID)
+		return nil, errors.New("Failed to bind instance")
+	}
+	response, err := b.Client.GetBinding(request.InstanceID, request.BindingID)
+	if err != nil {
+		glog.Errorf("Failed to get binding %s/%s: %s", request.InstanceID, request.BindingID, err)
+		return nil, err
+	}
+
+	wrappedResponse := broker.BindResponse{
+		BindResponse: osb.BindResponse{
+			Credentials:     response.Credentials,
+			SyslogDrainURL:  response.SyslogDrainURL,
+			RouteServiceURL: response.RouteServiceURL,
+			VolumeMounts:    response.VolumeMounts,
+		},
 	}
 
 	glog.V(5).Infof("Successfully binding %s (%s)", request.InstanceID, request.ServiceID)
 
+	return &wrappedResponse, nil
+}
+
+func (b *Broker) GetBinding(request *osb.GetBindingRequest, c *broker.RequestContext) (*broker.GetBindingResponse, error) {
+	binding, err := b.Client.GetBinding(request.InstanceID, request.BindingID)
+	if err != nil {
+		glog.Errorln(err)
+		return nil, err
+	}
+	response := broker.GetBindingResponse{
+		GetBindingResponse: *binding,
+	}
 	return &response, nil
+}
+
+func (b *Broker) BindingLastOperation(request *osb.BindingLastOperationRequest, c *broker.RequestContext) (*broker.LastOperationResponse, error) {
+	response, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID, request.OperationKey)
+	if err != nil {
+		glog.Errorln(err)
+		return nil, err
+	}
+
+	wrappedResponse := broker.LastOperationResponse{LastOperationResponse: *response}
+	glog.V(5).Infof("Successfully got last binding operation of %s::%s (%v/%v): %+v", request.InstanceID, request.BindingID, request.ServiceID, request.PlanID, response)
+	return &wrappedResponse, nil
 }
 
 func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*broker.UnbindResponse, error) {
 	glog.V(5).Infof("Unbinding %s (%s)", request.InstanceID, request.ServiceID)
-	// nothing to do
+
+	err := b.Client.Unbind(request.InstanceID, request.BindingID)
+	if err != nil {
+		glog.Errorln(err)
+		return nil, err
+	}
 
 	response := broker.UnbindResponse{}
-	if request.AcceptsIncomplete {
-		response.Async = false // We do not currently accept asynchronous operations on unbind
-	}
+	response.Async = false // We never need to unbind asynchronously
 
 	glog.V(5).Infof("Successfully unbinding %s (%s)", request.InstanceID, request.ServiceID)
 	return &response, nil

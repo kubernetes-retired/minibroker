@@ -72,6 +72,12 @@ const (
 const (
 	OperationPrefixProvision   = "provision-"
 	OperationPrefixDeprovision = "deprovision-"
+	OperationPrefixBind        = "bind-"
+)
+
+const (
+	BindingKeyPrefix      = "binding-"
+	BindingStateKeyPrefix = "binding-state-"
 )
 
 type Client struct {
@@ -183,7 +189,8 @@ func (c *Client) getConfigMap(instanceID string) (*corev1.ConfigMap, error) {
 	configMapInterface := c.coreClient.CoreV1().ConfigMaps(c.namespace)
 	config, err := configMapInterface.Get(instanceID, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get config for instance %q", instanceID)
+		// Do not wrap the error to keep apierrors.IsNotFound() working correctly
+		return nil, err
 	}
 	return config, nil
 }
@@ -506,77 +513,170 @@ func (c *Client) connectTiller() (*tiller.Client, func(), error) {
 	return tc, close, nil
 }
 
-func (c *Client) Bind(instanceID, serviceID string, bindParams map[string]interface{}) (map[string]interface{}, error) {
-	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
+// Bind the given service instance (of the given service) asynchronously; the
+// binding operation key is returned.
+func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete bool, bindParams map[string]interface{}) (string, error) {
+	config, err := c.getConfigMap(instanceID)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			msg := fmt.Sprintf("could not find configmap %s/%s", c.namespace, instanceID)
-			return nil, osb.HTTPStatusCodeError{
+			return "", osb.HTTPStatusCodeError{
 				StatusCode:   http.StatusNotFound,
 				ErrorMessage: &msg,
 			}
 		}
-		return nil, err
+		return "", err
 	}
 	releaseNamespace := config.Data[ReleaseNamespaceKey]
 	rawProvisionParams := config.Data[ProvisionParamsKey]
+	operationName := generateOperationName(OperationPrefixBind)
 
 	var provisionParams map[string]interface{}
 	err = json.Unmarshal([]byte(rawProvisionParams), &provisionParams)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not unmarshall provision parameters for instance %q", instanceID)
+		return "", errors.Wrapf(err, "could not unmarshall provision parameters for instance %q", instanceID)
 	}
 
-	// Smoosh all the params together
-	params := make(map[string]interface{}, len(bindParams)+len(provisionParams))
-	for k, v := range provisionParams {
-		params[k] = v
-	}
-	for k, v := range bindParams {
-		params[k] = v
+	if acceptsIncomplete {
+		go func() {
+			c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams)
+		}()
+		return operationName, nil
 	}
 
-	filterByInstance := metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			InstanceLabel: instanceID,
-		}).String(),
-	}
+	c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams)
+	return "", nil
+}
 
-	services, err := c.coreClient.CoreV1().Services(releaseNamespace).List(filterByInstance)
-	if err != nil {
-		return nil, err
-	}
-	if len(services.Items) == 0 {
-		return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
-	}
+// bindSynchronously creates a new binding for the given service instance.  All
+// results are only reported via the service instance configmap (under the
+// appropriate key for the binding) for lookup by LastBindingOperationState().
+func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace string, bindParams, provisionParams map[string]interface{}) {
 
-	secrets, err := c.coreClient.CoreV1().Secrets(releaseNamespace).List(filterByInstance)
-	if err != nil {
-		return nil, err
-	}
-	if len(secrets.Items) == 0 {
-		return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
-	}
-
-	data := make(map[string]interface{})
-	for _, secret := range secrets.Items {
-		for key, value := range secret.Data {
-			data[key] = string(value)
+	// Wrap most of the code in an inner function to simplify error handling
+	err := func() error {
+		// Smoosh all the params together
+		params := make(map[string]interface{}, len(bindParams)+len(provisionParams))
+		for k, v := range provisionParams {
+			params[k] = v
 		}
-	}
+		for k, v := range bindParams {
+			params[k] = v
+		}
 
-	// Apply additional provisioning logic for Service Catalog Enabled services
-	provider, ok := c.providers[serviceID]
-	if ok {
-		creds, err := provider.Bind(services.Items, params, data)
+		filterByInstance := metav1.ListOptions{
+			LabelSelector: labels.SelectorFromSet(map[string]string{
+				InstanceLabel: instanceID,
+			}).String(),
+		}
+
+		services, err := c.coreClient.CoreV1().Services(releaseNamespace).List(filterByInstance)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to bind instance %s", instanceID)
+			return err
 		}
-		for k, v := range creds.ToMap() {
-			data[k] = v
+		if len(services.Items) == 0 {
+			return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
 		}
-	}
 
+		secrets, err := c.coreClient.CoreV1().Secrets(releaseNamespace).List(filterByInstance)
+		if err != nil {
+			return err
+		}
+		if len(secrets.Items) == 0 {
+			return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+		}
+
+		data := make(map[string]interface{})
+		for _, secret := range secrets.Items {
+			for key, value := range secret.Data {
+				data[key] = string(value)
+			}
+		}
+
+		// Apply additional provisioning logic for Service Catalog Enabled services
+		provider, ok := c.providers[serviceID]
+		if ok {
+			creds, err := provider.Bind(services.Items, params, data)
+			if err != nil {
+				return errors.Wrapf(err, "unable to bind instance %s", instanceID)
+			}
+			for k, v := range creds.ToMap() {
+				data[k] = v
+			}
+		}
+
+		// Record the result for later fetching
+		bindingResponse := osb.GetBindingResponse{
+			Credentials: data,
+			Parameters:  bindParams,
+		}
+		bindingResponseJSON, err := json.Marshal(bindingResponse)
+		if err != nil {
+			return err
+		}
+
+		err = c.updateConfigMap(instanceID, map[string]interface{}{
+			(BindingKeyPrefix + bindingID): string(bindingResponseJSON),
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}()
+
+	operationState := osb.LastOperationResponse{}
+	if err == nil {
+		operationState.State = osb.StateSucceeded
+	} else {
+		glog.Errorf("Error binding instance %s: %s", instanceID, err)
+		operationState.State = osb.StateFailed
+		operationState.Description = strPtr(fmt.Sprintf("Failed to bind instance %q", instanceID))
+	}
+	operationStateJSON, err := json.Marshal(operationState)
+	if err != nil {
+		glog.Errorf("Error serializing bind operation state: %s", err)
+		return
+	}
+	updates := map[string]interface{}{
+		(BindingStateKeyPrefix + bindingID): string(operationStateJSON),
+	}
+	err = c.updateConfigMap(instanceID, updates)
+	if err != nil {
+		glog.Errorf("Error updating bind status: %s", err)
+	}
+}
+
+// Unbind a previously-bound instance binding.
+func (c *Client) Unbind(instanceID, bindingID string) error {
+	// The only clean up we need to do is to remove the binding information
+	err := c.updateConfigMap(instanceID, map[string]interface{}{
+		(BindingStateKeyPrefix + bindingID): nil,
+		(BindingKeyPrefix + bindingID):      nil,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) GetBinding(instanceID, bindingID string) (*osb.GetBindingResponse, error) {
+	config, err := c.getConfigMap(instanceID)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+		}
+		return nil, errors.Wrapf(err, "failed to get service instance %q data", instanceID)
+	}
+	jsonData, ok := config.Data[BindingKeyPrefix+bindingID]
+	if !ok {
+		return nil, osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+	}
+	var data *osb.GetBindingResponse
+	err = json.Unmarshal([]byte(jsonData), &data)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not decode binding data")
+	}
 	return data, nil
 }
 
@@ -680,4 +780,36 @@ func (c *Client) LastOperationState(instanceID string, operationKey *osb.Operati
 
 func boolPtr(value bool) *bool {
 	return &value
+}
+
+func strPtr(value string) *string {
+	return &value
+}
+
+func (c *Client) LastBindingOperationState(instanceID, bindingID string, operationKey *osb.OperationKey) (*osb.LastOperationResponse, error) {
+	config, err := c.getConfigMap(instanceID)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			glog.V(5).Infof(`last binding operation on missing instance "%s"`, instanceID)
+			return nil, osb.HTTPStatusCodeError{
+				StatusCode: http.StatusGone,
+			}
+		}
+	}
+
+	stateJSON, ok := config.Data[BindingStateKeyPrefix+bindingID]
+	if !ok {
+		glog.V(5).Infof(`last binding operation on missing binding "%s" of instance "%s"`, bindingID, instanceID)
+		return nil, osb.HTTPStatusCodeError{
+			StatusCode: http.StatusGone,
+		}
+	}
+
+	var response *osb.LastOperationResponse
+	err = json.Unmarshal([]byte(stateJSON), &response)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error unmarshalling binding state %s", stateJSON)
+	}
+
+	return response, nil
 }
