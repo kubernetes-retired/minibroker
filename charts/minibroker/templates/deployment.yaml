@@ -57,7 +57,7 @@ spec:
         ports:
         - containerPort: 8080
       - name: tiller
-        image: "gcr.io/kubernetes-helm/tiller:v2.8.1"
+        image: "gcr.io/kubernetes-helm/tiller:v2.13.1"
         imagePullPolicy: IfNotPresent
         env:
         - name: TILLER_NAMESPACE
