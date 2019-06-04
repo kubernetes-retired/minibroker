@@ -57,7 +57,7 @@ helm install --name minibroker --namespace minibroker minibroker/minibroker
 
 ```
 helm upgrade --install minibroker \
-	--recreate-pods --force charts/minibroker \
+	--recreate-pods --force minibroker/minibroker \
 	--set imagePullPolicy="Always",deploymentStrategy="Recreate"
 ```
 
