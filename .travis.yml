@@ -6,7 +6,7 @@ sudo: required
 services:
 - docker
 script:
-- make build test-unit
+- make build verify test-unit
 deploy:
   provider: script
   script: make release
