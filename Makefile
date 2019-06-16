@@ -11,6 +11,11 @@ build:
 build-image:
 	docker build -t minibroker-build ./build/build-image
 
+verify: verify-boilerplate
+
+verify-boilerplate:
+	./build/verify-boilerplate.sh
+
 test-unit:
 	go test -v ./...
 
