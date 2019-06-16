@@ -1,0 +1,11 @@
+{
+  "dirs_to_skip" : [
+    "vendor",
+    "verify/boilerplate/testdata/"
+  ],
+  "not_generated_files_to_skip" : [
+    "verify/boilerplate/boilerplate.py",
+    "kazel/generator.go",
+    "tools/generate_crosstool/main.go"
+  ]
+}
