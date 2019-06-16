@@ -1,7 +1,7 @@
 REPO ?= github.com/osbkit/minibroker
 BINARY ?= minibroker
 PKG ?= $(REPO)/cmd/$(BINARY)
-REGISTRY ?= osbkit/
+REGISTRY ?= quay.io/kubernetes-service-catalog/
 IMAGE ?= $(REGISTRY)minibroker
 TAG ?= canary
 

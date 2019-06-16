@@ -1,6 +1,6 @@
 # Default values for the minibroker
 # Image to use
-image: osbkit/minibroker:v0.3.1
+image: quay.io/kubernetes-service-catalog/minibroker:canary
 # ImagePullPolicy; valid values are "IfNotPresent", "Never", and "Always"
 imagePullPolicy: IfNotPresent
 deploymentPolicy: RollingUpdate
