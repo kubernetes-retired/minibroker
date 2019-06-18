@@ -203,7 +203,7 @@ the database to create, etc.
 * Docker
 * [Minikube v0.25+](https://github.com/kubernetes/minikube/releases/tag/v0.25.0)
 * [Helm v2.8.2+](https://helm.sh)
-* [Service Catalog CLI (svcat)](https://github.com/kubernetes-incubator/service-catalog/cmd/svcat)
+* [Service Catalog CLI (svcat)](http://svc-cat.io/docs/install/#installing-the-service-catalog-cli)
 
 ## Setup
 
