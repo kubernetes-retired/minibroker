@@ -14,15 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -xeuo pipefail
+set -euo pipefail
 
-minikube addons enable heapster
+: "${VM_DRIVER:=virtualbox}"
+: "${VM_MEMORY:=$(( 1024 * 4 ))}"
 
 if [[ "$(minikube status)" != *"Running"* ]]; then
-    minikube start --vm-driver=virtualbox \
-    --kubernetes-version=v1.11.3 \
-    --bootstrapper=kubeadm
+    set -x
+    minikube start \
+      --vm-driver="${VM_DRIVER}" \
+      --memory="${VM_MEMORY}" \
+      --kubernetes-version=v1.11.3 \
+      --bootstrapper=kubeadm
+else
+    echo "Using current running instance of Minikube..."
+    set -x
 fi
+
+minikube addons enable heapster
 
 kubectl apply -f https://raw.githubusercontent.com/Azure/helm-charts/master/docs/prerequisities/helm-rbac-config.yaml
 helm init --service-account tiller --wait

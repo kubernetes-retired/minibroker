@@ -207,14 +207,16 @@ the database to create, etc.
 
 ## Setup
 
-1. Create a Minikube cluster for local development: `make create-cluster`.
-2. Identify where you will push Docker images with your changes and set the `REGISTRY`
-   environment variable. For example to push your dev images to Docker Hub, use
-   `export REGISTRY=myusername/`.
+1. Create a Minikube cluster for local development by running `make create-cluster`. It defaults to
+  using VirtualBox as a VM driver. If you want to use a different VM driver, set the `VM_DRIVER`
+  environment variable. E.g. `VM_DRIVER=kvm2 make create-cluster`.
+2. Point your Docker to use the Minikube Docker daemon on the current shell session by running
+  `eval $(minikube docker-env)`.
 
 ## Deploy
 
-Compile and deploy the broker to your local cluster: `make push deploy`.
+Compile and deploy the broker to your local cluster by running
+`IMAGE_PULL_POLICY="Never" make image deploy`.
 
 ## Test
 
