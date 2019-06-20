@@ -27,7 +27,7 @@ You will need the following before you can install this chart:
 
 - Kubernetes 1.7+ with RBAC turned on and beta APIs enabled
 - [Service Catalog](https://github.com/kubernetes-incubator/service-catalog) installed
-- [Minibroker](https://github.com/osbkit/minibroker)
+- [Minibroker](https://github.com/kubernetes-sigs/minibroker)
 - PV provisioner support in the underlying infrastructure
 
 

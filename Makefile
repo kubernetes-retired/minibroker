@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-REPO ?= github.com/osbkit/minibroker
+REPO ?= github.com/kubernetes-sigs/minibroker
 BINARY ?= minibroker
 PKG ?= $(REPO)/cmd/$(BINARY)
 REGISTRY ?= quay.io/kubernetes-service-catalog/

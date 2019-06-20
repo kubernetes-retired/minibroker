@@ -27,7 +27,7 @@ import (
 	"syscall"
 
 	"github.com/golang/glog"
-	"github.com/osbkit/minibroker/pkg/broker"
+	"github.com/kubernetes-sigs/minibroker/pkg/broker"
 	"github.com/pmorie/osb-broker-lib/pkg/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
 
