@@ -1,5 +1,5 @@
 language: go
-go_import_path: github.com/osbkit/minibroker
+go_import_path: github.com/kubernetes-sigs/minibroker
 go:
 - 1.10.x
 sudo: required
@@ -11,5 +11,5 @@ deploy:
   provider: script
   script: make release
   on:
-    repo: osbkit/minibroker
+    repo: kubernetes-sigs/minibroker
     all_branches: true
