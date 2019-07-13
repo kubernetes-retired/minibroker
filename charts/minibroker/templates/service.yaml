@@ -1,15 +1,11 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: {{ template "fullname" . }}
-  labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+  name: {{ template "minibroker.fullname" . }}
+  {{- template "minibroker.labels" . }}
 spec:
   selector:
-    app: {{ template "fullname" . }}
+    app: {{ template "minibroker.fullname" . }}
   ports:
   - protocol: TCP
     port: 80

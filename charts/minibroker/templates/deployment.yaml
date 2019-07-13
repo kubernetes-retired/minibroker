@@ -1,26 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ template "fullname" . }}
-  labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+  name: {{ template "minibroker.fullname" . }}
+  {{- template "minibroker.labels" . }}
 spec:
   replicas: 1
   strategy:
     type: {{ .Values.deploymentStrategy }}
   selector:
     matchLabels:
-      app: {{ template "fullname" . }}
+      app: {{ template "minibroker.fullname" . }}
   template:
     metadata:
-      labels:
-        app: {{ template "fullname" . }}
-        chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-        release: "{{ .Release.Name }}"
-        heritage: "{{ .Release.Service }}"
+      {{- include "minibroker.labels" . | nindent 6 }}
     spec:
       serviceAccountName: minibroker
       containers:

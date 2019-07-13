@@ -3,11 +3,7 @@ apiVersion: servicecatalog.k8s.io/v1beta1
 kind: ClusterServiceBroker
 metadata:
   name: minibroker
-  labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+  {{- template "minibroker.labels" . }}
 spec:
-  url: http://{{ template "fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  url: http://{{ template "minibroker.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
 {{ end }}
