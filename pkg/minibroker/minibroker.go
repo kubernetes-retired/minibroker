@@ -539,19 +539,21 @@ func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete
 
 	if acceptsIncomplete {
 		go func() {
-			c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams)
+			_ = c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams)
 		}()
 		return operationName, nil
 	}
 
-	c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams)
+	if err = c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams); err != nil {
+		return "", err
+	}
 	return "", nil
 }
 
 // bindSynchronously creates a new binding for the given service instance.  All
 // results are only reported via the service instance configmap (under the
 // appropriate key for the binding) for lookup by LastBindingOperationState().
-func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace string, bindParams, provisionParams map[string]interface{}) {
+func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace string, bindParams, provisionParams map[string]interface{}) error {
 
 	// Wrap most of the code in an inner function to simplify error handling
 	err := func() error {
@@ -633,31 +635,35 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 		operationState.State = osb.StateFailed
 		operationState.Description = strPtr(fmt.Sprintf("Failed to bind instance %q", instanceID))
 	}
-	operationStateJSON, err := json.Marshal(operationState)
-	if err != nil {
-		glog.Errorf("Error serializing bind operation state: %s", err)
-		return
+	operationStateJSON, marshalError := json.Marshal(operationState)
+	if marshalError != nil {
+		glog.Errorf("Error serializing bind operation state: %s", marshalError)
+		if err != nil {
+			return err
+		}
+		return marshalError
 	}
 	updates := map[string]interface{}{
 		(BindingStateKeyPrefix + bindingID): string(operationStateJSON),
 	}
-	err = c.updateConfigMap(instanceID, updates)
-	if err != nil {
-		glog.Errorf("Error updating bind status: %s", err)
+	updateError := c.updateConfigMap(instanceID, updates)
+	if updateError != nil {
+		glog.Errorf("Error updating bind status: %s", updateError)
+		if err != nil {
+			return err
+		}
+		return updateError
 	}
+	return nil
 }
 
 // Unbind a previously-bound instance binding.
 func (c *Client) Unbind(instanceID, bindingID string) error {
 	// The only clean up we need to do is to remove the binding information
-	err := c.updateConfigMap(instanceID, map[string]interface{}{
+	return c.updateConfigMap(instanceID, map[string]interface{}{
 		(BindingStateKeyPrefix + bindingID): nil,
 		(BindingKeyPrefix + bindingID):      nil,
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *Client) GetBinding(instanceID, bindingID string) (*osb.GetBindingResponse, error) {
