@@ -54,7 +54,7 @@ func init() {
 		"base-64 encoded PEM block to use as the private key matching the TLS certificate. If '--tlsKey' is used, then '--tlsCert' must also be used")
 	flag.StringVar(&options.CatalogPath, "catalogPath", "",
 		"The path to the catalog")
-	flag.StringVar(&options.HelmRepoUrl, "helmUrl", "",
+	flag.StringVar(&options.HelmRepoURL, "helmUrl", "",
 		"The url to the helm repo")
 	flag.StringVar(&options.DefaultNamespace, "defaultNamespace", "",
 		"The default namespace for brokers when the request doesn't specify")

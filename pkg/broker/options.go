@@ -17,7 +17,7 @@ limitations under the License.
 package broker
 
 type Options struct {
-	HelmRepoUrl               string
+	HelmRepoURL               string
 	CatalogPath               string
 	DefaultNamespace          string
 	ServiceCatalogEnabledOnly bool
