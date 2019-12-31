@@ -42,7 +42,7 @@ helm install --name catalog --namespace svc-cat svc-cat/catalog --wait
 # Install Minibroker
 
 ```
-helm repo add minibroker https://minibroker.blob.core.windows.net/charts
+helm repo add minibroker https://github.com/kubernetes-sigs/minibroker/tree/master/charts
 helm install --name minibroker --namespace minibroker minibroker/minibroker
 ```
 
@@ -72,7 +72,7 @@ CF doesn't use a service catalog as the Cloud Controller handles the request
 for services.
 
 ```
-helm repo add minibroker https://minibroker.blob.core.windows.net/charts
+helm repo add minibroker https://github.com/kubernetes-sigs/minibroker/tree/master/charts
 helm install --name minibroker --namespace minibroker minibroker/minibroker \
 	--set "deployServiceCatalog=false" \
         --set "defaultNamespace=minibroker"
