@@ -1,13 +1,29 @@
 language: go
+
 go:
 - 1.13.x
 - 1.14.x
+
 os: linux
 dist: bionic
+
 services:
 - docker
+
 script:
-- make build verify test-unit
+- make build
+- make test-unit
+
+jobs:
+  include:
+  - name: Verify
+    stage: verify
+    script: make verify
+
+stages:
+- verify
+- test
+
 deploy:
   provider: script
   script: make release
