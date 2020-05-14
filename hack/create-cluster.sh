@@ -31,7 +31,6 @@ else
     exit 1
 fi
 
-minikube addons enable heapster
 
 kubectl apply -f https://raw.githubusercontent.com/Azure/helm-charts/master/docs/prerequisities/helm-rbac-config.yaml
 helm init --service-account tiller --wait
