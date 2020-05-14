@@ -27,8 +27,8 @@ if [[ "$(minikube status)" != *"Running"* ]]; then
       --kubernetes-version=v1.11.3 \
       --bootstrapper=kubeadm
 else
-    echo "Using current running instance of Minikube..."
-    set -x
+    >&2 echo "A Minikube instance is already running..."
+    exit 1
 fi
 
 minikube addons enable heapster
