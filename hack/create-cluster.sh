@@ -18,14 +18,14 @@ set -o errexit -o nounset -o pipefail
 
 : "${VM_DRIVER:=virtualbox}"
 : "${VM_MEMORY:=$(( 1024 * 4 ))}"
+: "${KUBERNETES_VERSION:=v1.15.12}"
 
 if [[ "$(minikube status)" != *"Running"* ]]; then
     set -o xtrace
     minikube start \
       --vm-driver="${VM_DRIVER}" \
       --memory="${VM_MEMORY}" \
-      --kubernetes-version=v1.11.3 \
-      --bootstrapper=kubeadm
+      --kubernetes-version="${KUBERNETES_VERSION}"
 else
     >&2 echo "A Minikube instance is already running..."
     exit 1
