@@ -32,7 +32,7 @@ verify-boilerplate:
 	./build/verify-boilerplate.sh
 
 test-unit:
-	go test -v ./...
+	go test -v ./cmd/... ./pkg/...
 
 test: test-unit test-mariadb test-mysqldb test-postgresql test-mongodb test-wordpress
 
