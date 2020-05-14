@@ -1,0 +1,5 @@
+{
+  "dirs_to_skip" : [
+    "third-party"
+  ]
+}

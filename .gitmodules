@@ -1,0 +1,3 @@
+[submodule "third-party/repo-infra"]
+	path = third-party/repo-infra
+	url = https://github.com/pivotal-k8s/repo-infra.git
