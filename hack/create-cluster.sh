@@ -17,6 +17,7 @@
 set -o errexit -o nounset -o pipefail
 
 : "${VM_DRIVER:=docker}"
+: "${VM_CPUS:=2}"
 : "${VM_MEMORY:=$(( 1024 * 4 ))}"
 : "${KUBERNETES_VERSION:=v1.15.12}"
 
@@ -24,6 +25,7 @@ if [[ "$(minikube status)" != *"Running"* ]]; then
     set -o xtrace
     minikube start \
       --vm-driver="${VM_DRIVER}" \
+      --cpus="${VM_CPUS}" \
       --memory="${VM_MEMORY}" \
       --kubernetes-version="${KUBERNETES_VERSION}"
 else
