@@ -16,7 +16,7 @@
 
 set -o errexit -o nounset -o pipefail
 
-: "${VM_DRIVER:=virtualbox}"
+: "${VM_DRIVER:=docker}"
 : "${VM_MEMORY:=$(( 1024 * 4 ))}"
 : "${KUBERNETES_VERSION:=v1.15.12}"
 
