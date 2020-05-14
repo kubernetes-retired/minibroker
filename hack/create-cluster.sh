@@ -33,9 +33,22 @@ else
     exit 1
 fi
 
+catalog_repository="svc-cat"
+catalog_release="catalog"
+catalog_namespace="svc-cat"
+helm repo add "${catalog_repository}" https://svc-catalog-charts.storage.googleapis.com
+kubectl create namespace "${catalog_namespace}"
+helm install "${catalog_release}" \
+  --namespace "${catalog_namespace}" \
+  "${catalog_repository}/${catalog_release}"
 
-kubectl apply -f https://raw.githubusercontent.com/Azure/helm-charts/master/docs/prerequisities/helm-rbac-config.yaml
-helm init --service-account tiller --wait
-
-helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
-helm upgrade --install catalog --namespace svc-cat svc-cat/catalog --wait
+set +o xtrace
+while kubectl get pods --namespace svc-cat --selector "release=${catalog_release}" 2>&1 \
+        | grep "No resources found in ${catalog_namespace} namespace."; do
+          sleep 1;
+done
+set -o xtrace
+kubectl wait pods \
+  --for condition=ready \
+  --namespace "${catalog_namespace}" \
+  --selector "release=${catalog_release}"
