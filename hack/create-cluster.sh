@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -euo pipefail
+set -o errexit -o nounset -o pipefail
 
 : "${VM_DRIVER:=virtualbox}"
 : "${VM_MEMORY:=$(( 1024 * 4 ))}"
 
 if [[ "$(minikube status)" != *"Running"* ]]; then
-    set -x
+    set -o xtrace
     minikube start \
       --vm-driver="${VM_DRIVER}" \
       --memory="${VM_MEMORY}" \
