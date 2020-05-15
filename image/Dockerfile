@@ -17,8 +17,8 @@
 FROM golang:1.14.2-stretch AS builder
 
 WORKDIR /build/minibroker
-COPY ./go.mod ./go.mod
-COPY ./go.sum ./go.sum
+# Copy the go.mod over so docker can cache the module downloads if possible.
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY ./ ./
