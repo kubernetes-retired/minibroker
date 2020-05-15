@@ -40,7 +40,7 @@ helm repo add "${catalog_repository}" https://svc-catalog-charts.storage.googlea
 kubectl create namespace "${catalog_namespace}"
 helm install "${catalog_release}" \
   --namespace "${catalog_namespace}" \
-  "${catalog_repository}/${catalog_release}"
+  "${catalog_repository}/catalog"
 
 set +o xtrace
 while [[ "$(kubectl get pods --namespace "${catalog_namespace}" --selector "release=${catalog_release}" --output=go-template='{{.items||len}}')" == 0 ]]; do
