@@ -22,11 +22,11 @@ TAG ?= canary
 IMAGE_PULL_POLICY ?= Always
 
 build:
-	CGO_ENABLED=0 go build -o $(OUTPUT_DIR)/minibroker $(PKG)
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o $(OUTPUT_DIR)/minibroker $(PKG)
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-		go build -o $(OUTPUT_DIR)/$(BINARY)-linux -tags netgo --ldflags="-s" $(PKG)
+		go build -ldflags="-s -w" -o $(OUTPUT_DIR)/$(BINARY)-linux -tags netgo $(PKG)
 
 build-image:
 	docker build -t minibroker-build ./build/build-image
