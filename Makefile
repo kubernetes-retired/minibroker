@@ -37,6 +37,9 @@ image:
 clean:
 	-rm -rf $(OUTPUT_DIR)
 
+push: image
+	IMAGE=$(IMAGE) TAG=$(TAG) ./build/publish-images.sh
+
 verify: verify-boilerplate
 
 verify-boilerplate:
@@ -126,9 +129,6 @@ setup-mongodb:
 teardown-mongodb:
 	svcat unbind mongodb -n minibroker
 	svcat deprovision mongodb -n minibroker
-
-push: image
-	IMAGE=$(IMAGE) TAG=$(TAG) ./build/publish-images.sh
 
 log:
 	kubectl log -n minibroker deploy/minibroker-minibroker -c minibroker
