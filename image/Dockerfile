@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ARG BUILDER_IMAGE=golang:golang:1.14.2-stretch
+ARG DOWNLOADER_IMAGE=alpine:latest
+ARG RUNNING_IMAGE=debian:stretch
+
 # --------------------------------------------------------------------------------------------------
 # The building stage.
-FROM golang:1.14.2-stretch AS builder
+FROM ${BUILDER_IMAGE} AS builder
 
 WORKDIR /build/minibroker
 # Copy the go.mod over so docker can cache the module downloads if possible.
@@ -26,7 +30,7 @@ RUN make build-linux
 
 # --------------------------------------------------------------------------------------------------
 # The downloading stage.
-FROM alpine:latest AS downloader
+FROM ${DOWNLOADER_IMAGE} AS downloader
 
 ENV HELM_VERSION="v2.13.1"
 ENV FILENAME="helm-${HELM_VERSION}-linux-amd64.tar.gz"
@@ -36,7 +40,7 @@ RUN tar -zxvf /tmp/${FILENAME} -C /tmp
 
 # --------------------------------------------------------------------------------------------------
 # The running stage.
-FROM debian:stretch
+FROM ${RUNNING_IMAGE}
 
 RUN apt update && apt install -y ca-certificates && apt clean && rm -rf /var/lib/apt/lists/*
 
