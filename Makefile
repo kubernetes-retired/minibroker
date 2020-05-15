@@ -26,7 +26,7 @@ lint: lint-go-mod lint-modified-files
 lint-go-mod:
 	go mod tidy
 
-lint-modified-files:
+lint-modified-files: | lint-go-mod
 	./build/verify-modified-files.sh
 
 build:
