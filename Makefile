@@ -15,16 +15,30 @@
 REPO ?= github.com/kubernetes-sigs/minibroker
 BINARY ?= minibroker
 PKG ?= $(REPO)/cmd/$(BINARY)
+OUTPUT_DIR ?= output
 REGISTRY ?= quay.io/kubernetes-service-catalog/
 IMAGE ?= $(REGISTRY)minibroker
 TAG ?= canary
 IMAGE_PULL_POLICY ?= Always
 
 build:
-	go build $(PKG)
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o $(OUTPUT_DIR)/minibroker $(PKG)
+
+build-linux:
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+		go build -ldflags="-s -w" -o $(OUTPUT_DIR)/$(BINARY)-linux -tags netgo $(PKG)
 
 build-image:
 	docker build -t minibroker-build ./build/build-image
+
+image:
+	docker build --tag "$(IMAGE):$(TAG)" --file image/Dockerfile .
+
+clean:
+	-rm -rf $(OUTPUT_DIR)
+
+push: image
+	IMAGE=$(IMAGE) TAG=$(TAG) ./build/publish-images.sh
 
 verify: verify-boilerplate
 
@@ -115,20 +129,6 @@ setup-mongodb:
 teardown-mongodb:
 	svcat unbind mongodb -n minibroker
 	svcat deprovision mongodb -n minibroker
-
-build-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-	go build -o $(BINARY)-linux -tags netgo --ldflags="-s" $(PKG)
-
-image: build-linux
-	cp $(BINARY)-linux image/$(BINARY)
-	docker build image/ -t "$(IMAGE):$(TAG)"
-
-clean:
-	-rm -f $(BINARY)
-
-push: image
-	IMAGE=$(IMAGE) TAG=$(TAG) ./build/publish-images.sh
 
 log:
 	kubectl log -n minibroker deploy/minibroker-minibroker -c minibroker

@@ -12,23 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:stretch
+# --------------------------------------------------------------------------------------------------
+# The building stage.
+FROM golang:1.14.2-stretch AS builder
 
-RUN apt-get update
-RUN apt-get install -y curl ca-certificates
+WORKDIR /build/minibroker
+# Copy the go.mod over so docker can cache the module downloads if possible.
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY ./ ./
+RUN make build-linux
+
+# --------------------------------------------------------------------------------------------------
+# The downloading stage.
+FROM alpine:latest AS downloader
 
 ENV HELM_VERSION="v2.13.1"
 ENV FILENAME="helm-${HELM_VERSION}-linux-amd64.tar.gz"
 
-RUN curl -L http://storage.googleapis.com/kubernetes-helm/${FILENAME} -o /tmp/${FILENAME} && \
-    tar -zxvf /tmp/${FILENAME} -C /tmp && \
-    mv /tmp/linux-amd64/helm /usr/local/bin/
+RUN wget -O /tmp/${FILENAME} http://storage.googleapis.com/kubernetes-helm/${FILENAME}
+RUN tar -zxvf /tmp/${FILENAME} -C /tmp
 
-COPY minibroker /usr/local/bin/
+# --------------------------------------------------------------------------------------------------
+# The running stage.
+FROM debian:stretch
+
+RUN apt update && apt install -y ca-certificates && apt clean && rm -rf /var/lib/apt/lists/*
 
 #RUN adduser -D minibroker
 #USER minibroker
 
+COPY --from=downloader /tmp/linux-amd64/helm /usr/local/bin/helm
 RUN helm init --client-only
+
+COPY --from=builder /build/minibroker/output/minibroker-linux /usr/local/bin/minibroker
 
 CMD ["minibroker", "--help"]
