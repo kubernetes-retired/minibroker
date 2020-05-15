@@ -34,6 +34,9 @@ build-image:
 image:
 	docker build --tag "$(IMAGE):$(TAG)" --file image/Dockerfile .
 
+clean:
+	-rm -rf $(OUTPUT_DIR)
+
 verify: verify-boilerplate
 
 verify-boilerplate:
@@ -123,9 +126,6 @@ setup-mongodb:
 teardown-mongodb:
 	svcat unbind mongodb -n minibroker
 	svcat deprovision mongodb -n minibroker
-
-clean:
-	-rm -f $(BINARY)
 
 push: image
 	IMAGE=$(IMAGE) TAG=$(TAG) ./build/publish-images.sh
