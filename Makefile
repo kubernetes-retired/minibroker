@@ -22,7 +22,7 @@ TAG ?= canary
 IMAGE_PULL_POLICY ?= Always
 
 build:
-	go build -o $(OUTPUT_DIR)/minibroker $(PKG)
+	CGO_ENABLED=0 go build -o $(OUTPUT_DIR)/minibroker $(PKG)
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
