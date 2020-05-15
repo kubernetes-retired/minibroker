@@ -14,27 +14,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -euo pipefail
+set -o errexit -o nounset -o pipefail
 
-: "${VM_DRIVER:=virtualbox}"
+: "${VM_DRIVER:=docker}"
+: "${VM_CPUS:=2}"
 : "${VM_MEMORY:=$(( 1024 * 4 ))}"
+: "${KUBERNETES_VERSION:=v1.15.12}"
 
 if [[ "$(minikube status)" != *"Running"* ]]; then
-    set -x
+    set -o xtrace
     minikube start \
       --vm-driver="${VM_DRIVER}" \
+      --cpus="${VM_CPUS}" \
       --memory="${VM_MEMORY}" \
-      --kubernetes-version=v1.11.3 \
-      --bootstrapper=kubeadm
+      --kubernetes-version="${KUBERNETES_VERSION}"
 else
-    echo "Using current running instance of Minikube..."
-    set -x
+    >&2 echo "A Minikube instance is already running..."
+    exit 1
 fi
 
-minikube addons enable heapster
+catalog_repository="svc-cat"
+catalog_release="catalog"
+catalog_namespace="svc-cat"
+helm repo add "${catalog_repository}" https://svc-catalog-charts.storage.googleapis.com
+kubectl create namespace "${catalog_namespace}"
+helm install "${catalog_release}" \
+  --namespace "${catalog_namespace}" \
+  "${catalog_repository}/catalog"
 
-kubectl apply -f https://raw.githubusercontent.com/Azure/helm-charts/master/docs/prerequisities/helm-rbac-config.yaml
-helm init --service-account tiller --wait
-
-helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
-helm upgrade --install catalog --namespace svc-cat svc-cat/catalog --wait
+set +o xtrace
+while [[ "$(kubectl get pods --namespace "${catalog_namespace}" --selector "release=${catalog_release}" --output=go-template='{{.items||len}}')" == 0 ]]; do
+  sleep 1;
+done
+set -o xtrace
+kubectl wait pods \
+  --for condition=ready \
+  --namespace "${catalog_namespace}" \
+  --selector "release=${catalog_release}"
