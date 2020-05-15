@@ -19,10 +19,14 @@ jobs:
   - name: Verify
     stage: verify
     script: make verify
+  - name: Docker image
+    stage: docker-image
+    script: make image
 
 stages:
 - verify
 - test
+- docker-image
 
 deploy:
   provider: script
