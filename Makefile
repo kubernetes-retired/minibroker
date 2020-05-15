@@ -24,7 +24,7 @@ IMAGE_PULL_POLICY ?= Always
 lint: lint-go-mod lint-modified-files
 
 lint-go-mod:
-	go mod verify
+	go mod tidy
 
 lint-modified-files:
 	./build/verify-modified-files.sh
