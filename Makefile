@@ -21,6 +21,14 @@ IMAGE ?= $(REGISTRY)minibroker
 TAG ?= canary
 IMAGE_PULL_POLICY ?= Always
 
+lint: lint-go-mod lint-modified-files
+
+lint-go-mod:
+	go mod verify
+
+lint-modified-files:
+	./build/verify-modified-files.sh
+
 build:
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o $(OUTPUT_DIR)/minibroker $(PKG)
 
