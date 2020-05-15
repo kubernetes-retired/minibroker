@@ -38,8 +38,7 @@ RUN tar -zxvf /tmp/${FILENAME} -C /tmp
 # The running stage.
 FROM debian:stretch
 
-RUN apt-get update
-RUN apt-get install -y ca-certificates
+RUN apt update && apt install -y ca-certificates && apt clean && rm -rf /var/lib/apt/lists/*
 
 #RUN adduser -D minibroker
 #USER minibroker
