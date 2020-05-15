@@ -43,9 +43,8 @@ helm install "${catalog_release}" \
   "${catalog_repository}/${catalog_release}"
 
 set +o xtrace
-while kubectl get pods --namespace svc-cat --selector "release=${catalog_release}" 2>&1 \
-        | grep "No resources found in ${catalog_namespace} namespace."; do
-          sleep 1;
+while [[ "$(kubectl get pods --namespace "${catalog_namespace}" --selector "release=${catalog_release}" --output=go-template='{{.items||len}}')" == 0 ]]; do
+  sleep 1;
 done
 set -o xtrace
 kubectl wait pods \
