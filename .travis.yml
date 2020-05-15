@@ -19,12 +19,17 @@ jobs:
   - name: Verify
     stage: verify
     script: make verify
+  - name: Lint
+    stage: lint
+    go: 1.14.x
+    script: make lint
   - name: Docker image
     stage: docker-image
     script: make image
 
 stages:
 - verify
+- lint
 - test
 - docker-image
 
