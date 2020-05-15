@@ -32,7 +32,7 @@ RUN make build-linux
 # The downloading stage.
 FROM ${DOWNLOADER_IMAGE} AS downloader
 
-ARG HELM_VERSION="v2.13.1"
+ARG HELM_VERSION="v2.16.7"
 ARG HELM_FILENAME="helm-${HELM_VERSION}-linux-amd64.tar.gz"
 
 RUN wget -O /tmp/${HELM_FILENAME} http://storage.googleapis.com/kubernetes-helm/${HELM_FILENAME}
