@@ -31,6 +31,9 @@ build-linux:
 build-image:
 	docker build -t minibroker-build ./build/build-image
 
+image:
+	docker build --tag "$(IMAGE):$(TAG)" --file image/Dockerfile .
+
 verify: verify-boilerplate
 
 verify-boilerplate:
@@ -120,10 +123,6 @@ setup-mongodb:
 teardown-mongodb:
 	svcat unbind mongodb -n minibroker
 	svcat deprovision mongodb -n minibroker
-
-image: build-linux
-	cp $(BINARY)-linux image/$(BINARY)
-	docker build image/ -t "$(IMAGE):$(TAG)"
 
 clean:
 	-rm -f $(BINARY)
