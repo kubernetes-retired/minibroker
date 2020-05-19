@@ -27,7 +27,6 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/golang/glog"
 	"github.com/kubernetes-sigs/minibroker/pkg/helm"
 	"github.com/kubernetes-sigs/minibroker/pkg/tiller"
 	"github.com/pkg/errors"
@@ -41,6 +40,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/helm/pkg/repo"
+	"k8s.io/klog"
 )
 
 const (
@@ -121,7 +121,7 @@ func loadInClusterClient() kubernetes.Interface {
 func loadNamespace() string {
 	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
 		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-			glog.Infof("namespace: %s", ns)
+			klog.Infof("namespace: %s", ns)
 			return ns
 		}
 	}
@@ -223,7 +223,7 @@ func (c *Client) updateConfigMap(instanceID string, data map[string]interface{})
 }
 
 func (c *Client) ListServices() ([]osb.Service, error) {
-	glog.Info("Listing services...")
+	klog.Info("Listing services...")
 	var services []osb.Service
 
 	charts, err := c.helm.ListCharts()
@@ -292,7 +292,7 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 		services = append(services, svc)
 	}
 
-	glog.Infoln("List complete")
+	klog.Infoln("List complete")
 	return services, nil
 }
 
@@ -304,7 +304,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 	chartVersion := strings.Replace(planID, serviceID+"-", "", 1)
 	chartVersion = strings.Replace(chartVersion, "-", ".", -1)
 
-	glog.Info("persisting the provisioning parameters...")
+	klog.Info("persisting the provisioning parameters...")
 	paramsJSON, err := json.Marshal(provisionParams)
 	if err != nil {
 		return "", errors.Wrapf(err, "could not marshall provisioning parameters %v", provisionParams)
@@ -355,13 +355,13 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 					OperationDescriptionKey: fmt.Sprintf("service instance %q provisioned", instanceID),
 				})
 			} else {
-				glog.Errorf("Failed to provision %q: %s", instanceID, err)
+				klog.Errorf("Failed to provision %q: %s", instanceID, err)
 				err = c.updateConfigMap(instanceID, map[string]interface{}{
 					OperationStateKey:       string(osb.StateFailed),
 					OperationDescriptionKey: fmt.Sprintf("service instance %q failed to provision", instanceID),
 				})
 				if err != nil {
-					glog.Errorf("Could not update operation state when provisioning asynchronously: %s", err)
+					klog.Errorf("Could not update operation state when provisioning asynchronously: %s", err)
 				}
 			}
 		}()
@@ -378,7 +378,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 
 // provisionSynchronously will provision the service instance synchronously.
 func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams map[string]interface{}) error {
-	glog.Infof("provisioning %s/%s using stable helm chart %s@%s...", serviceID, planID, chartName, chartVersion)
+	klog.Infof("provisioning %s/%s using stable helm chart %s@%s...", serviceID, planID, chartName, chartVersion)
 
 	chartDef, err := c.helm.GetChart(chartName, chartVersion)
 	if err != nil {
@@ -404,7 +404,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 	}
 
 	// Store any required metadata necessary for bind and deprovision as labels on the resources itself
-	glog.Infof("Labeling chart resources with instance %q...", instanceID)
+	klog.Infof("Labeling chart resources with instance %q...", instanceID)
 	filterByRelease := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			HeritageLabel: TillerHeritage,
@@ -440,7 +440,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 		return errors.Wrapf(err, "could not update the instance configmap for %q", instanceID)
 	}
 
-	glog.Infof("provision of %v@%v (%v@%v) complete\n%s\n",
+	klog.Infof("provision of %v@%v (%v@%v) complete\n%s\n",
 		chartName, chartVersion, resp.Release.Name, resp.Release.Version, spew.Sdump(resp.Release.Manifest))
 
 	return nil
@@ -508,7 +508,7 @@ func (c *Client) connectTiller() (*tiller.Client, func(), error) {
 	close := func() {
 		err := tc.Close()
 		if err != nil {
-			glog.Errorln(errors.Wrapf(err, "failed to disconnect tiller client"))
+			klog.Errorln(errors.Wrapf(err, "failed to disconnect tiller client"))
 		}
 	}
 
@@ -633,13 +633,13 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 	if err == nil {
 		operationState.State = osb.StateSucceeded
 	} else {
-		glog.Errorf("Error binding instance %s: %s", instanceID, err)
+		klog.Errorf("Error binding instance %s: %s", instanceID, err)
 		operationState.State = osb.StateFailed
 		operationState.Description = strPtr(fmt.Sprintf("Failed to bind instance %q", instanceID))
 	}
 	operationStateJSON, marshalError := json.Marshal(operationState)
 	if marshalError != nil {
-		glog.Errorf("Error serializing bind operation state: %s", marshalError)
+		klog.Errorf("Error serializing bind operation state: %s", marshalError)
 		if err != nil {
 			return err
 		}
@@ -650,7 +650,7 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 	}
 	updateError := c.updateConfigMap(instanceID, updates)
 	if updateError != nil {
-		glog.Errorf("Error updating bind status: %s", updateError)
+		klog.Errorf("Error updating bind status: %s", updateError)
 		if err != nil {
 			return err
 		}
@@ -726,13 +726,13 @@ func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string,
 			// After deprovisioning, there is no config map to update
 			return
 		}
-		glog.Errorf("Failed to deprovision %q: %s", instanceID, err)
+		klog.Errorf("Failed to deprovision %q: %s", instanceID, err)
 		err = c.updateConfigMap(instanceID, map[string]interface{}{
 			OperationStateKey:       string(osb.StateFailed),
 			OperationDescriptionKey: fmt.Sprintf("service instance %q failed to deprovision", instanceID),
 		})
 		if err != nil {
-			glog.Errorf("Could not update operation state when deprovisioning asynchronously: %s", err)
+			klog.Errorf("Could not update operation state when deprovisioning asynchronously: %s", err)
 		}
 	}()
 	return operationKey, nil
@@ -750,14 +750,14 @@ func (c *Client) deprovisionSynchronously(instanceID, release string) error {
 		return errors.Wrapf(err, "could not delete release %s", release)
 	}
 
-	glog.Infof("release %s deleted", release)
+	klog.Infof("release %s deleted", release)
 
 	err = c.coreClient.CoreV1().ConfigMaps(c.namespace).Delete(instanceID, &metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "could not delete configmap %s/%s", c.namespace, instanceID)
 	}
 
-	glog.Infof("deprovision of %q is complete", instanceID)
+	klog.Infof("deprovision of %q is complete", instanceID)
 	return nil
 }
 
@@ -766,12 +766,12 @@ func (c *Client) LastOperationState(instanceID string, operationKey *osb.Operati
 	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			glog.V(5).Infof("last operation on missing instance \"%s\"", instanceID)
+			klog.V(5).Infof("last operation on missing instance \"%s\"", instanceID)
 			return nil, osb.HTTPStatusCodeError{
 				StatusCode: http.StatusGone,
 			}
 		}
-		glog.Infof("could not get instance state of \"%s\": %s", instanceID, err)
+		klog.Infof("could not get instance state of \"%s\": %s", instanceID, err)
 		return nil, err
 	}
 
@@ -803,7 +803,7 @@ func (c *Client) LastBindingOperationState(instanceID, bindingID string) (*osb.L
 	config, err := c.getConfigMap(instanceID)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			glog.V(5).Infof(`last binding operation on missing instance "%s"`, instanceID)
+			klog.V(5).Infof(`last binding operation on missing instance "%s"`, instanceID)
 			return nil, osb.HTTPStatusCodeError{
 				StatusCode: http.StatusGone,
 			}
@@ -812,7 +812,7 @@ func (c *Client) LastBindingOperationState(instanceID, bindingID string) (*osb.L
 
 	stateJSON, ok := config.Data[BindingStateKeyPrefix+bindingID]
 	if !ok {
-		glog.V(5).Infof(`last binding operation on missing binding "%s" of instance "%s"`, bindingID, instanceID)
+		klog.V(5).Infof(`last binding operation on missing binding "%s" of instance "%s"`, bindingID, instanceID)
 		return nil, osb.HTTPStatusCodeError{
 			StatusCode: http.StatusGone,
 		}

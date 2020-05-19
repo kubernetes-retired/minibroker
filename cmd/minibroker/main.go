@@ -26,10 +26,10 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/golang/glog"
 	"github.com/kubernetes-sigs/minibroker/pkg/broker"
 	"github.com/pmorie/osb-broker-lib/pkg/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
+	"k8s.io/klog"
 
 	"github.com/pmorie/osb-broker-lib/pkg/rest"
 	"github.com/pmorie/osb-broker-lib/pkg/server"
@@ -44,6 +44,8 @@ var options struct {
 }
 
 func init() {
+	klog.InitFlags(nil)
+
 	flag.BoolVar(&options.ServiceCatalogEnabledOnly, "service-catalog-enabled-only", false,
 		"Only list Service Catalog Enabled services")
 	flag.IntVar(&options.Port, "port", 8005,
@@ -63,7 +65,7 @@ func init() {
 
 func main() {
 	if err := run(); err != nil && err != context.Canceled && err != context.DeadlineExceeded {
-		glog.Fatalln(err)
+		klog.Fatalln(err)
 	}
 }
 
@@ -105,7 +107,7 @@ func runWithContext(ctx context.Context) error {
 
 	s := server.New(api, reg)
 
-	glog.Infof("Starting broker!")
+	klog.Infof("Starting broker!")
 
 	if options.TLSCert == "" && options.TLSKey == "" {
 		err = s.Run(ctx, addr)
@@ -122,7 +124,7 @@ func cancelOnInterrupt(ctx context.Context, f context.CancelFunc) {
 	for {
 		select {
 		case <-term:
-			glog.Infof("Received SIGTERM, exiting gracefully...")
+			klog.Infof("Received SIGTERM, exiting gracefully...")
 			f()
 			os.Exit(0)
 		case <-ctx.Done():

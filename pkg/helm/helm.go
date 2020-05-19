@@ -24,7 +24,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/getter"
@@ -32,6 +31,7 @@ import (
 	"k8s.io/helm/pkg/helm/helmpath"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/repo"
+	"k8s.io/klog"
 )
 
 const stableURL = "https://kubernetes-charts.storage.googleapis.com"
@@ -52,7 +52,7 @@ func NewClient(repoURL string) *Client {
 
 func (c *Client) Init() error {
 	c.home = helmpath.Home(environment.DefaultHelmHome)
-	glog.Infof("Helm Home: %s", c.home)
+	klog.Infof("Helm Home: %s", c.home)
 	f, err := repo.LoadRepositoriesFile(c.home.RepositoryFile())
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
 }
 
 func LoadChart(chartURL string) (*chart.Chart, error) {
-	glog.Infof("downloading chart from %s", chartURL)
+	klog.Infof("downloading chart from %s", chartURL)
 	resp, err := http.Get(chartURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download chart from %s", chartURL)
@@ -147,17 +147,17 @@ func LoadChart(chartURL string) (*chart.Chart, error) {
 	}
 	defer func() {
 		if err := fd.Close(); err != nil {
-			glog.Errorln(
+			klog.Errorln(
 				errors.Wrapf(err, "failed to close file descriptor for chart at %s", fullChartPath))
 		}
 	}()
 
-	glog.Infof("copying chart to %s", fullChartPath)
+	klog.Infof("copying chart to %s", fullChartPath)
 	if _, err := io.Copy(fd, resp.Body); err != nil {
 		return nil, errors.Wrapf(err, "failed to download chart contents to %s", fullChartPath)
 	}
 
-	glog.Infof("loading chart from %s on disk", fullChartPath)
+	klog.Infof("loading chart from %s on disk", fullChartPath)
 	chart, err := chartutil.Load(fullChartPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load chart from disk")

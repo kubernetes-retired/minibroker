@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
+	"k8s.io/klog"
 )
 
 // maxMsgSize use 20MB as the default message size limit.
@@ -42,7 +42,7 @@ func NewConfig(host string, port int) Config {
 
 func (c Config) Connect() (*grpc.ClientConn, error) {
 	tillerHost := fmt.Sprintf("%v:%v", c.Host, c.Port)
-	glog.Infof("connecting to tiller at %v ...", tillerHost)
+	klog.Infof("connecting to tiller at %v ...", tillerHost)
 
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
@@ -61,7 +61,7 @@ func (c Config) Connect() (*grpc.ClientConn, error) {
 	if err != nil {
 		return conn, errors.Wrapf(err, "cannot connect to tiller at %v", tillerHost)
 	}
-	glog.Infoln("Connected!")
+	klog.Infoln("Connected!")
 	return conn, nil
 }
 

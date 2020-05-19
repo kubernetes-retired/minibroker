@@ -20,13 +20,13 @@ import (
 	"context"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/golang/glog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/yaml.v2"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	rls "k8s.io/helm/pkg/proto/hapi/services"
 	"k8s.io/helm/pkg/version"
+	"k8s.io/klog"
 )
 
 type Client struct {
@@ -53,7 +53,7 @@ func (t *Client) Create(ch *chart.Chart, installNS string, values map[string]int
 		DisableHooks: false,
 		Values:       &chart.Config{Raw: string(valuesYaml)},
 	}
-	glog.Infof("installing release for chart %s\n%s", ch.Metadata.Name, spew.Sdump(req))
+	klog.Infof("installing release for chart %s\n%s", ch.Metadata.Name, spew.Sdump(req))
 	return rlsCl.InstallRelease(ctx, req)
 }
 
@@ -65,7 +65,7 @@ func (t *Client) Delete(relName string) (*rls.UninstallReleaseResponse, error) {
 		DisableHooks: false,
 		Purge:        true,
 	}
-	glog.Infof("uninstalling release %s", relName)
+	klog.Infof("uninstalling release %s", relName)
 	return rlsCl.UninstallRelease(ctx, req)
 }
 
