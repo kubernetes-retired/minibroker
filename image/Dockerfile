@@ -14,6 +14,7 @@
 
 ARG BUILDER_IMAGE=golang:1.14.2-buster@sha256:6e35cbd04ca339a53194a2542d07dfba0f1ec0185a6f69dc33310540cc38144f
 ARG DOWNLOADER_IMAGE=alpine:latest
+ARG CERT_BUILDER_IMAGE=opensuse/leap:15.1@sha256:ace17bbeacb203c4bf1d3d23ce7c9e2639fe0527a87e7c5758387e749943a49a
 ARG RUNNING_IMAGE=debian:stable@sha256:e0635a846513de0357689a7dd0c605a538d4ba2093a14b4688a15ed509c88e55
 
 # --------------------------------------------------------------------------------------------------
@@ -37,6 +38,22 @@ ARG HELM_FILENAME="helm-${HELM_VERSION}-linux-amd64.tar.gz"
 
 RUN wget -O /tmp/${HELM_FILENAME} http://storage.googleapis.com/kubernetes-helm/${HELM_FILENAME}
 RUN tar -zxvf /tmp/${HELM_FILENAME} -C /tmp
+
+# --------------------------------------------------------------------------------------------------
+# The cert building stage.
+FROM ${CERT_BUILDER_IMAGE} AS cert_builder
+
+ARG CURL_VERSION="7.70.0"
+
+RUN zypper refresh
+RUN zypper --non-interactive install perl-Encode make tar gzip curl
+
+RUN curl -L -o /tmp/curl-${CURL_VERSION}.tar.gz https://github.com/curl/curl/releases/download/curl-${CURL_VERSION//\./_}/curl-${CURL_VERSION}.tar.gz
+RUN tar zxf /tmp/curl-${CURL_VERSION}.tar.gz
+WORKDIR /curl-${CURL_VERSION}
+
+RUN make ca-bundle
+RUN cp lib/ca-bundle.crt /tmp/ca-bundle.crt
 
 # --------------------------------------------------------------------------------------------------
 # The running stage.
