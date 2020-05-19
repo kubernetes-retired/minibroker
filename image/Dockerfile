@@ -12,9 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ARG BUILDER_IMAGE=golang:1.14.2-buster@sha256:6e35cbd04ca339a53194a2542d07dfba0f1ec0185a6f69dc33310540cc38144f
+ARG DOWNLOADER_IMAGE=alpine:latest
+ARG CERT_BUILDER_IMAGE=opensuse/leap:15.1@sha256:ace17bbeacb203c4bf1d3d23ce7c9e2639fe0527a87e7c5758387e749943a49a
+ARG RUNNING_IMAGE=debian:stable@sha256:e0635a846513de0357689a7dd0c605a538d4ba2093a14b4688a15ed509c88e55
+
 # --------------------------------------------------------------------------------------------------
 # The building stage.
-FROM golang:1.14.2-stretch AS builder
+FROM ${BUILDER_IMAGE} AS builder
 
 WORKDIR /build/minibroker
 # Copy the go.mod over so docker can cache the module downloads if possible.
@@ -26,23 +31,38 @@ RUN make build-linux
 
 # --------------------------------------------------------------------------------------------------
 # The downloading stage.
-FROM alpine:latest AS downloader
+FROM ${DOWNLOADER_IMAGE} AS downloader
 
-ENV HELM_VERSION="v2.13.1"
-ENV FILENAME="helm-${HELM_VERSION}-linux-amd64.tar.gz"
+ARG HELM_VERSION="v2.16.7"
+ENV HELM_FILENAME="helm-${HELM_VERSION}-linux-amd64.tar.gz"
 
-RUN wget -O /tmp/${FILENAME} http://storage.googleapis.com/kubernetes-helm/${FILENAME}
-RUN tar -zxvf /tmp/${FILENAME} -C /tmp
+RUN wget -O /tmp/${HELM_FILENAME} http://storage.googleapis.com/kubernetes-helm/${HELM_FILENAME}
+RUN tar -zxvf /tmp/${HELM_FILENAME} -C /tmp
+
+# --------------------------------------------------------------------------------------------------
+# The cert building stage.
+FROM ${CERT_BUILDER_IMAGE} AS cert_builder
+
+ARG CURL_VERSION="7.70.0"
+
+RUN zypper refresh
+RUN zypper --non-interactive install perl-Encode make tar gzip curl
+
+RUN curl -L -o /tmp/curl-${CURL_VERSION}.tar.gz https://github.com/curl/curl/releases/download/curl-${CURL_VERSION//\./_}/curl-${CURL_VERSION}.tar.gz
+RUN tar zxf /tmp/curl-${CURL_VERSION}.tar.gz
+WORKDIR /curl-${CURL_VERSION}
+
+RUN make ca-bundle
+RUN cp lib/ca-bundle.crt /tmp/ca-bundle.crt
 
 # --------------------------------------------------------------------------------------------------
 # The running stage.
-FROM debian:stretch
-
-RUN apt update && apt install -y ca-certificates && apt clean && rm -rf /var/lib/apt/lists/*
+FROM ${RUNNING_IMAGE}
 
 #RUN adduser -D minibroker
 #USER minibroker
 
+COPY --from=cert_builder /tmp/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
 COPY --from=downloader /tmp/linux-amd64/helm /usr/local/bin/helm
 RUN helm init --client-only
 
