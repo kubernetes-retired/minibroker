@@ -59,11 +59,10 @@ RUN cp lib/ca-bundle.crt /tmp/ca-bundle.crt
 # The running stage.
 FROM ${RUNNING_IMAGE}
 
-RUN apt update && apt install -y ca-certificates && apt clean && rm -rf /var/lib/apt/lists/*
-
 #RUN adduser -D minibroker
 #USER minibroker
 
+COPY --from=cert_builder /tmp/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
 COPY --from=downloader /tmp/linux-amd64/helm /usr/local/bin/helm
 RUN helm init --client-only
 
