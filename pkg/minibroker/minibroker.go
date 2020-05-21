@@ -661,11 +661,16 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 
 // Unbind a previously-bound instance binding.
 func (c *Client) Unbind(instanceID, bindingID string) error {
-	// The only clean up we need to do is to remove the binding information
-	return c.updateConfigMap(instanceID, map[string]interface{}{
+	// The only clean up we need to do is to remove the binding information.
+	data := map[string]interface{}{
 		(BindingStateKeyPrefix + bindingID): nil,
 		(BindingKeyPrefix + bindingID):      nil,
-	})
+	}
+	if err := c.updateConfigMap(instanceID, data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) GetBinding(instanceID, bindingID string) (*osb.GetBindingResponse, error) {
