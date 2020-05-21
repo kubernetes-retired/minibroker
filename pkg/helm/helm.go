@@ -158,5 +158,10 @@ func LoadChart(chartURL string) (*chart.Chart, error) {
 	}
 
 	glog.Infof("loading chart from %s on disk", fullChartPath)
-	return chartutil.Load(fullChartPath)
+	chart, err := chartutil.Load(fullChartPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load chart from disk")
+	}
+
+	return chart, nil
 }
