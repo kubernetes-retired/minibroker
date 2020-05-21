@@ -123,9 +123,7 @@ func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
 	return nil, fmt.Errorf("version not found: %s @ %s", name, version)
 }
 
-func LoadChart(chart *repo.ChartVersion) (*chart.Chart, error) {
-	chartURL := chart.URLs[0]
-
+func LoadChart(chartURL string) (*chart.Chart, error) {
 	glog.Infof("downloading chart from %s", chartURL)
 	resp, err := http.Get(chartURL)
 	if err != nil {

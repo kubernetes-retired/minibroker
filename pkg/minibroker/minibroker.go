@@ -385,13 +385,15 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 		return err
 	}
 
+	chartURL := chartDef.URLs[0]
+
 	tc, close, err := c.connectTiller()
 	if err != nil {
 		return err
 	}
 	defer close()
 
-	chart, err := helm.LoadChart(chartDef)
+	chart, err := helm.LoadChart(chartURL)
 	if err != nil {
 		return err
 	}
