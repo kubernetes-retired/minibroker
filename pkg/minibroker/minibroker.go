@@ -345,7 +345,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 			OperationDescriptionKey: fmt.Sprintf("provisioning service instance %q", instanceID),
 		})
 		if err != nil {
-			return "", errors.Wrapf(err, "Failed to set operation key when provisioning instance %s", instanceID)
+			return "", errors.Wrapf(err, "Failed to set operation key when provisioning instance %q", instanceID)
 		}
 		go func() {
 			err = c.provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
