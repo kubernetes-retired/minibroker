@@ -154,7 +154,7 @@ func LoadChart(chartURL string) (*chart.Chart, error) {
 
 	glog.Infof("copying chart to %s", fullChartPath)
 	if _, err := io.Copy(fd, resp.Body); err != nil {
-		return nil, errors.Wrapf(err, "failed to copy chart contents to %s", fullChartPath)
+		return nil, errors.Wrapf(err, "failed to download chart contents to %s", fullChartPath)
 	}
 
 	glog.Infof("loading chart from %s on disk", fullChartPath)
