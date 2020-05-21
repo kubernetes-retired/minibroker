@@ -345,7 +345,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 			OperationDescriptionKey: fmt.Sprintf("provisioning service instance %q", instanceID),
 		})
 		if err != nil {
-			return "", errors.Wrapf(err, "Failed to set operation key when provisioning instance %s", instanceID)
+			return "", errors.Wrapf(err, "Failed to set operation key when provisioning instance %q", instanceID)
 		}
 		go func() {
 			err = c.provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
@@ -385,13 +385,15 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 		return err
 	}
 
+	chartURL := chartDef.URLs[0]
+
 	tc, close, err := c.connectTiller()
 	if err != nil {
 		return err
 	}
 	defer close()
 
-	chart, err := helm.LoadChart(chartDef)
+	chart, err := helm.LoadChart(chartURL)
 	if err != nil {
 		return err
 	}
@@ -659,11 +661,16 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 
 // Unbind a previously-bound instance binding.
 func (c *Client) Unbind(instanceID, bindingID string) error {
-	// The only clean up we need to do is to remove the binding information
-	return c.updateConfigMap(instanceID, map[string]interface{}{
+	// The only clean up we need to do is to remove the binding information.
+	data := map[string]interface{}{
 		(BindingStateKeyPrefix + bindingID): nil,
 		(BindingKeyPrefix + bindingID):      nil,
-	})
+	}
+	if err := c.updateConfigMap(instanceID, data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) GetBinding(instanceID, bindingID string) (*osb.GetBindingResponse, error) {
@@ -755,7 +762,7 @@ func (c *Client) deprovisionSynchronously(instanceID, release string) error {
 }
 
 // LastOperationState returns the status of the last asynchronous operation.
-func (c *Client) LastOperationState(instanceID string, operationKey *osb.OperationKey) (*osb.LastOperationResponse, error) {
+func (c *Client) LastOperationState(instanceID string, operationKey osb.OperationKey) (*osb.LastOperationResponse, error) {
 	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -768,12 +775,12 @@ func (c *Client) LastOperationState(instanceID string, operationKey *osb.Operati
 		return nil, err
 	}
 
-	if operationKey != nil && config.Data[OperationNameKey] != string(*operationKey) {
-		// Got unexpected operation key
+	if config.Data[OperationNameKey] != string(operationKey) {
+		// Got unexpected operation key.
 		return nil, osb.HTTPStatusCodeError{
 			StatusCode:   http.StatusBadRequest,
-			ErrorMessage: &[]string{ConcurrencyErrorMessage}[0],
-			Description:  &[]string{ConcurrencyErrorDescription}[0],
+			ErrorMessage: strPtr(ConcurrencyErrorMessage),
+			Description:  strPtr(ConcurrencyErrorDescription),
 		}
 	}
 
@@ -792,7 +799,7 @@ func strPtr(value string) *string {
 	return &value
 }
 
-func (c *Client) LastBindingOperationState(instanceID, bindingID string, operationKey *osb.OperationKey) (*osb.LastOperationResponse, error) {
+func (c *Client) LastBindingOperationState(instanceID, bindingID string) (*osb.LastOperationResponse, error) {
 	config, err := c.getConfigMap(instanceID)
 	if err != nil {
 		if apierrors.IsNotFound(err) {

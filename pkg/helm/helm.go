@@ -123,9 +123,7 @@ func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
 	return nil, fmt.Errorf("version not found: %s @ %s", name, version)
 }
 
-func LoadChart(chart *repo.ChartVersion) (*chart.Chart, error) {
-	chartURL := chart.URLs[0]
-
+func LoadChart(chartURL string) (*chart.Chart, error) {
 	glog.Infof("downloading chart from %s", chartURL)
 	resp, err := http.Get(chartURL)
 	if err != nil {
@@ -156,9 +154,14 @@ func LoadChart(chart *repo.ChartVersion) (*chart.Chart, error) {
 
 	glog.Infof("copying chart to %s", fullChartPath)
 	if _, err := io.Copy(fd, resp.Body); err != nil {
-		return nil, errors.Wrapf(err, "failed to copy chart contents to %s", fullChartPath)
+		return nil, errors.Wrapf(err, "failed to download chart contents to %s", fullChartPath)
 	}
 
 	glog.Infof("loading chart from %s on disk", fullChartPath)
-	return chartutil.Load(fullChartPath)
+	chart, err := chartutil.Load(fullChartPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load chart from disk")
+	}
+
+	return chart, nil
 }
