@@ -174,7 +174,7 @@ func (b *Broker) Bind(request *osb.BindRequest, _ *broker.RequestContext) (*brok
 	}
 
 	// Get the response back out of the configmaps
-	operationState, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID, &operationKey)
+	operationState, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID)
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err
@@ -215,8 +215,8 @@ func (b *Broker) GetBinding(request *osb.GetBindingRequest, _ *broker.RequestCon
 	return &response, nil
 }
 
-	state, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID, request.OperationKey)
 func (b *Broker) BindingLastOperation(request *osb.BindingLastOperationRequest, _ *broker.RequestContext) (*broker.LastOperationResponse, error) {
+	state, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID)
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err

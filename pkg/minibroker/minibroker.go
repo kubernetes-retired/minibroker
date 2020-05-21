@@ -792,7 +792,7 @@ func strPtr(value string) *string {
 	return &value
 }
 
-func (c *Client) LastBindingOperationState(instanceID, bindingID string, operationKey *osb.OperationKey) (*osb.LastOperationResponse, error) {
+func (c *Client) LastBindingOperationState(instanceID, bindingID string) (*osb.LastOperationResponse, error) {
 	config, err := c.getConfigMap(instanceID)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
