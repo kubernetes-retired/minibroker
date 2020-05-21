@@ -772,8 +772,8 @@ func (c *Client) LastOperationState(instanceID string, operationKey osb.Operatio
 		// Got unexpected operation key.
 		return nil, osb.HTTPStatusCodeError{
 			StatusCode:   http.StatusBadRequest,
-			ErrorMessage: &[]string{ConcurrencyErrorMessage}[0],
-			Description:  &[]string{ConcurrencyErrorDescription}[0],
+			ErrorMessage: strPtr(ConcurrencyErrorMessage),
+			Description:  strPtr(ConcurrencyErrorDescription),
 		}
 	}
 
