@@ -75,7 +75,7 @@ func (b *Broker) GetCatalog(c *broker.RequestContext) (*broker.CatalogResponse, 
 	return response, nil
 }
 
-func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestContext) (*broker.ProvisionResponse, error) {
+func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestContext) (*broker.ProvisionResponse, error) {
 	b.Lock()
 	defer b.Unlock()
 
@@ -109,7 +109,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, c *broker.RequestConte
 	return &response, nil
 }
 
-func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestContext) (*broker.DeprovisionResponse, error) {
+func (b *Broker) Deprovision(request *osb.DeprovisionRequest, _ *broker.RequestContext) (*broker.DeprovisionResponse, error) {
 	glog.V(5).Infof("Deprovisioning %s (%s/%s)", request.InstanceID, request.ServiceID, request.PlanID)
 	b.Lock()
 	defer b.Unlock()
@@ -132,7 +132,7 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, c *broker.RequestC
 }
 
 // LastOperation provides information on the state of the last asynchronous operation
-func (b *Broker) LastOperation(request *osb.LastOperationRequest, c *broker.RequestContext) (*broker.LastOperationResponse, error) {
+func (b *Broker) LastOperation(request *osb.LastOperationRequest, _ *broker.RequestContext) (*broker.LastOperationResponse, error) {
 	glog.V(5).Infof("Getting last operation of %s (%v/%v)", request.InstanceID, request.ServiceID, request.PlanID)
 	b.Lock()
 	defer b.Unlock()
@@ -149,7 +149,7 @@ func (b *Broker) LastOperation(request *osb.LastOperationRequest, c *broker.Requ
 	return &wrappedResponse, nil
 }
 
-func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*broker.BindResponse, error) {
+func (b *Broker) Bind(request *osb.BindRequest, _ *broker.RequestContext) (*broker.BindResponse, error) {
 	glog.V(5).Infof("Binding %s (%s)", request.InstanceID, request.ServiceID)
 	b.Lock()
 	defer b.Unlock()
@@ -203,7 +203,7 @@ func (b *Broker) Bind(request *osb.BindRequest, c *broker.RequestContext) (*brok
 	return &bindResponse, nil
 }
 
-func (b *Broker) GetBinding(request *osb.GetBindingRequest, c *broker.RequestContext) (*broker.GetBindingResponse, error) {
+func (b *Broker) GetBinding(request *osb.GetBindingRequest, _ *broker.RequestContext) (*broker.GetBindingResponse, error) {
 	binding, err := b.Client.GetBinding(request.InstanceID, request.BindingID)
 	if err != nil {
 		glog.Errorln(err)
@@ -215,8 +215,8 @@ func (b *Broker) GetBinding(request *osb.GetBindingRequest, c *broker.RequestCon
 	return &response, nil
 }
 
-func (b *Broker) BindingLastOperation(request *osb.BindingLastOperationRequest, c *broker.RequestContext) (*broker.LastOperationResponse, error) {
 	state, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID, request.OperationKey)
+func (b *Broker) BindingLastOperation(request *osb.BindingLastOperationRequest, _ *broker.RequestContext) (*broker.LastOperationResponse, error) {
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err
@@ -242,7 +242,7 @@ func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*
 	return &response, nil
 }
 
-func (b *Broker) Update(request *osb.UpdateInstanceRequest, c *broker.RequestContext) (*broker.UpdateInstanceResponse, error) {
+func (b *Broker) Update(request *osb.UpdateInstanceRequest, _ *broker.RequestContext) (*broker.UpdateInstanceResponse, error) {
 	// Not supported, do nothing
 
 	response := broker.UpdateInstanceResponse{}
