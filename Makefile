@@ -21,7 +21,10 @@ IMAGE ?= $(REGISTRY)minibroker
 TAG ?= canary
 IMAGE_PULL_POLICY ?= Always
 
-lint: lint-go-mod lint-modified-files
+lint: lint-go-vet lint-go-mod lint-modified-files
+
+lint-go-vet:
+	go vet ./...
 
 lint-go-mod:
 	go mod tidy
