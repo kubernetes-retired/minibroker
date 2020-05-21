@@ -18,6 +18,7 @@ package broker
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/golang/glog"
@@ -137,7 +138,10 @@ func (b *Broker) LastOperation(request *osb.LastOperationRequest, _ *broker.Requ
 	b.Lock()
 	defer b.Unlock()
 
-	response, err := b.Client.LastOperationState(request.InstanceID, request.OperationKey)
+	if request.OperationKey == nil {
+		return nil, fmt.Errorf("failed to get last operation for instance %q: operation key cannot be nil", request.InstanceID)
+	}
+	response, err := b.Client.LastOperationState(request.InstanceID, *request.OperationKey)
 	if err != nil {
 		glog.Errorln(err)
 		return nil, err
