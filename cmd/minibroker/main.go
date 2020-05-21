@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"path"
@@ -79,12 +78,12 @@ func run() error {
 
 func runWithContext(ctx context.Context) error {
 	if flag.Arg(0) == "version" {
-		fmt.Printf("%s/%s\n", path.Base(os.Args[0]), "0.1.0")
+		klog.V(0).Infof("%s/%s", path.Base(os.Args[0]), "0.1.0")
 		return nil
 	}
 	if (options.TLSCert != "" || options.TLSKey != "") &&
 		(options.TLSCert == "" || options.TLSKey == "") {
-		fmt.Println("To use TLS, both --tlsCert and --tlsKey must be used")
+		klog.V(0).Infoln("To use TLS, both --tlsCert and --tlsKey must be used")
 		return nil
 	}
 
@@ -107,7 +106,7 @@ func runWithContext(ctx context.Context) error {
 
 	s := server.New(api, reg)
 
-	klog.Infof("Starting broker!")
+	klog.V(1).Infof("Starting broker!")
 
 	if options.TLSCert == "" && options.TLSKey == "" {
 		err = s.Run(ctx, addr)
@@ -124,7 +123,7 @@ func cancelOnInterrupt(ctx context.Context, f context.CancelFunc) {
 	for {
 		select {
 		case <-term:
-			klog.Infof("Received SIGTERM, exiting gracefully...")
+			klog.V(1).Infof("Received SIGTERM, exiting gracefully...")
 			f()
 			os.Exit(0)
 		case <-ctx.Done():
