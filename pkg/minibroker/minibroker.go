@@ -89,6 +89,7 @@ type Client struct {
 }
 
 func NewClient(repoURL string, serviceCatalogEnabledOnly bool) *Client {
+	klog.V(5).Infof("minibroker: initializing a new client")
 	return &Client{
 		helm:                      helm.NewClient(repoURL),
 		coreClient:                loadInClusterClient(),
@@ -121,7 +122,7 @@ func loadInClusterClient() kubernetes.Interface {
 func loadNamespace() string {
 	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
 		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-			klog.Infof("namespace: %s", ns)
+			klog.V(3).Infof("minibroker: namespace: %s", ns)
 			return ns
 		}
 	}
@@ -223,7 +224,8 @@ func (c *Client) updateConfigMap(instanceID string, data map[string]interface{})
 }
 
 func (c *Client) ListServices() ([]osb.Service, error) {
-	klog.Info("Listing services...")
+	klog.V(4).Infof("minibroker: listing services")
+
 	var services []osb.Service
 
 	charts, err := c.helm.ListCharts()
@@ -254,7 +256,7 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 
 			curV, err := semver.NewVersion(chartVersion.Version)
 			if err != nil {
-				fmt.Printf("Skipping %s@%s because %s is not a valid semver", chart, chartVersion.AppVersion, chartVersion.Version)
+				klog.V(4).Infof("minibroker: skipping %s@%s because %q is not a valid semver", chart, chartVersion.AppVersion, chartVersion.Version)
 				continue
 			}
 
@@ -266,7 +268,7 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 				if curV.GreaterThan(maxV) {
 					appVersions[chartVersion.AppVersion] = chartVersion
 				} else {
-					//fmt.Printf("Skipping %s@%s because %s<%s\n", chart, chartVersion.AppVersion, curV, maxV)
+					klog.V(4).Infof("minibroker: skipping %s@%s because %s < %s", chart, chartVersion.AppVersion, curV, maxV)
 					continue
 				}
 			}
@@ -292,19 +294,22 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 		services = append(services, svc)
 	}
 
-	klog.Infoln("List complete")
+	klog.V(4).Infof("minibroker: listed services")
+
 	return services, nil
 }
 
 // Provision a new service instance.  Returns the async operation key (if
 // acceptsIncomplete is set).
 func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acceptsIncomplete bool, provisionParams map[string]interface{}) (string, error) {
+	klog.V(3).Infof("minibroker: provisioning intance %q, service %q, namespace %q, params %v", instanceID, serviceID, namespace, provisionParams)
+
 	chartName := serviceID
 	// The way I'm turning charts into plans is not reversible
 	chartVersion := strings.Replace(planID, serviceID+"-", "", 1)
 	chartVersion = strings.Replace(chartVersion, "-", ".", -1)
 
-	klog.Info("persisting the provisioning parameters...")
+	klog.V(4).Infof("minibroker: persisting the provisioning parameters")
 	paramsJSON, err := json.Marshal(provisionParams)
 	if err != nil {
 		return "", errors.Wrapf(err, "could not marshall provisioning parameters %v", provisionParams)
@@ -355,13 +360,13 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 					OperationDescriptionKey: fmt.Sprintf("service instance %q provisioned", instanceID),
 				})
 			} else {
-				klog.Errorf("Failed to provision %q: %s", instanceID, err)
+				klog.V(2).Infof("minibroker: failed to provision %q: %v", instanceID, err)
 				err = c.updateConfigMap(instanceID, map[string]interface{}{
 					OperationStateKey:       string(osb.StateFailed),
 					OperationDescriptionKey: fmt.Sprintf("service instance %q failed to provision", instanceID),
 				})
 				if err != nil {
-					klog.Errorf("Could not update operation state when provisioning asynchronously: %s", err)
+					klog.V(2).Infof("minibroker: failed to provision %q: could not update operation state when provisioning asynchronously: %v", instanceID, err)
 				}
 			}
 		}()
@@ -378,7 +383,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 
 // provisionSynchronously will provision the service instance synchronously.
 func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams map[string]interface{}) error {
-	klog.Infof("provisioning %s/%s using stable helm chart %s@%s...", serviceID, planID, chartName, chartVersion)
+	klog.V(3).Infof("minibroker: provisioning %s/%s using helm chart %s@%s", serviceID, planID, chartName, chartVersion)
 
 	chartDef, err := c.helm.GetChart(chartName, chartVersion)
 	if err != nil {
@@ -404,7 +409,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 	}
 
 	// Store any required metadata necessary for bind and deprovision as labels on the resources itself
-	klog.Infof("Labeling chart resources with instance %q...", instanceID)
+	klog.V(3).Infof("minibroker: labeling chart resources with instance %q", instanceID)
 	filterByRelease := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			HeritageLabel: TillerHeritage,
@@ -440,7 +445,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 		return errors.Wrapf(err, "could not update the instance configmap for %q", instanceID)
 	}
 
-	klog.Infof("provision of %v@%v (%v@%v) complete\n%s\n",
+	klog.V(4).Infof("minibroker: provisioned %v@%v (%v@%v)\n%s\n",
 		chartName, chartVersion, resp.Release.Name, resp.Release.Version, spew.Sdump(resp.Release.Manifest))
 
 	return nil
@@ -508,7 +513,7 @@ func (c *Client) connectTiller() (*tiller.Client, func(), error) {
 	close := func() {
 		err := tc.Close()
 		if err != nil {
-			klog.Errorln(errors.Wrapf(err, "failed to disconnect tiller client"))
+			klog.V(2).Infof("minibroker: failed to disconnect tiller client: %v", err)
 		}
 	}
 
@@ -518,6 +523,7 @@ func (c *Client) connectTiller() (*tiller.Client, func(), error) {
 // Bind the given service instance (of the given service) asynchronously; the
 // binding operation key is returned.
 func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete bool, bindParams map[string]interface{}) (string, error) {
+	klog.V(3).Infof("minibroker: binding instance %q, service %q, binding %q, binding params %v", instanceID, serviceID, bindingID, bindParams)
 	config, err := c.getConfigMap(instanceID)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -540,15 +546,21 @@ func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete
 	}
 
 	if acceptsIncomplete {
+		klog.V(3).Infof("minibroker: initializing asynchronous binding %q", bindingID)
 		go func() {
 			_ = c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams)
+			klog.V(3).Infof("minibroker: asynchronously bound instance %q, service %q, binding %q", instanceID, serviceID, bindingID)
 		}()
 		return operationName, nil
 	}
 
+	klog.V(3).Infof("minibroker: initializing synchronous binding %q", bindingID)
 	if err = c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams); err != nil {
 		return "", err
 	}
+
+	klog.V(3).Infof("minibroker: synchronously bound instance %q, service %q, binding %q", instanceID, serviceID, bindingID)
+
 	return "", nil
 }
 
@@ -633,13 +645,13 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 	if err == nil {
 		operationState.State = osb.StateSucceeded
 	} else {
-		klog.Errorf("Error binding instance %s: %s", instanceID, err)
+		klog.V(2).Infof("minibroker: error binding instance %q: %v", instanceID, err)
 		operationState.State = osb.StateFailed
 		operationState.Description = strPtr(fmt.Sprintf("Failed to bind instance %q", instanceID))
 	}
 	operationStateJSON, marshalError := json.Marshal(operationState)
 	if marshalError != nil {
-		klog.Errorf("Error serializing bind operation state: %s", marshalError)
+		klog.V(2).Infof("minibroker: error serializing bind operation state: %v", marshalError)
 		if err != nil {
 			return err
 		}
@@ -650,7 +662,7 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 	}
 	updateError := c.updateConfigMap(instanceID, updates)
 	if updateError != nil {
-		klog.Errorf("Error updating bind status: %s", updateError)
+		klog.V(2).Infof("minibroker: error updating bind status: %v", marshalError)
 		if err != nil {
 			return err
 		}
@@ -661,6 +673,8 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 
 // Unbind a previously-bound instance binding.
 func (c *Client) Unbind(instanceID, bindingID string) error {
+	klog.V(3).Infof("minibroker: unbinding instance %q binding %q", instanceID, bindingID)
+
 	// The only clean up we need to do is to remove the binding information.
 	data := map[string]interface{}{
 		(BindingStateKeyPrefix + bindingID): nil,
@@ -670,10 +684,14 @@ func (c *Client) Unbind(instanceID, bindingID string) error {
 		return err
 	}
 
+	klog.V(3).Infof("minibroker: unbound instance %q binding %q", instanceID, bindingID)
+
 	return nil
 }
 
 func (c *Client) GetBinding(instanceID, bindingID string) (*osb.GetBindingResponse, error) {
+	klog.V(3).Infof("minibroker: getting instance %q binding %q", instanceID, bindingID)
+
 	config, err := c.getConfigMap(instanceID)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -690,10 +708,15 @@ func (c *Client) GetBinding(instanceID, bindingID string) (*osb.GetBindingRespon
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not decode binding data")
 	}
+
+	klog.V(3).Infof("minibroker: got instance %q binding %q", instanceID, bindingID)
+
 	return data, nil
 }
 
 func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string, error) {
+	klog.V(3).Infof("minibroker: deprovisioning instance %q", instanceID)
+
 	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -704,13 +727,16 @@ func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string,
 	release := config.Data[ReleaseLabel]
 
 	if !acceptsIncomplete {
+		klog.V(3).Infof("minibroker: synchronously deprovisioning instance %q", instanceID)
 		err = c.deprovisionSynchronously(instanceID, release)
 		if err != nil {
 			return "", err
 		}
+		klog.V(3).Infof("minibroker: synchronously deprovisioned instance %q", instanceID)
 		return "", nil
 	}
 
+	klog.V(3).Infof("minibroker: asynchronously deprovisioning instance %q", instanceID)
 	operationKey := generateOperationName(OperationPrefixDeprovision)
 	err = c.updateConfigMap(instanceID, map[string]interface{}{
 		OperationStateKey:       string(osb.StateInProgress),
@@ -726,14 +752,15 @@ func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string,
 			// After deprovisioning, there is no config map to update
 			return
 		}
-		klog.Errorf("Failed to deprovision %q: %s", instanceID, err)
+		klog.V(2).Infof("minibroker: failed to deprovision %q: %v", instanceID, err)
 		err = c.updateConfigMap(instanceID, map[string]interface{}{
 			OperationStateKey:       string(osb.StateFailed),
 			OperationDescriptionKey: fmt.Sprintf("service instance %q failed to deprovision", instanceID),
 		})
 		if err != nil {
-			klog.Errorf("Could not update operation state when deprovisioning asynchronously: %s", err)
+			klog.V(2).Infof("minibroker: could not update operation state when deprovisioning asynchronously: %v", err)
 		}
+		klog.V(3).Infof("minibroker: asynchronously deprovisioned instance %q", instanceID)
 	}()
 	return operationKey, nil
 }
@@ -750,33 +777,45 @@ func (c *Client) deprovisionSynchronously(instanceID, release string) error {
 		return errors.Wrapf(err, "could not delete release %s", release)
 	}
 
-	klog.Infof("release %s deleted", release)
-
 	err = c.coreClient.CoreV1().ConfigMaps(c.namespace).Delete(instanceID, &metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "could not delete configmap %s/%s", c.namespace, instanceID)
 	}
 
-	klog.Infof("deprovision of %q is complete", instanceID)
 	return nil
 }
 
-// LastOperationState returns the status of the last asynchronous operation.
+// LastOperationState returns the status of the last asynchronous operation. TODO(f0rmiga): This
+// deserves some polimorphism.
 func (c *Client) LastOperationState(instanceID string, operationKey *osb.OperationKey) (*osb.LastOperationResponse, error) {
+	if operationKey != nil {
+		klog.V(4).Infof("minibroker: getting last operation state for instance %q using key %q", instanceID, *operationKey)
+	} else {
+		klog.V(4).Infof("minibroker: getting last operation state for instance %q without key", instanceID)
+	}
+
 	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			klog.V(5).Infof("last operation on missing instance \"%s\"", instanceID)
+			if operationKey != nil {
+				klog.V(5).Infof("minibroker: missing instance %q while getting last operation state using key %q", instanceID, *operationKey)
+			} else {
+				klog.V(5).Infof("minibroker: missing instance %q while getting last operation state without key", instanceID)
+			}
 			return nil, osb.HTTPStatusCodeError{
 				StatusCode: http.StatusGone,
 			}
 		}
-		klog.Infof("could not get instance state of \"%s\": %s", instanceID, err)
 		return nil, err
 	}
 
 	if operationKey != nil && config.Data[OperationNameKey] != string(*operationKey) {
 		// Got unexpected operation key.
+		if operationKey != nil {
+			klog.V(4).Infof("minibroker: failed to get last operation state for instance %q using key %q", instanceID, *operationKey)
+		} else {
+			klog.V(4).Infof("minibroker: failed to get last operation state for instance %q without key", instanceID)
+		}
 		return nil, osb.HTTPStatusCodeError{
 			StatusCode:   http.StatusBadRequest,
 			ErrorMessage: strPtr(ConcurrencyErrorMessage),
@@ -785,10 +824,18 @@ func (c *Client) LastOperationState(instanceID string, operationKey *osb.Operati
 	}
 
 	description := config.Data[OperationDescriptionKey]
-	return &osb.LastOperationResponse{
+	response := &osb.LastOperationResponse{
 		State:       osb.LastOperationState(config.Data[OperationStateKey]),
 		Description: &description,
-	}, nil
+	}
+
+	if operationKey != nil {
+		klog.V(4).Infof("minibroker: got last operation state for instance %q using key %q", instanceID, *operationKey)
+	} else {
+		klog.V(4).Infof("minibroker: got last operation state for instance %q without key", instanceID)
+	}
+
+	return response, nil
 }
 
 func boolPtr(value bool) *bool {
@@ -800,10 +847,11 @@ func strPtr(value string) *string {
 }
 
 func (c *Client) LastBindingOperationState(instanceID, bindingID string) (*osb.LastOperationResponse, error) {
+	klog.V(4).Infof("minibroker: getting last binding %q operation state for instance %q", bindingID, instanceID)
 	config, err := c.getConfigMap(instanceID)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			klog.V(5).Infof(`last binding operation on missing instance "%s"`, instanceID)
+			klog.V(5).Infof("minibroker: missing instance %q while getting last binding %q operation state", instanceID, bindingID)
 			return nil, osb.HTTPStatusCodeError{
 				StatusCode: http.StatusGone,
 			}
@@ -812,7 +860,7 @@ func (c *Client) LastBindingOperationState(instanceID, bindingID string) (*osb.L
 
 	stateJSON, ok := config.Data[BindingStateKeyPrefix+bindingID]
 	if !ok {
-		klog.V(5).Infof(`last binding operation on missing binding "%s" of instance "%s"`, bindingID, instanceID)
+		klog.V(5).Infof("minibroker: missing binding %q for instance %q while getting last binding operation state", bindingID, instanceID)
 		return nil, osb.HTTPStatusCodeError{
 			StatusCode: http.StatusGone,
 		}
@@ -824,5 +872,6 @@ func (c *Client) LastBindingOperationState(instanceID, bindingID string) (*osb.L
 		return nil, errors.Wrapf(err, "Error unmarshalling binding state %s", stateJSON)
 	}
 
+	klog.V(4).Infof("minibroker: got last binding %q operation state for instance %q", bindingID, instanceID)
 	return response, nil
 }
