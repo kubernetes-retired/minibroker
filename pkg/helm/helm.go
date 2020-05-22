@@ -51,13 +51,16 @@ func NewClient(repoURL string) *Client {
 }
 
 func (c *Client) Init() error {
+	klog.V(5).Infof("helm client: initializing client")
+
 	c.home = helmpath.Home(environment.DefaultHelmHome)
-	klog.Infof("Helm Home: %s", c.home)
+	klog.V(3).Infof("helm client: helm home: %s", c.home)
 	f, err := repo.LoadRepositoriesFile(c.home.RepositoryFile())
 	if err != nil {
 		return err
 	}
 
+	klog.V(3).Infof("helm client: caching stable repository")
 	cif := c.home.CacheIndex("stable")
 	cr := repo.Entry{
 		Name:  "stable",
@@ -80,10 +83,15 @@ func (c *Client) Init() error {
 
 	// Load the repositories.yaml
 	c.rf, err = repo.LoadRepositoriesFile(c.home.RepositoryFile())
+
+	klog.V(5).Infof("helm client: initialized client")
+
 	return err
 }
 
 func (c *Client) ListCharts() (map[string]repo.ChartVersions, error) {
+	klog.V(4).Infof("helm client: listing charts")
+
 	charts := map[string]repo.ChartVersions{}
 
 	// TODO: handle non-unique names across repos
@@ -100,10 +108,14 @@ func (c *Client) ListCharts() (map[string]repo.ChartVersions, error) {
 		}
 	}
 
+	klog.V(4).Infof("helm client: listed charts")
+
 	return charts, nil
 }
 
 func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
+	klog.V(4).Infof("helm client: getting chart %s:%s", name, version)
+
 	charts, err := c.ListCharts()
 	if err != nil {
 		return nil, err
@@ -116,6 +128,7 @@ func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
 
 	for _, v := range versions {
 		if v.AppVersion == version {
+			klog.V(4).Infof("helm client: got chart %s:%s", name, version)
 			return v, nil
 		}
 	}
@@ -124,7 +137,8 @@ func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
 }
 
 func LoadChart(chartURL string) (*chart.Chart, error) {
-	klog.Infof("downloading chart from %s", chartURL)
+	klog.V(3).Infof("helm: loading chart %q", chartURL)
+
 	resp, err := http.Get(chartURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to download chart from %s", chartURL)
@@ -147,21 +161,22 @@ func LoadChart(chartURL string) (*chart.Chart, error) {
 	}
 	defer func() {
 		if err := fd.Close(); err != nil {
-			klog.Errorln(
-				errors.Wrapf(err, "failed to close file descriptor for chart at %s", fullChartPath))
+			klog.V(2).Infof("helm: failed to close file descriptor for chart at %q: %v", fullChartPath, err)
 		}
 	}()
 
-	klog.Infof("copying chart to %s", fullChartPath)
+	klog.V(3).Infof("helm: downloading chart %q to %q", chartURL, fullChartPath)
 	if _, err := io.Copy(fd, resp.Body); err != nil {
 		return nil, errors.Wrapf(err, "failed to download chart contents to %s", fullChartPath)
 	}
 
-	klog.Infof("loading chart from %s on disk", fullChartPath)
+	klog.V(3).Infof("helm: loading chart from disk %q", fullChartPath)
 	chart, err := chartutil.Load(fullChartPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load chart from disk")
 	}
+
+	klog.V(3).Infof("helm: successfully loaded chart downloaded from %q", chartURL)
 
 	return chart, nil
 }
