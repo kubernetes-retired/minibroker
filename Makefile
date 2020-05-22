@@ -37,7 +37,7 @@ build:
 
 build-linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-		go build -ldflags="-s -w" -o $(OUTPUT_DIR)/$(BINARY)-linux -tags netgo $(PKG)
+		go build -ldflags="-s -w" -o $(OUTPUT_DIR)/$(BINARY)-linux $(PKG)
 
 build-image:
 	docker build -t minibroker-build ./build/build-image
