@@ -64,10 +64,12 @@ test: test-unit test-mariadb test-mysqldb test-postgresql test-mongodb test-word
 test-wordpress: setup-wordpress teardown-wordpress
 
 setup-wordpress:
-	helm install --name minipress charts/wordpress --wait
+	kubectl create namespace minibroker-test-wordpress
+	helm install minipress charts/wordpress --namespace minibroker-test-wordpress --wait
 
 teardown-wordpress:
-	helm delete --purge minipress
+	helm delete minipress --namespace minibroker-test-wordpress
+	kubectl delete namespace minibroker-test-wordpress
 
 test-mysqldb: setup-mysqldb teardown-mysqldb
 
