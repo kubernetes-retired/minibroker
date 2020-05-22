@@ -43,7 +43,10 @@ build-image:
 	docker build -t minibroker-build ./build/build-image
 
 image:
-	docker build --tag "$(IMAGE):$(TAG)" --file image/Dockerfile .
+	BUILD_IN_MINIKUBE=0 IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/image.sh
+
+image-in-minikube:
+	BUILD_IN_MINIKUBE=1 IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/image.sh
 
 clean:
 	-rm -rf $(OUTPUT_DIR)
@@ -149,7 +152,7 @@ log:
 create-cluster:
 	./hack/create-cluster.sh
 
-deploy:
+deploy: image-in-minikube
 	until svcat version | grep -m 1 'Server Version: v' ; do sleep 1 ; done
 	if ! kubectl get namespace minibroker 1> /dev/null 2> /dev/null; then kubectl create namespace minibroker; fi
 	helm upgrade minibroker \
