@@ -72,15 +72,15 @@ teardown-wordpress:
 test-mysqldb: setup-mysqldb teardown-mysqldb
 
 setup-mysqldb:
-	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get broker minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 
 	svcat provision mysqldb --class mysql --plan 5-7-14 --namespace minibroker \
 		-p mysqlDatabase=mydb -p mysqlUser=admin
-	until svcat get instance mysqldb -n minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get instance mysqldb -n minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 	svcat get instance mysqldb -n minibroker
 
 	svcat bind mysqldb -n minibroker
-	until svcat get binding mysqldb -n minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get binding mysqldb -n minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 	svcat describe binding mysqldb -n minibroker
 
 teardown-mysqldb:
@@ -90,15 +90,15 @@ teardown-mysqldb:
 test-mariadb: setup-mariadb teardown-mariadb
 
 setup-mariadb:
-	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get broker minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 
 	svcat provision mariadb --class mariadb --plan 10-1-32 --namespace minibroker \
 		--params-json '{"db": {"name": "mydb", "user": "admin"}}'
-	until svcat get instance mariadb -n minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get instance mariadb -n minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 	svcat get instance mariadb -n minibroker
 
 	svcat bind mariadb -n minibroker
-	until svcat get binding mariadb -n minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get binding mariadb -n minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 	svcat describe binding mariadb -n minibroker
 
 teardown-mariadb:
@@ -108,15 +108,15 @@ teardown-mariadb:
 test-postgresql: setup-postgresql teardown-postgresql
 
 setup-postgresql:
-	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get broker minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 
 	svcat provision postgresql --class postgresql --plan 11-0-0 --namespace minibroker \
 		-p postgresDatabase=mydb -p postgresUser=admin
-	until svcat get instance postgresql -n minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get instance postgresql -n minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 	svcat get instance postgresql -n minibroker
 
 	svcat bind postgresql -n minibroker
-	until svcat get binding postgresql -n minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get binding postgresql -n minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 	svcat describe binding postgresql -n minibroker
 
 teardown-postgresql:
@@ -126,15 +126,15 @@ teardown-postgresql:
 test-mongodb: setup-mongodb teardown-mongodb
 
 setup-mongodb:
-	until svcat get broker minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get broker minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 
 	svcat provision mongodb --class mongodb --plan 3-7-1 --namespace minibroker \
 		-p mongodbDatabase=mydb -p postgresUsername=admin
-	until svcat get instance mongodb -n minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get instance mongodb -n minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 	svcat get instance mongodb -n minibroker
 
 	svcat bind mongodb -n minibroker
-	until svcat get binding mongodb -n minibroker | grep -w -m 1 Ready; do : ; done
+	until svcat get binding mongodb -n minibroker | grep -w -m 1 Ready; do sleep 1 ; done
 	svcat describe binding mongodb -n minibroker
 
 teardown-mongodb:
@@ -148,7 +148,7 @@ create-cluster:
 	./hack/create-cluster.sh
 
 deploy:
-	until svcat version | grep -m 1 'Server Version: v' ; do : ; done
+	until svcat version | grep -m 1 'Server Version: v' ; do sleep 1 ; done
 	helm upgrade --install minibroker --namespace minibroker \
 	--recreate-pods --force charts/minibroker \
 	--set image="$(IMAGE):$(TAG)",imagePullPolicy="$(IMAGE_PULL_POLICY)",deploymentStrategy="Recreate"
