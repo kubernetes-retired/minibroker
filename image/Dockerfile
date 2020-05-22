@@ -26,7 +26,9 @@ WORKDIR /build/minibroker
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY ./ ./
+COPY cmd/ ./cmd/
+COPY pkg/ ./pkg/
+COPY Makefile ./
 RUN make build-linux
 
 # --------------------------------------------------------------------------------------------------

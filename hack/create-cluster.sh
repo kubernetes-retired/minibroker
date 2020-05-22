@@ -43,7 +43,7 @@ helm install "${catalog_release}" \
   "${catalog_repository}/catalog"
 
 set +o xtrace
-while [[ "$(kubectl get pods --namespace "${catalog_namespace}" --selector "release=${catalog_release}" --output=go-template='{{.items||len}}')" == 0 ]]; do
+while [[ "$(kubectl get pods --namespace "${catalog_namespace}" --selector "release=${catalog_release}" --output=go-template='{{.items | len}}')" == 0 ]]; do
   sleep 1;
 done
 set -o xtrace
