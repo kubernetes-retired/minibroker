@@ -762,7 +762,7 @@ func (c *Client) deprovisionSynchronously(instanceID, release string) error {
 }
 
 // LastOperationState returns the status of the last asynchronous operation.
-func (c *Client) LastOperationState(instanceID string, operationKey osb.OperationKey) (*osb.LastOperationResponse, error) {
+func (c *Client) LastOperationState(instanceID string, operationKey *osb.OperationKey) (*osb.LastOperationResponse, error) {
 	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -775,7 +775,7 @@ func (c *Client) LastOperationState(instanceID string, operationKey osb.Operatio
 		return nil, err
 	}
 
-	if config.Data[OperationNameKey] != string(operationKey) {
+	if operationKey != nil && config.Data[OperationNameKey] != string(*operationKey) {
 		// Got unexpected operation key.
 		return nil, osb.HTTPStatusCodeError{
 			StatusCode:   http.StatusBadRequest,
