@@ -19,7 +19,7 @@ OUTPUT_DIR ?= output
 REGISTRY ?= quay.io/kubernetes-service-catalog/
 IMAGE ?= $(REGISTRY)minibroker
 TAG ?= canary
-IMAGE_PULL_POLICY ?= Always
+IMAGE_PULL_POLICY ?= Never
 
 lint: lint-go-vet lint-go-mod lint-modified-files
 
