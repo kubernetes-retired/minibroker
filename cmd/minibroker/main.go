@@ -28,7 +28,7 @@ import (
 	"github.com/kubernetes-sigs/minibroker/pkg/broker"
 	"github.com/pmorie/osb-broker-lib/pkg/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 
 	"github.com/pmorie/osb-broker-lib/pkg/rest"
 	"github.com/pmorie/osb-broker-lib/pkg/server"

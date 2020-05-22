@@ -26,7 +26,7 @@ import (
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	rls "k8s.io/helm/pkg/proto/hapi/services"
 	"k8s.io/helm/pkg/version"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 type Client struct {

@@ -36,6 +36,6 @@ require (
 	k8s.io/apimachinery v0.0.0-20180211090620-616b23029fa3
 	k8s.io/client-go v6.0.0+incompatible
 	k8s.io/helm v2.13.1+incompatible
-	k8s.io/klog v1.0.0
+	k8s.io/klog/v2 v2.0.0
 	k8s.io/kube-openapi v0.0.0-20180418233217-0f2f0396e266 // indirect
 )

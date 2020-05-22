@@ -31,7 +31,7 @@ import (
 	"k8s.io/helm/pkg/helm/helmpath"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/repo"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 const stableURL = "https://kubernetes-charts.storage.googleapis.com"

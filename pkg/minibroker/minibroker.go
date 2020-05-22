@@ -40,7 +40,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/helm/pkg/repo"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 const (

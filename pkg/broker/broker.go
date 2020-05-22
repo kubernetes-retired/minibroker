@@ -23,7 +23,7 @@ import (
 	"github.com/kubernetes-sigs/minibroker/pkg/minibroker"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/pmorie/osb-broker-lib/pkg/broker"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 // NewBroker is a hook that is called with the Options the program is run

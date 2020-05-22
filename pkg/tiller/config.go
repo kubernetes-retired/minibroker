@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
-	"k8s.io/klog"
+	klog "k8s.io/klog/v2"
 )
 
 // maxMsgSize use 20MB as the default message size limit.
