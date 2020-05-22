@@ -12,7 +12,7 @@ tls:
   key:
 
 # The logging level to use; higher values emit more information
-logLevel: 5
+logLevel: 3
 
 serviceCatalogEnabledOnly: true
 
