@@ -151,7 +151,7 @@ create-cluster:
 
 deploy:
 	until svcat version | grep -m 1 'Server Version: v' ; do sleep 1 ; done
-	kubectl create namespace minibroker
+	if ! kubectl get namespace minibroker 1> /dev/null 2> /dev/null; then kubectl create namespace minibroker; fi
 	helm upgrade minibroker \
 		--install \
 		--force \
