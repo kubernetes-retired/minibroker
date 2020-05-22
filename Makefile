@@ -149,6 +149,7 @@ create-cluster:
 
 deploy:
 	until svcat version | grep -m 1 'Server Version: v' ; do sleep 1 ; done
+	kubectl create namespace minibroker
 	helm upgrade --install minibroker --namespace minibroker \
 	--recreate-pods --force charts/minibroker \
 	--set image="$(IMAGE):$(TAG)",imagePullPolicy="$(IMAGE_PULL_POLICY)",deploymentStrategy="Recreate"
