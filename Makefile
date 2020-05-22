@@ -157,7 +157,9 @@ deploy:
 		--force \
 		--recreate-pods \
 		--namespace minibroker \
-		--set image="$(IMAGE):$(TAG)",imagePullPolicy="$(IMAGE_PULL_POLICY)",deploymentStrategy="Recreate" \
+		--set "image=$(IMAGE):$(TAG)" \
+		--set "imagePullPolicy=$(IMAGE_PULL_POLICY)" \
+		--set "deploymentStrategy=Recreate" \
 		charts/minibroker
 
 release: release-images release-charts
