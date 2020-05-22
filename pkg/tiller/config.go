@@ -42,7 +42,7 @@ func NewConfig(host string, port int) Config {
 
 func (c Config) Connect() (*grpc.ClientConn, error) {
 	tillerHost := fmt.Sprintf("%v:%v", c.Host, c.Port)
-	klog.Infof("connecting to tiller at %v ...", tillerHost)
+	klog.V(3).Infof("connecting to tiller at %q", tillerHost)
 
 	opts := []grpc.DialOption{
 		grpc.WithInsecure(),
@@ -61,7 +61,8 @@ func (c Config) Connect() (*grpc.ClientConn, error) {
 	if err != nil {
 		return conn, errors.Wrapf(err, "cannot connect to tiller at %v", tillerHost)
 	}
-	klog.Infoln("Connected!")
+
+	klog.V(3).Infof("connected to tiller at %q", tillerHost)
 	return conn, nil
 }
 

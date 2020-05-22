@@ -53,7 +53,7 @@ func (t *Client) Create(ch *chart.Chart, installNS string, values map[string]int
 		DisableHooks: false,
 		Values:       &chart.Config{Raw: string(valuesYaml)},
 	}
-	klog.Infof("installing release for chart %s\n%s", ch.Metadata.Name, spew.Sdump(req))
+	klog.V(5).Infof("tiller: installing release for chart %s\n%s", ch.Metadata.Name, spew.Sdump(req))
 	return rlsCl.InstallRelease(ctx, req)
 }
 
@@ -65,7 +65,7 @@ func (t *Client) Delete(relName string) (*rls.UninstallReleaseResponse, error) {
 		DisableHooks: false,
 		Purge:        true,
 	}
-	klog.Infof("uninstalling release %s", relName)
+	klog.V(5).Infof("tiller: uninstalling release %s", relName)
 	return rlsCl.UninstallRelease(ctx, req)
 }
 
