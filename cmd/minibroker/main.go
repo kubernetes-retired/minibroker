@@ -42,9 +42,7 @@ var options struct {
 	TLSKey  string
 }
 
-func init() {
-	klog.InitFlags(nil)
-
+func main() {
 	flag.BoolVar(&options.ServiceCatalogEnabledOnly, "service-catalog-enabled-only", false,
 		"Only list Service Catalog Enabled services")
 	flag.IntVar(&options.Port, "port", 8005,
@@ -60,9 +58,19 @@ func init() {
 	flag.StringVar(&options.DefaultNamespace, "defaultNamespace", "",
 		"The default namespace for brokers when the request doesn't specify")
 	flag.Parse()
-}
 
-func main() {
+	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(klogFlags)
+	// Sync the glog and klog flags.
+	flag.CommandLine.VisitAll(func(f1 *flag.Flag) {
+		f2 := klogFlags.Lookup(f1.Name)
+		if f2 != nil {
+			value := f1.Value.String()
+			f2.Value.Set(value)
+		}
+	})
+	defer klog.Flush()
+
 	if err := run(); err != nil && err != context.Canceled && err != context.DeadlineExceeded {
 		klog.Fatalln(err)
 	}
