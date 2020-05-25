@@ -115,7 +115,7 @@ func runWithContext(ctx context.Context) error {
 
 	s := server.New(api, reg)
 
-	klog.V(1).Infof("Starting broker!")
+	klog.V(1).Infof("starting broker!")
 
 	if options.TLSCert == "" && options.TLSKey == "" {
 		err = s.Run(ctx, addr)
@@ -132,7 +132,7 @@ func cancelOnInterrupt(ctx context.Context, f context.CancelFunc) {
 	for {
 		select {
 		case <-term:
-			klog.V(1).Infof("Received SIGTERM, exiting gracefully...")
+			klog.V(1).Infof("received SIGTERM, exiting gracefully...")
 			f()
 			os.Exit(0)
 		case <-ctx.Done():
