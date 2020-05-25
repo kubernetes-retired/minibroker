@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"path"
@@ -91,8 +92,8 @@ func runWithContext(ctx context.Context) error {
 	}
 	if (options.TLSCert != "" || options.TLSKey != "") &&
 		(options.TLSCert == "" || options.TLSKey == "") {
-		klog.V(0).Infoln("To use TLS, both --tlsCert and --tlsKey must be used")
-		return nil
+		err := fmt.Errorf("failed to start Minibroker: to use TLS, both --tlsCert and --tlsKey must be used")
+		return err
 	}
 
 	addr := ":" + strconv.Itoa(options.Port)
