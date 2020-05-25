@@ -37,6 +37,7 @@ catalog_repository="svc-cat"
 catalog_release="catalog"
 catalog_namespace="svc-cat"
 helm repo add "${catalog_repository}" https://svc-catalog-charts.storage.googleapis.com
+helm repo update
 kubectl create namespace "${catalog_namespace}"
 helm install "${catalog_release}" \
   --namespace "${catalog_namespace}" \
