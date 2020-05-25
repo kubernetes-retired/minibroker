@@ -52,6 +52,7 @@ func (t *Client) Create(ch *chart.Chart, installNS string, values map[string]int
 		ReuseName:    true,
 		DisableHooks: false,
 		Values:       &chart.Config{Raw: string(valuesYaml)},
+		Wait:         true,
 	}
 	glog.Infof("installing release for chart %s\n%s", ch.Metadata.Name, spew.Sdump(req))
 	return rlsCl.InstallRelease(ctx, req)
