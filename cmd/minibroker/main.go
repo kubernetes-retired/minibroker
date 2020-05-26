@@ -26,10 +26,10 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/golang/glog"
 	"github.com/kubernetes-sigs/minibroker/pkg/broker"
 	"github.com/pmorie/osb-broker-lib/pkg/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
+	klog "k8s.io/klog/v2"
 
 	"github.com/pmorie/osb-broker-lib/pkg/rest"
 	"github.com/pmorie/osb-broker-lib/pkg/server"
@@ -43,7 +43,7 @@ var options struct {
 	TLSKey  string
 }
 
-func init() {
+func main() {
 	flag.BoolVar(&options.ServiceCatalogEnabledOnly, "service-catalog-enabled-only", false,
 		"Only list Service Catalog Enabled services")
 	flag.IntVar(&options.Port, "port", 8005,
@@ -59,11 +59,21 @@ func init() {
 	flag.StringVar(&options.DefaultNamespace, "defaultNamespace", "",
 		"The default namespace for brokers when the request doesn't specify")
 	flag.Parse()
-}
 
-func main() {
+	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(klogFlags)
+	// Sync the glog and klog flags.
+	flag.CommandLine.VisitAll(func(f1 *flag.Flag) {
+		f2 := klogFlags.Lookup(f1.Name)
+		if f2 != nil {
+			value := f1.Value.String()
+			f2.Value.Set(value)
+		}
+	})
+	defer klog.Flush()
+
 	if err := run(); err != nil && err != context.Canceled && err != context.DeadlineExceeded {
-		glog.Fatalln(err)
+		klog.Fatalln(err)
 	}
 }
 
@@ -77,13 +87,13 @@ func run() error {
 
 func runWithContext(ctx context.Context) error {
 	if flag.Arg(0) == "version" {
-		fmt.Printf("%s/%s\n", path.Base(os.Args[0]), "0.1.0")
+		klog.V(0).Infof("%s/%s", path.Base(os.Args[0]), "0.1.0")
 		return nil
 	}
 	if (options.TLSCert != "" || options.TLSKey != "") &&
 		(options.TLSCert == "" || options.TLSKey == "") {
-		fmt.Println("To use TLS, both --tlsCert and --tlsKey must be used")
-		return nil
+		err := fmt.Errorf("failed to start Minibroker: to use TLS, both --tlsCert and --tlsKey must be used")
+		return err
 	}
 
 	addr := ":" + strconv.Itoa(options.Port)
@@ -105,7 +115,7 @@ func runWithContext(ctx context.Context) error {
 
 	s := server.New(api, reg)
 
-	glog.Infof("Starting broker!")
+	klog.V(1).Infof("starting broker!")
 
 	if options.TLSCert == "" && options.TLSKey == "" {
 		err = s.Run(ctx, addr)
@@ -122,7 +132,7 @@ func cancelOnInterrupt(ctx context.Context, f context.CancelFunc) {
 	for {
 		select {
 		case <-term:
-			glog.Infof("Received SIGTERM, exiting gracefully...")
+			klog.V(1).Infof("received SIGTERM, exiting gracefully...")
 			f()
 			os.Exit(0)
 		case <-ctx.Done():

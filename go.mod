@@ -8,7 +8,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.4.1 // indirect
 	github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c // indirect
 	github.com/googleapis/gnostic v0.1.0 // indirect
@@ -37,5 +36,6 @@ require (
 	k8s.io/apimachinery v0.0.0-20180211090620-616b23029fa3
 	k8s.io/client-go v6.0.0+incompatible
 	k8s.io/helm v2.13.1+incompatible
+	k8s.io/klog/v2 v2.0.0
 	k8s.io/kube-openapi v0.0.0-20180418233217-0f2f0396e266 // indirect
 )
