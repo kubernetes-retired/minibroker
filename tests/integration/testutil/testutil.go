@@ -17,14 +17,21 @@ limitations under the License.
 package testutil
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	servicecatalogv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	svcatclient "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset"
 	"github.com/kubernetes-sigs/service-catalog/pkg/svcat"
 	servicecatalog "github.com/kubernetes-sigs/service-catalog/pkg/svcat/service-catalog"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -202,4 +209,36 @@ func (sc *Svcat) WaitBinding(binding *servicecatalogv1beta1.ServiceBinding) erro
 	}
 
 	return nil
+}
+
+// LoadKubeSpec loads and renders a Kubernetes object from a reader containing valid YAML or JSON
+// specs. The file can contain valid Go text/template code.
+func LoadKubeSpec(filepath string, values map[string]interface{}) (runtime.Object, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load spec: %v", err)
+	}
+	defer file.Close()
+
+	tmplData, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load spec: %v", err)
+	}
+
+	tmpl, err := template.New("").Funcs(sprig.TxtFuncMap()).Parse(string(tmplData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load spec: %v", err)
+	}
+
+	var data bytes.Buffer
+	if err := tmpl.Execute(&data, values); err != nil {
+		return nil, fmt.Errorf("failed to load spec: %v", err)
+	}
+
+	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(data.Bytes(), nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load spec: %v", err)
+	}
+
+	return obj, nil
 }
