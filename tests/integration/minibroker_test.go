@@ -17,9 +17,15 @@ limitations under the License.
 package integration_test
 
 import (
+	"context"
 	"fmt"
+	"path"
+	"runtime"
+	"time"
 
 	apiv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	. "github.com/onsi/ginkgo"
@@ -35,6 +41,7 @@ const (
 var (
 	kubeClient kubernetes.Interface
 	svcat      *testutil.Svcat
+	testDir    string
 )
 
 var _ = BeforeSuite(func() {
@@ -48,6 +55,12 @@ var _ = BeforeSuite(func() {
 
 	_, err = svcat.WaitForBroker(brokerName, namespace)
 	Expect(err).NotTo(HaveOccurred())
+
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("failed to fetch runtime information for setting up tests")
+	}
+	testDir = path.Dir(filename)
 })
 
 var _ = Describe("classes", func() {
@@ -58,10 +71,65 @@ var _ = Describe("classes", func() {
 		assert func(*apiv1beta1.ServiceInstance, *apiv1beta1.ServiceBinding)
 	}{
 		{
-			name:   "mariadb",
-			plan:   "10-3-22",
-			params: map[string]interface{}{},
-			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {},
+			name: "mariadb",
+			plan: "10-3-22",
+			params: map[string]interface{}{
+				"db": map[string]interface{}{
+					"name": "mydb",
+					"user": "admin",
+				},
+			},
+			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
+				By("rendering and loading the mariadb client template")
+				tmplPath := path.Join(testDir, "resources", "mariadb_client.tmpl.yaml")
+				values := map[string]interface{}{
+					"DatabaseVersion": "10.3",
+					"SecretName":      binding.Spec.SecretName,
+					"Command": []string{
+						"sh", "-c",
+						"mysql" +
+							" --host=${DATABASE_HOST}" +
+							" --port=${DATABASE_PORT}" +
+							" --user=${DATABASE_USER}" +
+							" --password=${DATABASE_PASSWORD}" +
+							" --database=${DATABASE_NAME}" +
+							" --execute='SELECT 1'",
+					},
+				}
+				obj, err := testutil.LoadKubeSpec(tmplPath, values)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("creating the mariadb client resource")
+				ctx := context.Background()
+				pod, err := kubeClient.CoreV1().Pods(namespace).Create(ctx, obj.(*corev1.Pod), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				defer func() {
+					err := kubeClient.CoreV1().Pods(namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				}()
+
+				By("asserting the mariadb client completed successfully")
+				retry := 0
+				for {
+					if retry == 60 {
+						Fail("maximum retries reached")
+					}
+
+					pod, err = kubeClient.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					if pod.Status.Phase == corev1.PodFailed {
+						Fail("the client failed to assert the database service")
+					}
+
+					if pod.Status.Phase == corev1.PodSucceeded {
+						break
+					}
+
+					retry++
+					time.Sleep(time.Second)
+				}
+			},
 		},
 		{
 			name:   "mongodb",
