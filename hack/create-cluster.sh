@@ -50,4 +50,5 @@ set -o xtrace
 kubectl wait pods \
   --for condition=ready \
   --namespace "${catalog_namespace}" \
-  --selector "release=${catalog_release}"
+  --selector "release=${catalog_release}" \
+  --timeout 90s
