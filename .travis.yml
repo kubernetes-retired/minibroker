@@ -86,9 +86,9 @@ jobs:
       timeout 5m make test-integration
 
 stages:
-- verify
-- lint
-- test
+# - verify
+# - lint
+# - test
 - test-integration
 
 deploy:
