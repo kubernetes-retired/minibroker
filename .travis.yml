@@ -10,6 +10,7 @@ dist: bionic
 cache:
   directories:
   - ${HOME}/assets
+  - ${GOPATH}/pkg/mod
 
 before_install:
 - sudo apt-get -qq -y install conntrack
