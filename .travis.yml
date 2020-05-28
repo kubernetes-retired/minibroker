@@ -60,7 +60,7 @@ before_script:
     chmod +x "${asset_path}"
   fi
   sudo cp "${asset_path}" /usr/local/bin/svcat
-- go get -u github.com/onsi/ginkgo/ginkgo
+- go install github.com/onsi/ginkgo/ginkgo
 
 services:
 - docker
