@@ -34,7 +34,7 @@ const (
 
 var (
 	kubeClient kubernetes.Interface
-	sc         *testutil.Svcat
+	svcat      *testutil.Svcat
 )
 
 var _ = BeforeSuite(func() {
@@ -43,10 +43,10 @@ var _ = BeforeSuite(func() {
 	kubeClient, err = testutil.KubeClient()
 	Expect(err).NotTo(HaveOccurred())
 
-	sc, err = testutil.NewSvcat(kubeClient, namespace)
+	svcat, err = testutil.NewSvcat(kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = sc.WaitForBroker(brokerName, namespace)
+	_, err = svcat.WaitForBroker(brokerName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 })
 
@@ -95,29 +95,29 @@ var _ = Describe("classes", func() {
 			serviceName := fmt.Sprintf("%s-%s-test", class.name, class.plan)
 			It(fmt.Sprintf("should setup, assert and tear-down %s/%s", class.name, class.plan), func() {
 				By(fmt.Sprintf("provisioning %s", serviceName))
-				instance, err := sc.Provision(namespace, serviceName, class.name, class.plan, class.params)
+				instance, err := svcat.Provision(namespace, serviceName, class.name, class.plan, class.params)
 				Expect(err).NotTo(HaveOccurred())
 				defer func() {
 					By(fmt.Sprintf("deprovisioning %s", serviceName))
-					err := sc.Deprovision(instance)
+					err := svcat.Deprovision(instance)
 					Expect(err).NotTo(HaveOccurred())
 				}()
 
 				By(fmt.Sprintf("waiting for %s to be provisioned", serviceName))
-				err = sc.WaitProvisioning(instance)
+				err = svcat.WaitProvisioning(instance)
 				Expect(err).NotTo(HaveOccurred())
 
 				By(fmt.Sprintf("binding %s", serviceName))
-				binding, err := sc.Bind(instance)
+				binding, err := svcat.Bind(instance)
 				Expect(err).NotTo(HaveOccurred())
 				defer func() {
 					By(fmt.Sprintf("unbinding %s", serviceName))
-					err := sc.Unbind(instance)
+					err := svcat.Unbind(instance)
 					Expect(err).NotTo(HaveOccurred())
 				}()
 
 				By(fmt.Sprintf("waiting for %s binding", serviceName))
-				err = sc.WaitBinding(binding)
+				err = svcat.WaitBinding(binding)
 				Expect(err).NotTo(HaveOccurred())
 
 				By(fmt.Sprintf("asserting %s functionality", serviceName))
