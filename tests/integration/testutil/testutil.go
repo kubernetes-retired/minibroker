@@ -29,10 +29,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var (
-	interval = time.Second
-	timeout  = time.Minute * 3
-)
+const defaultInterval = time.Second
+
+var defaultTimeout = time.Minute * 3
 
 // KubeClient creates a new Kubernetes client using the default kubeconfig.
 func KubeClient() (kubernetes.Interface, error) {
@@ -113,7 +112,7 @@ func (sc *Svcat) WaitForBroker(
 		Scope:     servicecatalog.AllScope,
 		Namespace: namespace,
 	}
-	broker, err := sc.app.WaitForBroker(name, opts, interval, &timeout)
+	broker, err := sc.app.WaitForBroker(name, opts, defaultInterval, &defaultTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for broker: %v", err)
 	}
@@ -171,7 +170,7 @@ func (sc *Svcat) Deprovision(instance *servicecatalogv1beta1.ServiceInstance) er
 
 // WaitProvisioning waits for an instance to be provisioned.
 func (sc *Svcat) WaitProvisioning(instance *servicecatalogv1beta1.ServiceInstance) error {
-	if _, err := sc.app.WaitForInstance(instance.Namespace, instance.Name, interval, &timeout); err != nil {
+	if _, err := sc.app.WaitForInstance(instance.Namespace, instance.Name, defaultInterval, &defaultTimeout); err != nil {
 		return fmt.Errorf("failed to wait for instance to be provisioned: %v", err)
 	}
 
@@ -198,7 +197,7 @@ func (sc *Svcat) Unbind(instance *servicecatalogv1beta1.ServiceInstance) error {
 
 // WaitBinding waits for a service binding to be ready.
 func (sc *Svcat) WaitBinding(binding *servicecatalogv1beta1.ServiceBinding) error {
-	if _, err := sc.app.WaitForBinding(binding.Namespace, binding.Name, interval, &timeout); err != nil {
+	if _, err := sc.app.WaitForBinding(binding.Namespace, binding.Name, defaultInterval, &defaultTimeout); err != nil {
 		return fmt.Errorf("failed to wait for service binding: %v", err)
 	}
 
