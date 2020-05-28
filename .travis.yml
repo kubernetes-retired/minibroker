@@ -88,9 +88,9 @@ jobs:
     script: ci/test_integration.sh
 
 stages:
-# - verify
-# - lint
-# - test
+- verify
+- lint
+- test
 - test-integration
 
 deploy:
