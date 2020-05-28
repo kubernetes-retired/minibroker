@@ -62,7 +62,12 @@ verify-boilerplate:
 test-unit:
 	go test -v ./cmd/... ./pkg/...
 
-test: test-unit test-wordpress
+test-integration:
+	kubectl create namespace minibroker-tests
+	(cd ./tests/integration; NAMESPACE=minibroker-tests ginkgo --nodes 4 --slowSpecThreshold 180 .)
+	kubectl delete namespace minibroker-tests
+
+test: test-unit test-integration test-wordpress
 
 test-wordpress: setup-wordpress teardown-wordpress
 
