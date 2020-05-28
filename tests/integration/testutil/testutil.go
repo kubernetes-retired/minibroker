@@ -51,8 +51,8 @@ func KubeClient() (kubernetes.Interface, error) {
 	return clientset, nil
 }
 
-// SvcatClient creates a new svcat client using the default kubeconfig.
-func SvcatClient() (*svcatclient.Clientset, error) {
+// svcatClient creates a new svcat client using the default kubeconfig.
+func svcatClient() (*svcatclient.Clientset, error) {
 	config, err := kubeConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize svcat client: %v", err)
@@ -92,7 +92,7 @@ type Svcat struct {
 
 // NewSvcat constructs a new Svcat.
 func NewSvcat(kubeClient kubernetes.Interface, namespace string) (*Svcat, error) {
-	client, err := SvcatClient()
+	client, err := svcatClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new Svcat: %v", err)
 	}
