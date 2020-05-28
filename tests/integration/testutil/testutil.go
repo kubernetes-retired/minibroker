@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"time"
 
-	apiv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	servicecatalogv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	svcatclient "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset"
 	"github.com/kubernetes-sigs/service-catalog/pkg/svcat"
 	servicecatalog "github.com/kubernetes-sigs/service-catalog/pkg/svcat/service-catalog"
@@ -132,7 +132,7 @@ func (sc *Svcat) Provision(
 	className string,
 	planName string,
 	params map[string]interface{},
-) (*apiv1beta1.ServiceInstance, error) {
+) (*servicecatalogv1beta1.ServiceInstance, error) {
 	scopeOpts := servicecatalog.ScopeOptions{
 		Namespace: namespace,
 		Scope:     servicecatalog.AllScope,
@@ -166,7 +166,7 @@ func (sc *Svcat) Provision(
 }
 
 // Deprovision deprovisions an instance.
-func (sc *Svcat) Deprovision(instance *apiv1beta1.ServiceInstance) error {
+func (sc *Svcat) Deprovision(instance *servicecatalogv1beta1.ServiceInstance) error {
 	if err := sc.app.Deprovision(instance.Namespace, instance.Name); err != nil {
 		return fmt.Errorf("failed to deprovision instance: %v", err)
 	}
@@ -174,7 +174,7 @@ func (sc *Svcat) Deprovision(instance *apiv1beta1.ServiceInstance) error {
 }
 
 // WaitProvisioning waits for an instance to be provisioned.
-func (sc *Svcat) WaitProvisioning(instance *apiv1beta1.ServiceInstance) error {
+func (sc *Svcat) WaitProvisioning(instance *servicecatalogv1beta1.ServiceInstance) error {
 	if _, err := sc.app.WaitForInstance(instance.Namespace, instance.Name, interval, &timeout); err != nil {
 		return fmt.Errorf("failed to wait for instance to be provisioned: %v", err)
 	}
@@ -183,7 +183,7 @@ func (sc *Svcat) WaitProvisioning(instance *apiv1beta1.ServiceInstance) error {
 }
 
 // Bind binds an instance.
-func (sc *Svcat) Bind(instance *apiv1beta1.ServiceInstance) (*apiv1beta1.ServiceBinding, error) {
+func (sc *Svcat) Bind(instance *servicecatalogv1beta1.ServiceInstance) (*servicecatalogv1beta1.ServiceBinding, error) {
 	binding, err := sc.app.Bind(instance.Namespace, "", "", instance.Name, "", nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to bind instance: %v", err)
@@ -193,7 +193,7 @@ func (sc *Svcat) Bind(instance *apiv1beta1.ServiceInstance) (*apiv1beta1.Service
 }
 
 // Unbind unbinds an instance.
-func (sc *Svcat) Unbind(instance *apiv1beta1.ServiceInstance) error {
+func (sc *Svcat) Unbind(instance *servicecatalogv1beta1.ServiceInstance) error {
 	if _, err := sc.app.Unbind(instance.Namespace, instance.Name); err != nil {
 		return fmt.Errorf("failed to unbind instance: %v", err)
 	}
@@ -201,7 +201,7 @@ func (sc *Svcat) Unbind(instance *apiv1beta1.ServiceInstance) error {
 }
 
 // WaitBinding waits for a service binding to be ready.
-func (sc *Svcat) WaitBinding(binding *apiv1beta1.ServiceBinding) error {
+func (sc *Svcat) WaitBinding(binding *servicecatalogv1beta1.ServiceBinding) error {
 	if _, err := sc.app.WaitForBinding(binding.Namespace, binding.Name, interval, &timeout); err != nil {
 		return fmt.Errorf("failed to wait for service binding: %v", err)
 	}
