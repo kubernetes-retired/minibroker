@@ -87,17 +87,7 @@ create-cluster:
 	./hack/create-cluster.sh
 
 deploy: image-in-minikube
-	until svcat version | grep -m 1 'Server Version: v' ; do sleep 1 ; done
-	if ! kubectl get namespace minibroker 1> /dev/null 2> /dev/null; then kubectl create namespace minibroker; fi
-	helm upgrade minibroker \
-		--install \
-		--force \
-		--recreate-pods \
-		--namespace minibroker \
-		--set "image=$(IMAGE):$(TAG)" \
-		--set "imagePullPolicy=$(IMAGE_PULL_POLICY)" \
-		--set "deploymentStrategy=Recreate" \
-		charts/minibroker
+	IMAGE=$(IMAGE) TAG=$(TAG) IMAGE_PULL_POLICY=$(IMAGE_PULL_POLICY) ./build/deploy.sh
 
 release: release-images release-charts
 
