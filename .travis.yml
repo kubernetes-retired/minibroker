@@ -59,10 +59,10 @@ jobs:
     - MINIKUBE_HOME=${HOME}
     - CHANGE_MINIKUBE_NONE_USER=true
     script: |
-      VM_DRIVER=none sudo make create-cluster
+      VM_DRIVER=none sudo timeout 3m make create-cluster
       sudo chown -R "$(whoami):" "${HOME}/.minikube/"
-      make deploy
-      make test-integration
+      timeout 5m make deploy
+      timeout 5m make test-integration
 
 stages:
 - verify
