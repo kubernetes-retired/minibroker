@@ -11,6 +11,7 @@ cache:
   directories:
   - ${HOME}/assets
   - ${GOPATH}/pkg/mod
+  - ${GOPATH}/bin
 
 before_install:
 - sudo apt-get -qq -y install conntrack
