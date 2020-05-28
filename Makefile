@@ -63,6 +63,7 @@ test-unit:
 	go test -v ./cmd/... ./pkg/...
 
 test-integration:
+	-kubectl delete namespace minibroker-tests
 	kubectl create namespace minibroker-tests
 	(cd ./tests/integration; NAMESPACE=minibroker-tests ginkgo --nodes 4 --slowSpecThreshold 180 .)
 	kubectl delete namespace minibroker-tests
