@@ -18,8 +18,6 @@ package testutil
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	servicecatalogv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
@@ -38,7 +36,7 @@ var (
 
 // KubeClient creates a new Kubernetes client using the default kubeconfig.
 func KubeClient() (kubernetes.Interface, error) {
-	config, err := kubeConfig()
+	config, err := restKubeConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize kubernetes client: %v", err)
 	}
@@ -53,7 +51,7 @@ func KubeClient() (kubernetes.Interface, error) {
 
 // svcatClient creates a new svcat client using the default kubeconfig.
 func svcatClient() (*svcatclient.Clientset, error) {
-	config, err := kubeConfig()
+	config, err := restKubeConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize svcat client: %v", err)
 	}
@@ -66,18 +64,16 @@ func svcatClient() (*svcatclient.Clientset, error) {
 	return clientset, nil
 }
 
-func kubeConfig() (*rest.Config, error) {
-	location := os.Getenv("KUBECONFIG")
-	if location == "" {
-		location = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+func restKubeConfig() (*rest.Config, error) {
+	apiConfig, err := clientcmd.NewDefaultClientConfigLoadingRules().Load()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize the rest config: %v", err)
 	}
 
-	config, err := clientcmd.BuildConfigFromFlags("", location)
+	overrides := clientcmd.ConfigOverrides{}
+	config, err := clientcmd.NewDefaultClientConfig(*apiConfig, &overrides).ClientConfig()
 	if err != nil {
-		config, err = rest.InClusterConfig()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get kubernetes configuration: %v", err)
-		}
+		return nil, fmt.Errorf("failed to initialize the rest config: %v", err)
 	}
 
 	return config, nil
