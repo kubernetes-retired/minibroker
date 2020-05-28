@@ -120,7 +120,7 @@ func (sc *Svcat) WaitForBroker(
 	return broker, nil
 }
 
-// Provision provisions an instance.
+// Provision asynchronously provisions an instance.
 func (sc *Svcat) Provision(
 	namespace string,
 	serviceName string,
@@ -160,7 +160,7 @@ func (sc *Svcat) Provision(
 	return instance, nil
 }
 
-// Deprovision deprovisions an instance.
+// Deprovision asynchronously deprovisions an instance.
 func (sc *Svcat) Deprovision(instance *servicecatalogv1beta1.ServiceInstance) error {
 	if err := sc.app.Deprovision(instance.Namespace, instance.Name); err != nil {
 		return fmt.Errorf("failed to deprovision instance: %v", err)
@@ -177,7 +177,7 @@ func (sc *Svcat) WaitProvisioning(instance *servicecatalogv1beta1.ServiceInstanc
 	return nil
 }
 
-// Bind binds an instance.
+// Bind asynchronously binds an instance.
 func (sc *Svcat) Bind(instance *servicecatalogv1beta1.ServiceInstance) (*servicecatalogv1beta1.ServiceBinding, error) {
 	binding, err := sc.app.Bind(instance.Namespace, "", "", instance.Name, "", nil, nil)
 	if err != nil {
@@ -187,7 +187,7 @@ func (sc *Svcat) Bind(instance *servicecatalogv1beta1.ServiceInstance) (*service
 	return binding, nil
 }
 
-// Unbind unbinds an instance.
+// Unbind asynchronously unbinds an instance.
 func (sc *Svcat) Unbind(instance *servicecatalogv1beta1.ServiceInstance) error {
 	if _, err := sc.app.Unbind(instance.Namespace, instance.Name); err != nil {
 		return fmt.Errorf("failed to unbind instance: %v", err)
