@@ -48,7 +48,7 @@ before_script:
   # Install svcat.
   version="v0.3.0"
   asset_path="${HOME}/assets/svcat-${version}"
-  asset_url="https://download.svcat.sh/cli/latest/${version}/amd64/svcat"
+  asset_url="https://download.svcat.sh/cli/${version}/linux/amd64/svcat"
   if [ ! -f "${asset_path}" ]; then
     curl -Lo "${asset_path}" "${asset_url}"
     chmod +x "${asset_path}"
