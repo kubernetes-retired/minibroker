@@ -16,6 +16,7 @@ before_install:
 
 before_script:
 - |-
+  # Install kubectl.
   version="v1.18.1"
   asset_path="${HOME}/assets/kubectl-${version}"
   asset_url="https://storage.googleapis.com/kubernetes-release/release/${version}/bin/linux/amd64/kubectl"
@@ -25,6 +26,7 @@ before_script:
   fi
   sudo cp "${asset_path}" /usr/local/bin/kubectl
 - |-
+  # Install minikube.
   version="v1.10.1"
   asset_path="${HOME}/assets/minikube-${version}"
   asset_url="https://storage.googleapis.com/minikube/releases/${version}/minikube-linux-amd64"
@@ -33,6 +35,25 @@ before_script:
     chmod +x "${asset_path}"
   fi
   sudo cp "${asset_path}" /usr/local/bin/minikube
+- |-
+  # Install helm.
+  version="v3.2.1"
+  asset_path="${HOME}/assets/helm-${version}.tar.gz"
+  asset_url="https://get.helm.sh/helm-${version}-linux-amd64.tar.gz"
+  if [ ! -f "${asset_path}" ]; then
+    curl -Lo "${asset_path}" "${asset_url}"
+  fi
+  sudo tar zxf "${asset_path}" --strip-components=1 --directory /usr/local/bin/ linux-amd64/helm
+- |-
+  # Install svcat.
+  version="v0.3.0"
+  asset_path="${HOME}/assets/svcat-${version}"
+  asset_url="https://download.svcat.sh/cli/latest/${version}/amd64/svcat"
+  if [ ! -f "${asset_path}" ]; then
+    curl -Lo "${asset_path}" "${asset_url}"
+    chmod +x "${asset_path}"
+  fi
+  sudo cp "${asset_path}" /usr/local/bin/svcat
 
 services:
 - docker
