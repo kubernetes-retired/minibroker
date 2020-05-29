@@ -32,11 +32,9 @@ jobs:
   - name: Integration tests
     stage: test-integration
     env:
-    - CHANGE_MINIKUBE_NONE_USER=true
+    - CHANGE_MINIKUBE_NONE_USER=false
     - MINIKUBE_WANTUPDATENOTIFICATION=false
-    - MINIKUBE_WANTREPORTERRORPROMPT=false
     - MINIKUBE_HOME=${HOME}
-    - CHANGE_MINIKUBE_NONE_USER=true
     before_install:
     - sudo apt-get -qq -y install conntrack
     before_script:
