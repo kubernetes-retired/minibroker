@@ -13,12 +13,6 @@ cache:
   - ${GOPATH}/pkg/mod
   - ${GOPATH}/bin
 
-before_install:
-- sudo apt-get -qq -y install conntrack
-
-before_script:
-- ci/install_tools.sh
-
 services:
 - docker
 
@@ -43,6 +37,10 @@ jobs:
     - MINIKUBE_WANTREPORTERRORPROMPT=false
     - MINIKUBE_HOME=${HOME}
     - CHANGE_MINIKUBE_NONE_USER=true
+    before_install:
+    - sudo apt-get -qq -y install conntrack
+    before_script:
+    - ci/install_tools.sh
     script: ci/test_integration.sh
 
 stages:
