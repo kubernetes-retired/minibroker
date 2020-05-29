@@ -6,10 +6,7 @@ kind: ServiceAccount
 metadata:
   name: {{ .Values.rbac.serviceAccount.name | quote }}
   labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    {{- include "minibroker.labels" . | nindent 4 }}
     {{- range $k, $v := .Values.rbac.serviceAccount.labels }}
     {{ $k | quote }}: {{ $v | quote }}
     {{- end }}
@@ -33,10 +30,7 @@ kind: ClusterRole
 metadata:
   name: {{ printf "minibroker-%s" .Release.Name | quote }}
   labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    {{- include "minibroker.labels" . | nindent 4 }}
 rules:
 - apiGroups: [""]
   resources:
@@ -50,10 +44,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ printf "minibroker-%s" .Release.Name | quote }}
   labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    {{- include "minibroker.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -68,10 +59,7 @@ kind: Role
 metadata:
   name: minibroker
   labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    {{- include "minibroker.labels" . | nindent 4 }}
 rules:
 - apiGroups: [""]
   resources: ["configmaps"]
@@ -82,10 +70,7 @@ kind: RoleBinding
 metadata:
   name: minibroker
   labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    {{- include "minibroker.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -102,10 +87,7 @@ metadata:
   name: minibroker
   namespace: {{ $namespace | quote }}
   labels:
-    app: {{ template "fullname" $ }}
-    chart: "{{ $.Chart.Name }}-{{ $.Chart.Version }}"
-    release: "{{ $.Release.Name }}"
-    heritage: "{{ $.Release.Service }}"
+    {{- include "minibroker.labels" . | nindent 4 }}
 rules:
 - apiGroups: ["*"]
   resources: ["*"]
@@ -117,10 +99,7 @@ metadata:
   name: minibroker
   namespace: {{ $namespace | quote }}
   labels:
-    app: {{ template "fullname" $ }}
-    chart: "{{ $.Chart.Name }}-{{ $.Chart.Version }}"
-    release: "{{ $.Release.Name }}"
-    heritage: "{{ $.Release.Service }}"
+    {{- include "minibroker.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -137,10 +116,7 @@ kind: ClusterRole
 metadata:
   name: {{ printf "minibroker-%s" .Release.Name | quote }}
   labels:
-    app: {{ template "fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    {{- include "minibroker.labels" . | nindent 4 }}
 rules:
 - apiGroups: [""]
   resources:
@@ -185,7 +161,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: minibroker
-  {{- template "minibroker.labels" . }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

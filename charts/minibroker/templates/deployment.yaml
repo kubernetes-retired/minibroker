@@ -2,7 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "minibroker.fullname" . }}
-  {{- template "minibroker.labels" . }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 spec:
   replicas: 1
   strategy:
@@ -12,7 +13,8 @@ spec:
       app: {{ template "minibroker.fullname" . }}
   template:
     metadata:
-      {{- include "minibroker.labels" . | nindent 6 }}
+      labels:
+        {{- include "minibroker.labels" . | nindent 8 }}
     spec:
       serviceAccountName: minibroker
       containers:

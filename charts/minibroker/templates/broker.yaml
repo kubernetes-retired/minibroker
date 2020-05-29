@@ -3,7 +3,8 @@ apiVersion: servicecatalog.k8s.io/v1beta1
 kind: ClusterServiceBroker
 metadata:
   name: minibroker
-  {{- template "minibroker.labels" . }}
+  labels:
+    {{- include "minibroker.labels" . | nindent 4 }}
 spec:
   url: http://{{ template "minibroker.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
 {{ end }}
