@@ -109,8 +109,7 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the mariadb client completed successfully")
-				retry := 0
-				for {
+				for retry := 0; ; retry++ {
 					if retry == 60 {
 						Fail("maximum retries reached")
 					}
@@ -126,7 +125,6 @@ var _ = Describe("classes", func() {
 						break
 					}
 
-					retry++
 					time.Sleep(time.Second)
 				}
 			},
