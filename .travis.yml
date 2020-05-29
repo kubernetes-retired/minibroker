@@ -7,6 +7,12 @@ go:
 os: linux
 dist: bionic
 
+cache:
+  directories:
+  - ${HOME}/assets
+  - ${GOPATH}/pkg/mod
+  - ${GOPATH}/bin
+
 services:
 - docker
 
@@ -23,15 +29,23 @@ jobs:
     stage: lint
     go: 1.14.x
     script: make lint
-  - name: Docker image
-    stage: docker-image
-    script: make image
+  - name: Integration tests
+    stage: test-integration
+    env:
+    - CHANGE_MINIKUBE_NONE_USER=false
+    - MINIKUBE_WANTUPDATENOTIFICATION=false
+    - MINIKUBE_HOME=${HOME}
+    before_install:
+    - sudo apt-get -qq -y install conntrack
+    before_script:
+    - ci/install_tools.sh
+    script: ci/test_integration.sh
 
 stages:
 - verify
 - lint
 - test
-- docker-image
+- test-integration
 
 deploy:
   provider: script
