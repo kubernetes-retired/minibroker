@@ -1,0 +1,38 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mariadb-client
+spec:
+  containers:
+  - name: mariadb-client
+    image: mariadb:{{ .DatabaseVersion }}
+    imagePullPolicy: IfNotPresent
+    command: {{ .Command | toJson }}
+    env:
+    - name: DATABASE_HOST
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: host
+    - name: DATABASE_PORT
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: port
+    - name: DATABASE_NAME
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: database
+    - name: DATABASE_USER
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: username
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: password
+  restartPolicy: Never
