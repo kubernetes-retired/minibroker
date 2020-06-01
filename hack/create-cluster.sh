@@ -21,6 +21,8 @@ set -o errexit -o nounset -o pipefail
 : "${VM_MEMORY:=$(( 1024 * 4 ))}"
 : "${KUBERNETES_VERSION:=v1.15.12}"
 
+export MINIKUBE_WANTUPDATENOTIFICATION=false
+
 if [[ "$(minikube status)" != *"Running"* ]]; then
     set -o xtrace
     minikube start \

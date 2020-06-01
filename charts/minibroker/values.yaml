@@ -17,3 +17,21 @@ logLevel: 3
 serviceCatalogEnabledOnly: true
 
 deployServiceCatalog: true
+
+# A default namespace where Minibroker deploys service instances.
+defaultNamespace: ~
+
+rbac:
+  create: true
+  namespaced:
+    # Whether Minibroker will be namespaced or not. When enabled, Minibroker will only be able to
+    # manage resources in the whitelisted namespaces.
+    enabled: false
+    # A list of namespaces Minibroker can use to deploy service instances. The namespaces are
+    # expected to be created ahead of time.
+    whitelist: []
+  serviceAccount:
+    create: true
+    name: minibroker
+    annotations: {}
+    labels: {}
