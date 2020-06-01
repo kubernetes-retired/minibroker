@@ -10,13 +10,13 @@ metadata:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
-    {{- if gt (len .Values.rbac.serviceAccount.labels) 0 }}
-    {{- .Values.rbac.serviceAccount.labels | toYaml | nindent 4 }}
-    {{- end }}{{/* if gt (len .Values.rbac.serviceAccount.labels) 0 */}}
+    {{- range $k, $v := .Values.rbac.serviceAccount.labels }}
+    {{ $k | quote }}: {{ $v | quote }}
+    {{- end }}
   annotations:
-    {{- if gt (len .Values.rbac.serviceAccount.annotations) 0 }}
-    {{- .Values.rbac.serviceAccount.annotations | toYaml | nindent 4 }}
-    {{- end }}{{/* if gt (len .Values.rbac.serviceAccount.annotations) 0 */}}
+    {{- range $k, $v := .Values.rbac.serviceAccount.annotations }}
+    {{ $k | quote }}: {{ $v | quote }}
+    {{- end }}
 {{- end }}{{/* if .Values.rbac.serviceAccount.create */}}
 
 {{- if .Values.rbac.namespaced.enabled }}
@@ -31,7 +31,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: minibroker
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
   labels:
     app: {{ template "fullname" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
@@ -48,7 +48,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: minibroker
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
   labels:
     app: {{ template "fullname" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
@@ -57,7 +57,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: minibroker
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
 subjects:
 - kind: ServiceAccount
   name: {{ .Values.rbac.serviceAccount.name | quote }}
@@ -135,7 +135,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: minibroker
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
   labels:
     app: {{ template "fullname" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
@@ -193,7 +193,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: minibroker
+  name: {{ printf "minibroker-%s" .Release.Name | quote }}
 subjects:
 - kind: ServiceAccount
   name: {{ .Values.rbac.serviceAccount.name | quote }}
