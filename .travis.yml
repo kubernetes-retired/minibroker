@@ -33,7 +33,6 @@ jobs:
     stage: test-integration
     env:
     - CHANGE_MINIKUBE_NONE_USER=false
-    - MINIKUBE_WANTUPDATENOTIFICATION=false
     - MINIKUBE_HOME=${HOME}
     before_install:
     - sudo apt-get -qq -y install conntrack
