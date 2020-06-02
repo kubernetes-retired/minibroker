@@ -158,7 +158,7 @@ var _ = Describe("classes", func() {
 				obj, err := testutil.LoadKubeSpec(tmplPath, values)
 				Expect(err).NotTo(HaveOccurred())
 
-				By("creating the mariadb client resource")
+				By("creating the mysql client resource")
 				ctx := context.Background()
 				pod, err := kubeClient.CoreV1().Pods(namespace).Create(ctx, obj.(*corev1.Pod), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
