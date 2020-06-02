@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mysql-client
+spec:
+  containers:
+  - name: mysql-client
+    image: mysql:{{ .DatabaseVersion }}
+    imagePullPolicy: IfNotPresent
+    command: {{ .Command | toJson }}
+    env:
+    - name: DATABASE_HOST
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: host
+    - name: DATABASE_PORT
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: port
+    - name: DATABASE_USER
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: username
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: password
+  restartPolicy: Never

@@ -139,7 +139,54 @@ var _ = Describe("classes", func() {
 			name:   "mysql",
 			plan:   "5-7-30",
 			params: map[string]interface{}{},
-			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {},
+			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
+				By("rendering and loading the mysql client template")
+				tmplPath := path.Join(testDir, "resources", "mysql_client.tmpl.yaml")
+				values := map[string]interface{}{
+					"DatabaseVersion": "5.7.30",
+					"SecretName":      binding.Spec.SecretName,
+					"Command": []string{
+						"sh", "-c",
+						"mysql" +
+							" --host=${DATABASE_HOST}" +
+							" --port=${DATABASE_PORT}" +
+							" --user=${DATABASE_USER}" +
+							" --password=${DATABASE_PASSWORD}" +
+							" --execute='SELECT 1'",
+					},
+				}
+				obj, err := testutil.LoadKubeSpec(tmplPath, values)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("creating the mariadb client resource")
+				ctx := context.Background()
+				pod, err := kubeClient.CoreV1().Pods(namespace).Create(ctx, obj.(*corev1.Pod), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				defer func() {
+					err := kubeClient.CoreV1().Pods(namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				}()
+
+				By("asserting the mysql client completed successfully")
+				for retry := 0; ; retry++ {
+					if retry == 60 {
+						Fail("maximum retries reached")
+					}
+
+					pod, err = kubeClient.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					if pod.Status.Phase == corev1.PodFailed {
+						Fail("the client failed to assert the database service")
+					}
+
+					if pod.Status.Phase == corev1.PodSucceeded {
+						break
+					}
+
+					time.Sleep(time.Second)
+				}
+			},
 		},
 		{
 			name:   "postgresql",
