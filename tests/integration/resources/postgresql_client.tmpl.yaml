@@ -10,22 +10,22 @@ spec:
     imagePullPolicy: IfNotPresent
     command: {{ .Command | toJson }}
     env:
-    - name: DATABASE_HOST
+    - name: PGHOST
       valueFrom:
         secretKeyRef:
           name: {{ .SecretName }}
           key: host
-    - name: DATABASE_PORT
+    - name: PGPORT
       valueFrom:
         secretKeyRef:
           name: {{ .SecretName }}
           key: port
-    - name: DATABASE_USER
+    - name: PGUSER
       valueFrom:
         secretKeyRef:
           name: {{ .SecretName }}
           key: username
-    - name: DATABASE_PASSWORD
+    - name: PGPASSWORD
       valueFrom:
         secretKeyRef:
           name: {{ .SecretName }}

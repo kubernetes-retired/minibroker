@@ -152,10 +152,7 @@ var _ = Describe("classes", func() {
 					"DatabaseVersion": "11.7",
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
-						"sh", "-c",
-						"psql" +
-							" \"host=${DATABASE_HOST} port=${DATABASE_PORT} user=${DATABASE_USER} password=${DATABASE_PASSWORD}\"" +
-							" -c 'SELECT 1'",
+						"psql", "-c", "SELECT 1",
 					},
 				}
 				obj, err := testutil.LoadKubeSpec(tmplPath, values)
