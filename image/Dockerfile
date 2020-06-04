@@ -41,6 +41,9 @@ ENV HELM_FILENAME="helm-${HELM_VERSION}-linux-amd64.tar.gz"
 RUN wget -O /tmp/${HELM_FILENAME} http://storage.googleapis.com/kubernetes-helm/${HELM_FILENAME}
 RUN tar -zxvf /tmp/${HELM_FILENAME} -C /tmp
 
+RUN wget -O /tmp/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64
+RUN chmod +x /tmp/dumb-init
+
 # --------------------------------------------------------------------------------------------------
 # The cert building stage.
 FROM ${CERT_BUILDER_IMAGE} AS cert_builder
@@ -65,9 +68,11 @@ FROM ${RUNNING_IMAGE}
 #USER minibroker
 
 COPY --from=cert_builder /tmp/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
+COPY --from=downloader /tmp/dumb-init /usr/local/bin/dumb-init
 COPY --from=downloader /tmp/linux-amd64/helm /usr/local/bin/helm
 RUN helm init --client-only
 
 COPY --from=builder /build/minibroker/output/minibroker-linux /usr/local/bin/minibroker
 
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["minibroker", "--help"]

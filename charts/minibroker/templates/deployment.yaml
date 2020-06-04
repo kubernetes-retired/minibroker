@@ -21,9 +21,8 @@ spec:
       - name: minibroker
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
-        command:
-        - minibroker
         args:
+        - minibroker
         {{- if .Values.serviceCatalogEnabledOnly }}
         - --service-catalog-enabled-only
         {{- end }}
