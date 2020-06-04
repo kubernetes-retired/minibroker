@@ -242,7 +242,51 @@ var _ = Describe("classes", func() {
 			name:   "redis",
 			plan:   "5-0-7",
 			params: map[string]interface{}{},
-			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {},
+			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
+				By("rendering and loading the redis client template")
+				tmplPath := path.Join(testDir, "resources", "redis_client.tmpl.yaml")
+				values := map[string]interface{}{
+					"DatabaseVersion": "5.0.7",
+					"SecretName":      binding.Spec.SecretName,
+					"Command": []string{
+						"sh", "-c",
+						"redis-cli" +
+						" -u ${DATABASE_URL}",
+						" CLUSTER INFO",
+					},
+				}
+				obj, err := testutil.LoadKubeSpec(tmplPath, values)
+				Expect(err).NotTo(HaveOccurred())
+
+				By("creating the redis client resource")
+				ctx := context.Background()
+				pod, err := kubeClient.CoreV1().Pods(namespace).Create(ctx, obj.(*corev1.Pod), metav1.CreateOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				defer func() {
+					err := kubeClient.CoreV1().Pods(namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				}()
+
+				By("asserting the redis client completed successfully")
+				for retry := 0; ; retry++ {
+					if retry == 60 {
+						Fail("maximum retries reached")
+					}
+
+					pod, err = kubeClient.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					if pod.Status.Phase == corev1.PodFailed {
+						Fail("the client failed to assert the database service")
+					}
+
+					if pod.Status.Phase == corev1.PodSucceeded {
+						break
+					}
+
+					time.Sleep(time.Second)
+				}
+			},
 		},
 	}
 
