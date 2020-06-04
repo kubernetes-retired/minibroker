@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mongodb-client
+spec:
+  containers:
+  - name: mongodb-client
+    image: mongo:{{ .DatabaseVersion }}
+    imagePullPolicy: IfNotPresent
+    command: {{ .Command | toJson }}
+    env:
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: uri
+  restartPolicy: Never
