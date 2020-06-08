@@ -63,7 +63,7 @@ verify-boilerplate:
 	./build/verify-boilerplate.sh
 
 test-unit:
-	go test -v ./cmd/... ./pkg/...
+	ginkgo -cover cmd/... pkg/...
 
 test-integration:
 	(cd ./tests/integration; NAMESPACE=minibroker-tests ginkgo --nodes 4 --slowSpecThreshold 180 .)
