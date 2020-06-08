@@ -29,7 +29,7 @@ lint-go-vet:
 lint-go-mod:
 	go mod tidy
 
-lint-modified-files: | lint-go-mod
+lint-modified-files: | lint-go-mod generate
 	./build/verify-modified-files.sh
 
 generate:
