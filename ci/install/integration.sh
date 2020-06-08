@@ -58,6 +58,3 @@ if [ ! -f "${asset_path}" ] || [[ "$(sha256sum "${asset_path}" | awk '{ print $1
   chmod +x "${asset_path}"
 fi
 sudo cp "${asset_path}" /usr/local/bin/svcat
-
-# Install ginkgo.
-go install github.com/onsi/ginkgo/ginkgo
