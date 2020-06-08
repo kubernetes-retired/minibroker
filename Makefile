@@ -32,6 +32,9 @@ lint-go-mod:
 lint-modified-files: | lint-go-mod
 	./build/verify-modified-files.sh
 
+generate:
+	go generate ./...
+
 build:
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o $(OUTPUT_DIR)/minibroker $(PKG)
 
