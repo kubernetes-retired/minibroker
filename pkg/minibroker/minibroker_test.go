@@ -19,8 +19,8 @@ package minibroker
 import (
 	"testing"
 
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/repo"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/repo"
 )
 
 func TestHasTag(t *testing.T) {

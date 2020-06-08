@@ -17,20 +17,20 @@ limitations under the License.
 package minibroker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/Masterminds/semver"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/kubernetes-sigs/minibroker/pkg/helm"
-	"github.com/kubernetes-sigs/minibroker/pkg/tiller"
 	"github.com/pkg/errors"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
+	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +39,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/helm/pkg/repo"
 	klog "k8s.io/klog/v2"
 )
 
@@ -51,7 +50,6 @@ const (
 	ReleaseNamespaceKey = "release-namespace"
 	HeritageLabel       = "heritage"
 	ReleaseLabel        = "release"
-	TillerHeritage      = "Tiller"
 )
 
 // ConfigMap keys for tracking the last operation
@@ -88,12 +86,12 @@ type Client struct {
 	serviceCatalogEnabledOnly bool
 }
 
-func NewClient(repoURL string, serviceCatalogEnabledOnly bool) *Client {
+func NewClient(serviceCatalogEnabledOnly bool) *Client {
 	klog.V(5).Infof("minibroker: initializing a new client")
 	return &Client{
-		helm:                      helm.NewClient(repoURL),
+		helm:                      helm.NewDefaultClient(),
 		coreClient:                loadInClusterClient(),
-		namespace:                 loadNamespace(),
+		namespace:                 os.Getenv("NAMESPACE"),
 		serviceCatalogEnabledOnly: serviceCatalogEnabledOnly,
 		providers: map[string]Provider{
 			"mysql":      MySQLProvider{},
@@ -119,19 +117,8 @@ func loadInClusterClient() kubernetes.Interface {
 	return clientset
 }
 
-func loadNamespace() string {
-	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
-		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-			klog.V(3).Infof("minibroker: namespace: %s", ns)
-			return ns
-		}
-	}
-
-	panic("could not detect current namespace")
-}
-
-func (c *Client) Init() error {
-	return c.helm.Init()
+func (c *Client) Init(repoURL string) error {
+	return c.helm.Initialize(repoURL)
 }
 
 func hasTag(tag string, list []string) bool {
@@ -188,7 +175,7 @@ func generateOperationName(prefix string) string {
 
 func (c *Client) getConfigMap(instanceID string) (*corev1.ConfigMap, error) {
 	configMapInterface := c.coreClient.CoreV1().ConfigMaps(c.namespace)
-	config, err := configMapInterface.Get(instanceID, metav1.GetOptions{})
+	config, err := configMapInterface.Get(context.TODO(), instanceID, metav1.GetOptions{})
 	if err != nil {
 		// Do not wrap the error to keep apierrors.IsNotFound() working correctly
 		return nil, err
@@ -216,7 +203,7 @@ func (c *Client) updateConfigMap(instanceID string, data map[string]interface{})
 	}
 
 	configMapInterface := c.coreClient.CoreV1().ConfigMaps(c.namespace)
-	_, err = configMapInterface.Update(config)
+	_, err = configMapInterface.Update(context.TODO(), config, metav1.UpdateOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update config for instance %q", instanceID)
 	}
@@ -228,11 +215,7 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 
 	var services []osb.Service
 
-	charts, err := c.helm.ListCharts()
-	if err != nil {
-		return nil, err
-	}
-
+	charts := c.helm.ListCharts()
 	for chart, chartVersions := range charts {
 		if _, ok := c.providers[chart]; !ok && c.serviceCatalogEnabledOnly {
 			continue
@@ -329,8 +312,8 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 			PlanKey:            planID,
 		},
 	}
-	_, err = c.coreClient.CoreV1().ConfigMaps(config.Namespace).Create(&config)
-	if err != nil {
+
+	if _, err := c.coreClient.CoreV1().ConfigMaps(config.Namespace).Create(context.TODO(), &config, metav1.CreateOptions{}); err != nil {
 		// TODO: compare provision parameters and ignore this call if it's the same
 		if apierrors.IsAlreadyExists(err) {
 			return "", osb.HTTPStatusCodeError{
@@ -390,20 +373,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 		return err
 	}
 
-	chartURL := chartDef.URLs[0]
-
-	tc, close, err := c.connectTiller()
-	if err != nil {
-		return err
-	}
-	defer close()
-
-	chart, err := helm.LoadChart(chartURL)
-	if err != nil {
-		return err
-	}
-
-	resp, err := tc.Create(chart, namespace, provisionParams)
+	release, err := c.helm.ChartInstaller().Install(chartDef, namespace, provisionParams)
 	if err != nil {
 		return err
 	}
@@ -412,11 +382,11 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 	klog.V(3).Infof("minibroker: labeling chart resources with instance %q", instanceID)
 	filterByRelease := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
-			HeritageLabel: TillerHeritage,
-			ReleaseLabel:  resp.Release.Name,
+			ReleaseLabel: release.Name,
+			// TODO(f0rmiga): Do we need other selectors here to get the right thing?
 		}).String(),
 	}
-	services, err := c.coreClient.CoreV1().Services(namespace).List(filterByRelease)
+	services, err := c.coreClient.CoreV1().Services(namespace).List(context.TODO(), filterByRelease)
 	if err != nil {
 		return err
 	}
@@ -426,7 +396,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 			return err
 		}
 	}
-	secrets, err := c.coreClient.CoreV1().Secrets(namespace).List(filterByRelease)
+	secrets, err := c.coreClient.CoreV1().Secrets(namespace).List(context.TODO(), filterByRelease)
 	if err != nil {
 		return err
 	}
@@ -438,15 +408,15 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 	}
 
 	err = c.updateConfigMap(instanceID, map[string]interface{}{
-		ReleaseLabel:        resp.Release.Name,
-		ReleaseNamespaceKey: resp.Release.Namespace,
+		ReleaseLabel:        release.Name,
+		ReleaseNamespaceKey: release.Namespace,
 	})
 	if err != nil {
 		return errors.Wrapf(err, "could not update the instance configmap for %q", instanceID)
 	}
 
-	klog.V(4).Infof("minibroker: provisioned %v@%v (%v@%v)\n%s\n",
-		chartName, chartVersion, resp.Release.Name, resp.Release.Version, spew.Sdump(resp.Release.Manifest))
+	klog.V(4).Infof("minibroker: provisioned %v@%v (%v@%v)",
+		chartName, chartVersion, release.Name, release.Version)
 
 	return nil
 }
@@ -468,8 +438,7 @@ func (c *Client) labelService(service corev1.Service, instanceID string, params 
 		return err
 	}
 
-	_, err = c.coreClient.CoreV1().Services(service.Namespace).Patch(service.Name, types.StrategicMergePatchType, patch)
-	if err != nil {
+	if _, err := c.coreClient.CoreV1().Services(service.Namespace).Patch(context.TODO(), service.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to label service %s/%s with service metadata", service.Namespace, service.Name)
 	}
 
@@ -493,31 +462,11 @@ func (c *Client) labelSecret(secret corev1.Secret, instanceID string) error {
 		return err
 	}
 
-	_, err = c.coreClient.CoreV1().Secrets(secret.Namespace).Patch(secret.Name, types.StrategicMergePatchType, patch)
-	if err != nil {
+	if _, err := c.coreClient.CoreV1().Secrets(secret.Namespace).Patch(context.TODO(), secret.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to label secret %s/%s with service metadata", secret.Namespace, secret.Name)
 	}
 
 	return nil
-}
-
-func (c *Client) connectTiller() (*tiller.Client, func(), error) {
-	config := tiller.Config{
-		Host: "localhost",
-		Port: 44134,
-	}
-	tc, err := config.NewClient()
-	if err != nil {
-		return nil, nil, err
-	}
-	close := func() {
-		err := tc.Close()
-		if err != nil {
-			klog.V(2).Infof("minibroker: failed to disconnect tiller client: %v", err)
-		}
-	}
-
-	return tc, close, nil
 }
 
 // Bind the given service instance (of the given service) asynchronously; the
@@ -586,7 +535,7 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 			}).String(),
 		}
 
-		services, err := c.coreClient.CoreV1().Services(releaseNamespace).List(filterByInstance)
+		services, err := c.coreClient.CoreV1().Services(releaseNamespace).List(context.TODO(), filterByInstance)
 		if err != nil {
 			return err
 		}
@@ -594,7 +543,7 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 			return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
 		}
 
-		secrets, err := c.coreClient.CoreV1().Secrets(releaseNamespace).List(filterByInstance)
+		secrets, err := c.coreClient.CoreV1().Secrets(releaseNamespace).List(context.TODO(), filterByInstance)
 		if err != nil {
 			return err
 		}
@@ -717,7 +666,7 @@ func (c *Client) GetBinding(instanceID, bindingID string) (*osb.GetBindingRespon
 func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string, error) {
 	klog.V(3).Infof("minibroker: deprovisioning instance %q", instanceID)
 
-	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
+	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(context.TODO(), instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return "", osb.HTTPStatusCodeError{StatusCode: http.StatusGone}
@@ -725,11 +674,11 @@ func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string,
 		return "", err
 	}
 	release := config.Data[ReleaseLabel]
+	namespace := config.Data[ReleaseNamespaceKey]
 
 	if !acceptsIncomplete {
 		klog.V(3).Infof("minibroker: synchronously deprovisioning instance %q", instanceID)
-		err = c.deprovisionSynchronously(instanceID, release)
-		if err != nil {
+		if err := c.deprovisionSynchronously(instanceID, release, namespace); err != nil {
 			return "", err
 		}
 		klog.V(3).Infof("minibroker: synchronously deprovisioned instance %q", instanceID)
@@ -747,7 +696,7 @@ func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string,
 		return "", errors.Wrapf(err, "Failed to set operation key when deprovisioning instance %s", instanceID)
 	}
 	go func() {
-		err = c.deprovisionSynchronously(instanceID, release)
+		err = c.deprovisionSynchronously(instanceID, release, namespace)
 		if err == nil {
 			// After deprovisioning, there is no config map to update
 			return
@@ -765,20 +714,12 @@ func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string,
 	return operationKey, nil
 }
 
-func (c *Client) deprovisionSynchronously(instanceID, release string) error {
-	tc, close, err := c.connectTiller()
-	if err != nil {
-		return err
-	}
-	defer close()
-
-	_, err = tc.Delete(release)
-	if err != nil {
-		return errors.Wrapf(err, "could not delete release %s", release)
+func (c *Client) deprovisionSynchronously(instanceID, releaseName, namespace string) error {
+	if err := c.helm.ChartUninstaller().Uninstall(releaseName, namespace); err != nil {
+		return errors.Wrapf(err, "could not uninstall release %s", releaseName)
 	}
 
-	err = c.coreClient.CoreV1().ConfigMaps(c.namespace).Delete(instanceID, &metav1.DeleteOptions{})
-	if err != nil {
+	if err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Delete(context.TODO(), instanceID, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrapf(err, "could not delete configmap %s/%s", c.namespace, instanceID)
 	}
 
@@ -794,7 +735,7 @@ func (c *Client) LastOperationState(instanceID string, operationKey *osb.Operati
 		klog.V(4).Infof("minibroker: getting last operation state for instance %q without key", instanceID)
 	}
 
-	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(instanceID, metav1.GetOptions{})
+	config, err := c.coreClient.CoreV1().ConfigMaps(c.namespace).Get(context.TODO(), instanceID, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			if operationKey != nil {
