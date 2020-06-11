@@ -14,7 +14,7 @@ require (
 	github.com/pmorie/osb-broker-lib v0.0.0-20180516212803-87d71cfbf342
 	github.com/prometheus/client_golang v1.6.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
-	helm.sh/helm/v3 v3.2.1
+	helm.sh/helm/v3 v3.2.3
 	k8s.io/api v0.18.0
 	k8s.io/apimachinery v0.18.0
 	k8s.io/cli-runtime v0.18.0
