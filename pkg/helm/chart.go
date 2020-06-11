@@ -197,7 +197,7 @@ func (cm *ChartManager) Load(chartURL string) (*chart.Chart, error) {
 		return nil, fmt.Errorf("failed to load chart: %v", err)
 	}
 
-	return chartRequested, err
+	return chartRequested, nil
 }
 
 // ChartHelmClientProvider is the interface that wraps the methods for providing Helm action clients
