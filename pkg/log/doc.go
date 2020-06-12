@@ -14,18 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/*
+Package log contains definitions and implementations for dealing with logging.
+*/
 package log
-
-// Level represents a log level.
-type Level int32
-
-// Verboser wraps the V method for providing a Logger.
-type Verboser interface {
-	V(Level) Logger
-}
-
-// Logger defines how a logger should be implemented.
-type Logger interface {
-	Get() Logger
-	Log(format string, args ...interface{})
-}

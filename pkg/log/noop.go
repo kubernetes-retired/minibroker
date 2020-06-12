@@ -16,6 +16,8 @@ limitations under the License.
 
 package log
 
+// NewNoop creates a new noop wrapped in the Verboser interface. The noop verboser and logger should
+// be used when a logger is required, but shouldn't log anything.
 func NewNoop() Verboser {
 	return &noop{&noopLogger{}}
 }

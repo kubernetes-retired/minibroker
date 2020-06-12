@@ -20,10 +20,12 @@ import klog "k8s.io/klog/v2"
 
 const klogMaxLevel = 5
 
+// Klog satisfies the Verboser interface.
 type Klog struct {
 	levels []*klogLogger
 }
 
+// NewKlog creates a new Klog wrapped in the Verboser interface.
 func NewKlog() Verboser {
 	levels := make([]*klogLogger, 0, klogMaxLevel+1)
 	for level := 0; level <= 5; level++ {
@@ -33,6 +35,7 @@ func NewKlog() Verboser {
 	return &Klog{levels}
 }
 
+// V returns a Logger for the provided level.
 func (l *Klog) V(level Level) Logger {
 	if level > klogMaxLevel {
 		return l.levels[klogMaxLevel]
@@ -40,10 +43,12 @@ func (l *Klog) V(level Level) Logger {
 	return l.levels[level]
 }
 
+// klogLogger satisfies the Logger interface.
 type klogLogger struct {
 	v klog.Verbose
 }
 
+// Get returns the Logger if it's enabled.
 func (l *klogLogger) Get() Logger {
 	if !l.v.Enabled() {
 		return nil
@@ -51,6 +56,7 @@ func (l *klogLogger) Get() Logger {
 	return l
 }
 
+// Log logs a message.
 func (l *klogLogger) Log(format string, args ...interface{}) {
 	l.v.Infof(format, args...)
 }

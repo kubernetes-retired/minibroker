@@ -98,6 +98,7 @@ func (cc *ChartClient) Install(
 		err := fmt.Errorf("missing chart URL for %q", chartDef.Name)
 		return nil, fmt.Errorf("failed to install chart: %v", err)
 	}
+	// TODO(f0rmiga): deal with multiple chart URLs.
 	chartURL := chartDef.URLs[0]
 
 	chartRequested, err := cc.chartLoader.Load(chartURL)
