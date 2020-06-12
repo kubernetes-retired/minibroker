@@ -6,5 +6,5 @@ metadata:
   labels:
     {{- include "minibroker.labels" . | nindent 4 }}
 spec:
-  url: http://{{ template "minibroker.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  url: http://{{ template "minibroker.fullname" . }}.{{ .Release.Namespace }}.svc
 {{ end }}
