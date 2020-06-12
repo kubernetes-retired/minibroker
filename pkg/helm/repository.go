@@ -25,18 +25,19 @@ import (
 
 //go:generate mockgen -destination=./mocks/mock_repository.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm RepositoryInitializer,RepositoryDownloader,RepositoryLoader,RepositoryInitializeDownloadLoader,ChartRepo
 
-// Initializer is the interface that wraps the Initialize method for initializing a
+// RepositoryInitializer is the interface that wraps the Initialize method for initializing a
 // repo.ChartRepository.
 type RepositoryInitializer interface {
 	Initialize(*repo.Entry, getter.Providers) (*repo.ChartRepository, error)
 }
 
-// Downloader is the interface that wraps the DownloadIndex method for downloading a ChartRepo.
+// RepositoryDownloader is the interface that wraps the DownloadIndex method for downloading a
+// ChartRepo.
 type RepositoryDownloader interface {
 	DownloadIndex(ChartRepo) (string, error)
 }
 
-// Loader is the interface that wraps the chart repository Load method.
+// RepositoryLoader is the interface that wraps the chart repository Load method.
 type RepositoryLoader interface {
 	Load(path string) (*repo.IndexFile, error)
 }
@@ -88,7 +89,7 @@ func (rc *RepositoryClient) Initialize(
 	return chartRepo, nil
 }
 
-// Download downloads a chart repository index and returns its path.
+// DownloadIndex downloads a chart repository index and returns its path.
 func (*RepositoryClient) DownloadIndex(chartRepo ChartRepo) (string, error) {
 	indexPath, err := chartRepo.DownloadIndexFile()
 	if err != nil {

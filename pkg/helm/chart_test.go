@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -33,6 +34,7 @@ import (
 
 	"github.com/kubernetes-sigs/minibroker/pkg/helm"
 	"github.com/kubernetes-sigs/minibroker/pkg/helm/mocks"
+	testutilmocks "github.com/kubernetes-sigs/minibroker/pkg/helm/testutil/mocks"
 	"github.com/kubernetes-sigs/minibroker/pkg/log"
 	nameutilmocks "github.com/kubernetes-sigs/minibroker/pkg/nameutil/mocks"
 )
@@ -171,15 +173,15 @@ var _ = Describe("Chart", func() {
 					Generate(gomock.Any()).
 					Return(releaseName, nil).
 					Times(1)
-				installRunner := mocks.NewMockHelmClientInstallRunner(ctrl)
+				installRunner := testutilmocks.NewMockChartInstallRunner(ctrl)
 				installRunner.EXPECT().
-					Run(chartRequested, values).
+					ChartInstallRunner(chartRequested, values).
 					Return(nil, fmt.Errorf("error from client install runner")).
 					Times(1)
 				chartHelmClientProvider := mocks.NewMockChartHelmClientProvider(ctrl)
 				chartHelmClientProvider.EXPECT().
 					ProvideInstaller(releaseName, namespace).
-					Return(installRunner, nil).
+					Return(installRunner.ChartInstallRunner, nil).
 					Times(1)
 				client := helm.NewChartClient(log.NewNoop(), chartLoader, nameGenerator, chartHelmClientProvider)
 				chartDef := &repo.ChartVersion{
@@ -224,15 +226,15 @@ var _ = Describe("Chart", func() {
 							Generate(gomock.Any()).
 							Return(releaseName, nil).
 							Times(1)
-						installRunner := mocks.NewMockHelmClientInstallRunner(ctrl)
+						installRunner := testutilmocks.NewMockChartInstallRunner(ctrl)
 						installRunner.EXPECT().
-							Run(chartRequested, values).
+							ChartInstallRunner(chartRequested, values).
 							Return(expectedRelease, nil).
 							Times(1)
 						chartHelmClientProvider := mocks.NewMockChartHelmClientProvider(ctrl)
 						chartHelmClientProvider.EXPECT().
 							ProvideInstaller(releaseName, namespace).
-							Return(installRunner, nil).
+							Return(installRunner.ChartInstallRunner, nil).
 							Times(1)
 						client := helm.NewChartClient(log.NewNoop(), chartLoader, nameGenerator, chartHelmClientProvider)
 						chartDef := &repo.ChartVersion{
@@ -264,15 +266,15 @@ var _ = Describe("Chart", func() {
 			It("should fail when running the uninstall client fails", func() {
 				releaseName := "foo-12345"
 				namespace := "foo-namespace"
-				uninstaller := mocks.NewMockHelmClientUninstallRunner(ctrl)
-				uninstaller.EXPECT().
-					Run(releaseName).
+				uninstallRunner := testutilmocks.NewMockChartUninstallRunner(ctrl)
+				uninstallRunner.EXPECT().
+					ChartUninstallRunner(releaseName).
 					Return(nil, fmt.Errorf("error from client uninstall runner")).
 					Times(1)
 				chartHelmClientProvider := mocks.NewMockChartHelmClientProvider(ctrl)
 				chartHelmClientProvider.EXPECT().
 					ProvideUninstaller(namespace).
-					Return(uninstaller, nil).
+					Return(uninstallRunner.ChartUninstallRunner, nil).
 					Times(1)
 				client := helm.NewChartClient(log.NewNoop(), nil, nil, chartHelmClientProvider)
 				err := client.Uninstall(releaseName, namespace)
@@ -282,15 +284,15 @@ var _ = Describe("Chart", func() {
 			It("should succeed uninstalling", func() {
 				releaseName := "foo-12345"
 				namespace := "foo-namespace"
-				uninstaller := mocks.NewMockHelmClientUninstallRunner(ctrl)
-				uninstaller.EXPECT().
-					Run(releaseName).
+				uninstallRunner := testutilmocks.NewMockChartUninstallRunner(ctrl)
+				uninstallRunner.EXPECT().
+					ChartUninstallRunner(releaseName).
 					Return(&release.UninstallReleaseResponse{}, nil).
 					Times(1)
 				chartHelmClientProvider := mocks.NewMockChartHelmClientProvider(ctrl)
 				chartHelmClientProvider.EXPECT().
 					ProvideUninstaller(namespace).
-					Return(uninstaller, nil).
+					Return(uninstallRunner.ChartUninstallRunner, nil).
 					Times(1)
 				client := helm.NewChartClient(log.NewNoop(), nil, nil, chartHelmClientProvider)
 				err := client.Uninstall(releaseName, namespace)
@@ -310,7 +312,7 @@ var _ = Describe("Chart", func() {
 		Describe("Load", func() {
 			It("should fail when downloading the chart fails", func() {
 				chartURL := "https://foo/bar.tar.gz"
-				httpGetter := mocks.NewMockHttpGetter(ctrl)
+				httpGetter := mocks.NewMockHTTPGetter(ctrl)
 				httpGetter.EXPECT().
 					Get(chartURL).
 					Return(nil, fmt.Errorf("http error")).
@@ -328,7 +330,7 @@ var _ = Describe("Chart", func() {
 					Close().
 					Times(1)
 				httpRes := &http.Response{Body: resBody}
-				httpGetter := mocks.NewMockHttpGetter(ctrl)
+				httpGetter := mocks.NewMockHTTPGetter(ctrl)
 				httpGetter.EXPECT().
 					Get(chartURL).
 					Return(httpRes, nil).
@@ -350,7 +352,7 @@ var _ = Describe("Chart", func() {
 					Close().
 					Times(1)
 				httpRes := &http.Response{Body: resBody}
-				httpGetter := mocks.NewMockHttpGetter(ctrl)
+				httpGetter := mocks.NewMockHTTPGetter(ctrl)
 				httpGetter.EXPECT().
 					Get(chartURL).
 					Return(httpRes, nil).
@@ -383,12 +385,12 @@ var _ = Describe("Chart", func() {
 		Describe("ProvideInstaller", func() {
 			It("should fail when config provider fails", func() {
 				namespace := "foo-namespace"
-				configProvider := mocks.NewMockConfigProvider(ctrl)
+				configProvider := testutilmocks.NewMockConfigProvider(ctrl)
 				configProvider.EXPECT().
-					Provide(namespace).
+					ConfigProvider(namespace).
 					Return(nil, fmt.Errorf("error from config provider")).
 					Times(1)
-				chartHelm := helm.NewChartHelm(configProvider, nil, nil)
+				chartHelm := helm.NewChartHelm(configProvider.ConfigProvider, nil, nil)
 				installer, err := chartHelm.ProvideInstaller("", namespace)
 				Expect(err).To(Equal(fmt.Errorf("failed to provide chart installer: error from config provider")))
 				Expect(installer).To(BeNil())
@@ -402,31 +404,33 @@ var _ = Describe("Chart", func() {
 					ReleaseName: releaseName,
 					Namespace:   namespace,
 				}
-				configProvider := mocks.NewMockConfigProvider(ctrl)
+				configProvider := testutilmocks.NewMockConfigProvider(ctrl)
 				configProvider.EXPECT().
-					Provide(namespace).
-					Return(cfg, nil).
-					Times(1)
+					ConfigProvider(namespace).
+					Return(cfg, nil)
 				actionNewInstall := func(arg0 *action.Configuration) *action.Install {
 					Expect(arg0).To(Equal(cfg))
 					return expectedInstaller
 				}
-				chartHelm := helm.NewChartHelm(configProvider, actionNewInstall, nil)
+				chartHelm := helm.NewChartHelm(configProvider.ConfigProvider, actionNewInstall, nil)
 				installer, err := chartHelm.ProvideInstaller(releaseName, namespace)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(installer).To(Equal(expectedInstaller))
+				Expect(
+					reflect.ValueOf(installer).Pointer(),
+				).To(Equal(
+					reflect.ValueOf(expectedInstaller.Run).Pointer(),
+				))
 			})
 		})
 
 		Describe("ProvideUninstaller", func() {
 			It("should fail when config provider fails", func() {
 				namespace := "foo-namespace"
-				configProvider := mocks.NewMockConfigProvider(ctrl)
+				configProvider := testutilmocks.NewMockConfigProvider(ctrl)
 				configProvider.EXPECT().
-					Provide(namespace).
-					Return(nil, fmt.Errorf("error from config provider")).
-					Times(1)
-				chartHelm := helm.NewChartHelm(configProvider, nil, nil)
+					ConfigProvider(namespace).
+					Return(nil, fmt.Errorf("error from config provider"))
+				chartHelm := helm.NewChartHelm(configProvider.ConfigProvider, nil, nil)
 				uninstaller, err := chartHelm.ProvideUninstaller(namespace)
 				Expect(err).To(Equal(fmt.Errorf("failed to provide chart uninstaller: error from config provider")))
 				Expect(uninstaller).To(BeNil())
@@ -436,19 +440,22 @@ var _ = Describe("Chart", func() {
 				namespace := "foo-namespace"
 				cfg := &action.Configuration{}
 				expectedUninstaller := &action.Uninstall{}
-				configProvider := mocks.NewMockConfigProvider(ctrl)
+				configProvider := testutilmocks.NewMockConfigProvider(ctrl)
 				configProvider.EXPECT().
-					Provide(namespace).
-					Return(cfg, nil).
-					Times(1)
+					ConfigProvider(namespace).
+					Return(cfg, nil)
 				actionNewUninstall := func(arg0 *action.Configuration) *action.Uninstall {
 					Expect(arg0).To(Equal(cfg))
 					return expectedUninstaller
 				}
-				chartHelm := helm.NewChartHelm(configProvider, nil, actionNewUninstall)
+				chartHelm := helm.NewChartHelm(configProvider.ConfigProvider, nil, actionNewUninstall)
 				uninstaller, err := chartHelm.ProvideUninstaller(namespace)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(uninstaller).To(Equal(expectedUninstaller))
+				Expect(
+					reflect.ValueOf(uninstaller).Pointer(),
+				).To(Equal(
+					reflect.ValueOf(expectedUninstaller.Run).Pointer(),
+				))
 			})
 		})
 	})

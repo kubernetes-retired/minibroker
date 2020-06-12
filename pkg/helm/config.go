@@ -26,8 +26,6 @@ import (
 	"github.com/kubernetes-sigs/minibroker/pkg/log"
 )
 
-//go:generate mockgen -destination=./mocks/mock_config.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm ConfigProvider,ConfigInitializer,ConfigInitializerProvider
-
 const (
 	driver = "secret"
 
@@ -36,90 +34,57 @@ const (
 	defaultContext    = ""
 )
 
-// ConfigProvider is the interface that wraps the Provide method for the upstream Helm configuration
-// provider.
-type ConfigProvider interface {
-	Provide(namespace string) (interface{}, error)
-}
+// ConfigProvider defines the signature for a function that provides *action.Configuration.
+type ConfigProvider func(namespace string) (*action.Configuration, error)
 
-// Config satisfies the ConfigProvider interface and provides Helm configurations for interacting
-// with a specific Kubernetes namespace.
-type Config struct {
-	log                       log.Verboser
-	configInitializerProvider ConfigInitializerProvider
-	kubeConfig                string
-	context                   string
-}
-
-// NewDefaultConfig creates a new Config with the default dependencies.
-func NewDefaultConfig() *Config {
-	return NewConfig(
+// NewDefaultConfigProvider creates a new ConfigProvider using the default dependencies.
+func NewDefaultConfigProvider() ConfigProvider {
+	return NewConfigProvider(
 		log.NewKlog(),
-		NewDefaultConfigInitializerProvider(),
+		DefaultConfigInitializerProvider,
 		defaultKubeConfig,
 		defaultContext,
 	)
 }
 
-// NewConfig creates a new Config with the explicit dependencies.
-func NewConfig(
+// NewConfigProvider creates a new ConfigProvider using the explicit dependencies.
+func NewConfigProvider(
 	log log.Verboser,
 	configInitializerProvider ConfigInitializerProvider,
 	kubeConfig string,
 	context string,
-) *Config {
-	return &Config{
-		log:                       log,
-		configInitializerProvider: configInitializerProvider,
-		kubeConfig:                kubeConfig,
-		context:                   context,
-	}
-}
-
-// Provide provides a new Helm configuration that enables the Helm client to deploy resources to a
-// specific namespace.
-func (c *Config) Provide(namespace string) (interface{}, error) {
-	restGetter := kube.GetConfig(c.kubeConfig, c.context, namespace)
-	debug := func(string, ...interface{}) {}
-	if l := c.log.V(4).Get(); l != nil {
-		debug = func(format string, v ...interface{}) {
-			l.Log("helm client: %s", fmt.Sprintf(format, v...))
+) ConfigProvider {
+	return func(namespace string) (*action.Configuration, error) {
+		restGetter := kube.GetConfig(kubeConfig, context, namespace)
+		debug := func(string, ...interface{}) {}
+		if l := log.V(4).Get(); l != nil {
+			debug = func(format string, v ...interface{}) {
+				l.Log("helm client: %s", fmt.Sprintf(format, v...))
+			}
 		}
+		cfg, init := configInitializerProvider()
+		if err := init(restGetter, namespace, driver, debug); err != nil {
+			return nil, fmt.Errorf("failed to provide action configuration: %v", err)
+		}
+		return cfg, nil
 	}
-	actionConfig := c.configInitializerProvider.Provide()
-	if err := actionConfig.Init(restGetter, namespace, driver, debug); err != nil {
-		return nil, fmt.Errorf("failed to provide action configuration: %v", err)
-	}
-	return actionConfig, nil
 }
 
 // ConfigInitializer is the interface that wraps the signature of the action.Configuration.Init
 // method to avoid a hidden dependency call in the Config.Provide method.
-type ConfigInitializer interface {
-	Init(
-		getter genericclioptions.RESTClientGetter,
-		namespace string,
-		helmDriver string,
-		log action.DebugLog,
-	) error
-}
+type ConfigInitializer func(
+	getter genericclioptions.RESTClientGetter,
+	namespace string,
+	helmDriver string,
+	log action.DebugLog,
+) error
 
-// ConfigInitializerProvider is the interface that wraps the basic Provide method for configuration
-// initializers.
-type ConfigInitializerProvider interface {
-	Provide() ConfigInitializer
-}
+// ConfigInitializerProvider defines the signature for a function that provides an
+// *action.Configuration and its Init method.
+type ConfigInitializerProvider func() (*action.Configuration, ConfigInitializer)
 
-// configInitializerProvider is a private default implementation that satisfies the
-// ConfigInitializerProvider interface.
-type configInitializerProvider struct{}
-
-// NewDefaultConfigInitializerProvider creates a new ConfigInitializerProvider.
-func NewDefaultConfigInitializerProvider() ConfigInitializerProvider {
-	return &configInitializerProvider{}
-}
-
-// Provide provides a new *action.Configuration wrapped as a ConfigInitializer interface.
-func (*configInitializerProvider) Provide() ConfigInitializer {
-	return &action.Configuration{}
+// DefaultConfigInitializerProvider is the default implementation for ConfigInitializerProvider.
+func DefaultConfigInitializerProvider() (*action.Configuration, ConfigInitializer) {
+	cfg := &action.Configuration{}
+	return cfg, cfg.Init
 }

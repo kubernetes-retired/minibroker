@@ -14,14 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package helm
+package testutil
 
-import "net/http"
+import (
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/release"
+)
 
-//go:generate mockgen -destination=./mocks/mock_http.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm HTTPGetter
+//go:generate mockgen -destination=./mocks/mock_chart.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm/testutil ChartInstallRunner,ChartUninstallRunner
 
-// HTTPGetter is the interface that wraps the Get method to be used with the default library
-// http.DefaultClient.
-type HTTPGetter interface {
-	Get(string) (*http.Response, error)
+type ChartInstallRunner interface {
+	ChartInstallRunner(*chart.Chart, map[string]interface{}) (*release.Release, error)
+}
+
+type ChartUninstallRunner interface {
+	ChartUninstallRunner(string) (*release.UninstallReleaseResponse, error)
 }
