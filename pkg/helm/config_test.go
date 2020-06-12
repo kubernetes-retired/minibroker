@@ -28,9 +28,11 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 
 	"github.com/kubernetes-sigs/minibroker/pkg/helm"
-	"github.com/kubernetes-sigs/minibroker/pkg/helm/testutil/mocks"
+	"github.com/kubernetes-sigs/minibroker/pkg/helm/mocks"
 	"github.com/kubernetes-sigs/minibroker/pkg/log"
 )
+
+//go:generate mockgen -destination=./mocks/mock_config.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm/testutil ConfigProvider,ConfigInitializer,ConfigInitializerProvider
 
 var _ = Describe("Config", func() {
 	Describe("Config", func() {

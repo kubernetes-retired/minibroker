@@ -23,8 +23,6 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-//go:generate mockgen -destination=./mocks/mock_repository.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm RepositoryInitializer,RepositoryDownloader,RepositoryLoader,RepositoryInitializeDownloadLoader,ChartRepo
-
 // RepositoryInitializer is the interface that wraps the Initialize method for initializing a
 // repo.ChartRepository.
 type RepositoryInitializer interface {

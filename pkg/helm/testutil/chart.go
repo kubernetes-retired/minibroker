@@ -21,8 +21,6 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 )
 
-//go:generate mockgen -destination=./mocks/mock_chart.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm/testutil ChartInstallRunner,ChartUninstallRunner
-
 type ChartInstallRunner interface {
 	ChartInstallRunner(*chart.Chart, map[string]interface{}) (*release.Release, error)
 }

@@ -31,9 +31,6 @@ import (
 	"github.com/kubernetes-sigs/minibroker/pkg/nameutil"
 )
 
-//go:generate mockgen -destination=./mocks/mock_chart.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm ChartLoader,ChartHelmClientProvider
-//go:generate mockgen -destination=./mocks/mock_io.go -package=mocks io ReadCloser
-
 // ChartInstaller is the interface that wraps the Install method.
 type ChartInstaller interface {
 	Install(

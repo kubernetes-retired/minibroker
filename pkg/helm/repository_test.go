@@ -30,6 +30,8 @@ import (
 	"github.com/kubernetes-sigs/minibroker/pkg/helm/mocks"
 )
 
+//go:generate mockgen -destination=./mocks/mock_repository.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm RepositoryInitializer,RepositoryDownloader,RepositoryLoader,RepositoryInitializeDownloadLoader,ChartRepo
+
 var _ = Describe("Repository", func() {
 	Context("RepositoryClient", func() {
 		Describe("NewDefaultRepositoryClient", func() {

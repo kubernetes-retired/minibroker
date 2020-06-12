@@ -23,8 +23,6 @@ import (
 	"github.com/kubernetes-sigs/minibroker/pkg/helm"
 )
 
-//go:generate mockgen -destination=./mocks/mock_config.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm/testutil ConfigProvider,ConfigInitializer,ConfigInitializerProvider
-
 type ConfigProvider interface {
 	ConfigProvider(namespace string) (*action.Configuration, error)
 }

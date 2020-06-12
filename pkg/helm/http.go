@@ -18,8 +18,6 @@ package helm
 
 import "net/http"
 
-//go:generate mockgen -destination=./mocks/mock_http.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm HTTPGetter
-
 // HTTPGetter is the interface that wraps the Get method to be used with the default library
 // http.DefaultClient.
 type HTTPGetter interface {

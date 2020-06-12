@@ -34,10 +34,14 @@ import (
 
 	"github.com/kubernetes-sigs/minibroker/pkg/helm"
 	"github.com/kubernetes-sigs/minibroker/pkg/helm/mocks"
-	testutilmocks "github.com/kubernetes-sigs/minibroker/pkg/helm/testutil/mocks"
 	"github.com/kubernetes-sigs/minibroker/pkg/log"
 	nameutilmocks "github.com/kubernetes-sigs/minibroker/pkg/nameutil/mocks"
 )
+
+//go:generate mockgen -destination=./mocks/mock_testutil_chart.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm/testutil ChartInstallRunner,ChartUninstallRunner
+//go:generate mockgen -destination=./mocks/mock_chart.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm ChartLoader,ChartHelmClientProvider
+//go:generate mockgen -destination=./mocks/mock_http.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/helm HTTPGetter
+//go:generate mockgen -destination=./mocks/mock_io.go -package=mocks io ReadCloser
 
 var _ = Describe("Chart", func() {
 	var ctrl *gomock.Controller
@@ -173,7 +177,7 @@ var _ = Describe("Chart", func() {
 					Generate(gomock.Any()).
 					Return(releaseName, nil).
 					Times(1)
-				installRunner := testutilmocks.NewMockChartInstallRunner(ctrl)
+				installRunner := mocks.NewMockChartInstallRunner(ctrl)
 				installRunner.EXPECT().
 					ChartInstallRunner(chartRequested, values).
 					Return(nil, fmt.Errorf("error from client install runner")).
@@ -226,7 +230,7 @@ var _ = Describe("Chart", func() {
 							Generate(gomock.Any()).
 							Return(releaseName, nil).
 							Times(1)
-						installRunner := testutilmocks.NewMockChartInstallRunner(ctrl)
+						installRunner := mocks.NewMockChartInstallRunner(ctrl)
 						installRunner.EXPECT().
 							ChartInstallRunner(chartRequested, values).
 							Return(expectedRelease, nil).
@@ -266,7 +270,7 @@ var _ = Describe("Chart", func() {
 			It("should fail when running the uninstall client fails", func() {
 				releaseName := "foo-12345"
 				namespace := "foo-namespace"
-				uninstallRunner := testutilmocks.NewMockChartUninstallRunner(ctrl)
+				uninstallRunner := mocks.NewMockChartUninstallRunner(ctrl)
 				uninstallRunner.EXPECT().
 					ChartUninstallRunner(releaseName).
 					Return(nil, fmt.Errorf("error from client uninstall runner")).
@@ -284,7 +288,7 @@ var _ = Describe("Chart", func() {
 			It("should succeed uninstalling", func() {
 				releaseName := "foo-12345"
 				namespace := "foo-namespace"
-				uninstallRunner := testutilmocks.NewMockChartUninstallRunner(ctrl)
+				uninstallRunner := mocks.NewMockChartUninstallRunner(ctrl)
 				uninstallRunner.EXPECT().
 					ChartUninstallRunner(releaseName).
 					Return(&release.UninstallReleaseResponse{}, nil).
@@ -385,7 +389,7 @@ var _ = Describe("Chart", func() {
 		Describe("ProvideInstaller", func() {
 			It("should fail when config provider fails", func() {
 				namespace := "foo-namespace"
-				configProvider := testutilmocks.NewMockConfigProvider(ctrl)
+				configProvider := mocks.NewMockConfigProvider(ctrl)
 				configProvider.EXPECT().
 					ConfigProvider(namespace).
 					Return(nil, fmt.Errorf("error from config provider")).
@@ -404,7 +408,7 @@ var _ = Describe("Chart", func() {
 					ReleaseName: releaseName,
 					Namespace:   namespace,
 				}
-				configProvider := testutilmocks.NewMockConfigProvider(ctrl)
+				configProvider := mocks.NewMockConfigProvider(ctrl)
 				configProvider.EXPECT().
 					ConfigProvider(namespace).
 					Return(cfg, nil)
@@ -426,7 +430,7 @@ var _ = Describe("Chart", func() {
 		Describe("ProvideUninstaller", func() {
 			It("should fail when config provider fails", func() {
 				namespace := "foo-namespace"
-				configProvider := testutilmocks.NewMockConfigProvider(ctrl)
+				configProvider := mocks.NewMockConfigProvider(ctrl)
 				configProvider.EXPECT().
 					ConfigProvider(namespace).
 					Return(nil, fmt.Errorf("error from config provider"))
@@ -440,7 +444,7 @@ var _ = Describe("Chart", func() {
 				namespace := "foo-namespace"
 				cfg := &action.Configuration{}
 				expectedUninstaller := &action.Uninstall{}
-				configProvider := testutilmocks.NewMockConfigProvider(ctrl)
+				configProvider := mocks.NewMockConfigProvider(ctrl)
 				configProvider.EXPECT().
 					ConfigProvider(namespace).
 					Return(cfg, nil)
