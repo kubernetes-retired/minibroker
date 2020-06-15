@@ -33,7 +33,7 @@ lint-modified-files: | lint-go-mod generate
 	./build/verify-modified-files.sh
 
 generate:
-	find . -type d -name '*mocks' -print -prune -exec rm -rf {} \;
+	find . -type d -name '*mocks' -print -prune -exec rm -rf '{}' \;
 	go generate ./...
 
 build:
