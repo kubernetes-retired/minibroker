@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 
@@ -86,12 +85,12 @@ type Client struct {
 	serviceCatalogEnabledOnly bool
 }
 
-func NewClient(serviceCatalogEnabledOnly bool) *Client {
+func NewClient(namespace string, serviceCatalogEnabledOnly bool) *Client {
 	klog.V(5).Infof("minibroker: initializing a new client")
 	return &Client{
 		helm:                      helm.NewDefaultClient(),
 		coreClient:                loadInClusterClient(),
-		namespace:                 os.Getenv("NAMESPACE"),
+		namespace:                 namespace,
 		serviceCatalogEnabledOnly: serviceCatalogEnabledOnly,
 		providers: map[string]Provider{
 			"mysql":      MySQLProvider{},

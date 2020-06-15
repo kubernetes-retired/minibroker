@@ -17,8 +17,11 @@ limitations under the License.
 package broker
 
 type Options struct {
-	HelmRepoURL               string
-	CatalogPath               string
+	HelmRepoURL string
+	CatalogPath string
+	// The namespace where Minibroker stores configmaps.
+	Namespace string
+	// The default namespace wheer Minibroker deploys service instances.
 	DefaultNamespace          string
 	ServiceCatalogEnabledOnly bool
 }
