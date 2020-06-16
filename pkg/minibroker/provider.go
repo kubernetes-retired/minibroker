@@ -67,5 +67,5 @@ func buildURI(c Credentials) string {
 }
 
 func buildHostFromService(service corev1.Service) string {
-	return fmt.Sprintf("%s.%s.svc.cluster.local", service.Name, service.Namespace)
+	return fmt.Sprintf("%s.%s.svc", service.Name, service.Namespace)
 }

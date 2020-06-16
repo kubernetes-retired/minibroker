@@ -87,7 +87,7 @@ possible to run the minibroker separately, but this would need a proper
 ingress setup.
 
 ```
-cf create-service-broker minibroker user pass http://minibroker-minibroker.minibroker.svc.cluster.local
+cf create-service-broker minibroker user pass http://minibroker-minibroker.minibroker.svc
 cf enable-service-access redis
 echo > redis.json '[{ "protocol": "tcp", "destination": "10.0.0.0/8", "ports": "6379", "description": "Allow Redis traffic" }]'
 cf create-security-group redis_networking redis.json
@@ -170,12 +170,12 @@ Parameters:
 
 Secret Data:
   database              mydb
-  host                  lucky-dragon-mysql.minibroker.svc.cluster.local
+  host                  lucky-dragon-mysql.minibroker.svc
   mysql-password        gsIpB8dBEn
   mysql-root-password   F8aBHuo8zb
   password              gsIpB8dBEn
   port                  3306
-  uri                   mysql://admin:gsIpB8dBEn@lucky-dragon-mysql.minibroker.svc.cluster.local:3306/mydb
+  uri                   mysql://admin:gsIpB8dBEn@lucky-dragon-mysql.minibroker.svc:3306/mydb
   username              admin
 
 $ svcat unbind mysqldb
