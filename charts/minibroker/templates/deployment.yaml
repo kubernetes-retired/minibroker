@@ -21,6 +21,9 @@ spec:
       - name: minibroker
         image: {{ .Values.image }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        securityContext:
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
         args:
         - minibroker
         {{- if .Values.serviceCatalogEnabledOnly }}
