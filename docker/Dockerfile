@@ -64,15 +64,17 @@ RUN cp lib/ca-bundle.crt /tmp/ca-bundle.crt
 # The running stage.
 FROM ${RUNNING_IMAGE}
 
-#RUN adduser -D minibroker
-#USER minibroker
-
 COPY --from=cert_builder /tmp/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
 COPY --from=downloader /tmp/dumb-init /usr/local/bin/dumb-init
 COPY --from=downloader /tmp/linux-amd64/helm /usr/local/bin/helm
-RUN helm init --client-only
-
 COPY --from=builder /build/minibroker/output/minibroker-linux /usr/local/bin/minibroker
 
+ADD docker/rootfs/etc/passwd /etc/passwd
+COPY --chown=1000 docker/rootfs/home/minibroker /home/minibroker
+USER 1000
+RUN helm init --client-only
+
+VOLUME /home/minibroker
+ENV TMPDIR /home/minibroker/tmp
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["minibroker", "--help"]

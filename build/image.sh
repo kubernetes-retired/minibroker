@@ -21,4 +21,4 @@ if [[ "${BUILD_IN_MINIKUBE}" == "1" ]]; then
   eval $(minikube -p minikube docker-env)
 fi
 
-docker build --tag "${IMAGE}:${TAG}" --file image/Dockerfile .
+docker build --tag "${IMAGE}:${TAG}" --file docker/Dockerfile .
