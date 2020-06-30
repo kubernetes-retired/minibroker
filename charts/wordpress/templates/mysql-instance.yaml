@@ -10,7 +10,6 @@ metadata:
 spec:
   clusterServiceClassExternalName: mysql
   clusterServicePlanExternalName: {{ .Values.externalDatabase.minibroker.servicePlan }}
-  parameters:
   {{- if .Values.externalDatabase.minibroker.parameters }}
-  {{ toYaml .Values.externalDatabase.minibroker.parameters | indent 2 }}{{- end }}
-
+  parameters: {{ toJson .Values.externalDatabase.minibroker.parameters }}
+  {{- end }}
