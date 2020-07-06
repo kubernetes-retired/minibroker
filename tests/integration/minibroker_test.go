@@ -120,9 +120,9 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the mariadb client completed successfully")
-				startTime := time.Now()
+				timeLimit := time.Now().Add(assertTimeout)
 				for {
-					if time.Now().After(startTime.Add(assertTimeout)) {
+					if time.Now().After(timeLimit) {
 						Fail("assertion timed out")
 					}
 
@@ -171,9 +171,9 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the mongodb client completed successfully")
-				startTime := time.Now()
+				timeLimit := time.Now().Add(assertTimeout)
 				for {
-					if time.Now().After(startTime.Add(assertTimeout)) {
+					if time.Now().After(timeLimit) {
 						Fail("assertion timed out")
 					}
 
@@ -225,9 +225,9 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the mysql client completed successfully")
-				startTime := time.Now()
+				timeLimit := time.Now().Add(assertTimeout)
 				for {
-					if time.Now().After(startTime.Add(assertTimeout)) {
+					if time.Now().After(timeLimit) {
 						Fail("assertion timed out")
 					}
 
@@ -273,9 +273,9 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the postgresql client completed successfully")
-				startTime := time.Now()
+				timeLimit := time.Now().Add(assertTimeout)
 				for {
-					if time.Now().After(startTime.Add(assertTimeout)) {
+					if time.Now().After(timeLimit) {
 						Fail("assertion timed out")
 					}
 
@@ -324,9 +324,9 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the redis client completed successfully")
-				startTime := time.Now()
+				timeLimit := time.Now().Add(assertTimeout)
 				for {
-					if time.Now().After(startTime.Add(assertTimeout)) {
+					if time.Now().After(timeLimit) {
 						Fail("assertion timed out")
 					}
 
