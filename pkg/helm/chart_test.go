@@ -56,8 +56,8 @@ var _ = Describe("Chart", func() {
 
 	Describe("ChartClient", func() {
 		Describe("NewDefaultChartClient", func() {
-			It("should satisfy the ChartInstallUninstaller interface", func() {
-				var client helm.ChartInstallUninstaller = helm.NewDefaultChartClient()
+			It("should return a new ChartClient", func() {
+				client := helm.NewDefaultChartClient()
 				Expect(client).NotTo(BeNil())
 			})
 		})

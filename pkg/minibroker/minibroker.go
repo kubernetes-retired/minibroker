@@ -372,7 +372,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 		return err
 	}
 
-	release, err := c.helm.ChartInstaller().Install(chartDef, namespace, provisionParams)
+	release, err := c.helm.ChartClient().Install(chartDef, namespace, provisionParams)
 	if err != nil {
 		return err
 	}
@@ -714,7 +714,7 @@ func (c *Client) Deprovision(instanceID string, acceptsIncomplete bool) (string,
 }
 
 func (c *Client) deprovisionSynchronously(instanceID, releaseName, namespace string) error {
-	if err := c.helm.ChartUninstaller().Uninstall(releaseName, namespace); err != nil {
+	if err := c.helm.ChartClient().Uninstall(releaseName, namespace); err != nil {
 		return errors.Wrapf(err, "could not uninstall release %s", releaseName)
 	}
 

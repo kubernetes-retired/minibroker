@@ -38,7 +38,7 @@ const (
 type Client struct {
 	log              log.Verboser
 	repositoryClient RepositoryInitializeDownloadLoader
-	chartClient      ChartInstallUninstaller
+	chartClient      *ChartClient
 
 	settings  *cli.EnvSettings
 	chartRepo *repo.ChartRepository
@@ -57,7 +57,7 @@ func NewDefaultClient() *Client {
 func NewClient(
 	log log.Verboser,
 	repositoryClient RepositoryInitializeDownloadLoader,
-	chartClient ChartInstallUninstaller,
+	chartClient *ChartClient,
 ) *Client {
 	settings := &cli.EnvSettings{
 		RegistryConfig:   helmpath.ConfigPath("registry.json"),
@@ -169,12 +169,7 @@ func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
 	return nil, fmt.Errorf("failed to get chart: %v", err)
 }
 
-// ChartInstaller returns the chart client for installing a chart.
-func (c *Client) ChartInstaller() ChartInstaller {
-	return c.chartClient
-}
-
-// ChartUninstaller returns the chart client for uninstalling a release.
-func (c *Client) ChartUninstaller() ChartUninstaller {
+// ChartClient returns the chart client for installing and uninstalling a chart.
+func (c *Client) ChartClient() *ChartClient {
 	return c.chartClient
 }

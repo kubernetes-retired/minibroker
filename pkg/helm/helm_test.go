@@ -202,21 +202,11 @@ var _ = Describe("Helm", func() {
 			})
 		})
 
-		Describe("ChartInstaller", func() {
-			It("should return the expected chart client as chart installer", func() {
+		Describe("ChartClient", func() {
+			It("should return the expected chart client", func() {
 				chartClient := helm.NewDefaultChartClient()
 				client := helm.NewClient(nil, nil, chartClient)
-				installer := client.ChartInstaller()
-				Expect(installer).To(Equal(chartClient))
-			})
-		})
-
-		Describe("ChartUninstaller", func() {
-			It("should return the expected chart client as chart uninstaller", func() {
-				chartClient := helm.NewDefaultChartClient()
-				client := helm.NewClient(nil, nil, chartClient)
-				uninstaller := client.ChartUninstaller()
-				Expect(uninstaller).To(Equal(chartClient))
+				Expect(client.ChartClient()).To(Equal(chartClient))
 			})
 		})
 	})

@@ -31,28 +31,7 @@ import (
 	"github.com/kubernetes-sigs/minibroker/pkg/nameutil"
 )
 
-// ChartInstaller is the interface that wraps the Install method.
-type ChartInstaller interface {
-	Install(
-		chartDef *repo.ChartVersion,
-		namespace string,
-		values map[string]interface{},
-	) (*release.Release, error)
-}
-
-// ChartUninstaller is the interface that wraps the Uninstall method.
-type ChartUninstaller interface {
-	Uninstall(releaseName, namespace string) error
-}
-
-// ChartInstallUninstaller wraps the ChartInstaller and ChartUninstaller interfaces.
-type ChartInstallUninstaller interface {
-	ChartInstaller
-	ChartUninstaller
-}
-
-// ChartClient satisfies the ChartInstallUninstaller interface. It allows users of this client to
-// install and uninstall charts.
+// ChartClient allows users of this client to install and uninstall charts.
 type ChartClient struct {
 	log                     log.Verboser
 	chartLoader             ChartLoader
