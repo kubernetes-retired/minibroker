@@ -39,10 +39,21 @@ const (
 )
 
 var (
-	kubeClient kubernetes.Interface
-	svcat      *testutil.Svcat
-	testDir    string
+	kubeClient         kubernetes.Interface
+	svcat              *testutil.Svcat
+	testDir            string
+	brokerReadyTimeout time.Duration
+	provisionTimeout   time.Duration
+	bindTimeout        time.Duration
+	assertTimeout      time.Duration
 )
+
+func init() {
+	brokerReadyTimeout = testutil.MustTimeoutFromEnv("TEST_BROKER_READY_TIMEOUT")
+	provisionTimeout = testutil.MustTimeoutFromEnv("TEST_PROVISION_TIMEOUT")
+	bindTimeout = testutil.MustTimeoutFromEnv("TEST_BIND_TIMEOUT")
+	assertTimeout = testutil.MustTimeoutFromEnv("TEST_ASSERT_TIMEOUT")
+}
 
 var _ = BeforeSuite(func() {
 	var err error
@@ -53,7 +64,7 @@ var _ = BeforeSuite(func() {
 	svcat, err = testutil.NewSvcat(kubeClient, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = svcat.WaitForBroker(brokerName, namespace)
+	_, err = svcat.WaitForBroker(brokerName, namespace, brokerReadyTimeout)
 	Expect(err).NotTo(HaveOccurred())
 
 	_, filename, _, ok := runtime.Caller(0)
@@ -109,9 +120,10 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the mariadb client completed successfully")
-				for retry := 0; ; retry++ {
-					if retry == 60 {
-						Fail("maximum retries reached")
+				timeLimit := time.Now().Add(assertTimeout)
+				for {
+					if time.Now().After(timeLimit) {
+						Fail("assertion timed out")
 					}
 
 					pod, err = kubeClient.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
@@ -140,10 +152,8 @@ var _ = Describe("classes", func() {
 					"DatabaseVersion": "4.2.7",
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
-						"sh", "-c",
-						"mongo" +
-						" ${DATABASE_URL}",
-						" connectionStatus",
+						"sh", "-xc",
+						"mongo ${DATABASE_URL} --eval 'printjson(db.serverStatus())'",
 					},
 				}
 				obj, err := testutil.LoadKubeSpec(tmplPath, values)
@@ -159,9 +169,10 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the mongodb client completed successfully")
-				for retry := 0; ; retry++ {
-					if retry == 60 {
-						Fail("maximum retries reached")
+				timeLimit := time.Now().Add(assertTimeout)
+				for {
+					if time.Now().After(timeLimit) {
+						Fail("assertion timed out")
 					}
 
 					pod, err = kubeClient.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
@@ -212,9 +223,10 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the mysql client completed successfully")
-				for retry := 0; ; retry++ {
-					if retry == 60 {
-						Fail("maximum retries reached")
+				timeLimit := time.Now().Add(assertTimeout)
+				for {
+					if time.Now().After(timeLimit) {
+						Fail("assertion timed out")
 					}
 
 					pod, err = kubeClient.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
@@ -259,9 +271,10 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the postgresql client completed successfully")
-				for retry := 0; ; retry++ {
-					if retry == 60 {
-						Fail("maximum retries reached")
+				timeLimit := time.Now().Add(assertTimeout)
+				for {
+					if time.Now().After(timeLimit) {
+						Fail("assertion timed out")
 					}
 
 					pod, err = kubeClient.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
@@ -291,9 +304,7 @@ var _ = Describe("classes", func() {
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
 						"sh", "-c",
-						"redis-cli" +
-						" -u ${DATABASE_URL}",
-						" CLUSTER INFO",
+						"redis-cli -u ${DATABASE_URL} CLUSTER INFO",
 					},
 				}
 				obj, err := testutil.LoadKubeSpec(tmplPath, values)
@@ -309,9 +320,10 @@ var _ = Describe("classes", func() {
 				}()
 
 				By("asserting the redis client completed successfully")
-				for retry := 0; ; retry++ {
-					if retry == 60 {
-						Fail("maximum retries reached")
+				timeLimit := time.Now().Add(assertTimeout)
+				for {
+					if time.Now().After(timeLimit) {
+						Fail("assertion timed out")
 					}
 
 					pod, err = kubeClient.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
@@ -346,7 +358,7 @@ var _ = Describe("classes", func() {
 				}()
 
 				By(fmt.Sprintf("waiting for %s to be provisioned", serviceName))
-				err = svcat.WaitProvisioning(instance)
+				err = svcat.WaitProvisioning(instance, provisionTimeout)
 				Expect(err).NotTo(HaveOccurred())
 
 				By(fmt.Sprintf("binding %s", serviceName))
@@ -359,7 +371,7 @@ var _ = Describe("classes", func() {
 				}()
 
 				By(fmt.Sprintf("waiting for %s binding", serviceName))
-				err = svcat.WaitBinding(binding)
+				err = svcat.WaitBinding(binding, bindTimeout)
 				Expect(err).NotTo(HaveOccurred())
 
 				By(fmt.Sprintf("asserting %s functionality", serviceName))

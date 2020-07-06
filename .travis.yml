@@ -34,6 +34,9 @@ jobs:
     env:
     - CHANGE_MINIKUBE_NONE_USER=false
     - MINIKUBE_HOME=${HOME}
+    - TEST_PROVISION_TIMEOUT=5m
+    - TEST_BIND_TIMEOUT=5m
+    - TEST_ASSERT_TIMEOUT=2m
     before_install:
     - sudo apt-get -qq -y install conntrack
     before_script:

@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"text/template"
 	"time"
@@ -37,8 +38,7 @@ import (
 )
 
 const defaultInterval = time.Second
-
-var defaultTimeout = time.Minute * 3
+const defaultTimeout = time.Minute * 3
 
 // KubeClient creates a new Kubernetes client using the default kubeconfig.
 func KubeClient() (kubernetes.Interface, error) {
@@ -114,12 +114,13 @@ func NewSvcat(kubeClient kubernetes.Interface, namespace string) (*Svcat, error)
 func (sc *Svcat) WaitForBroker(
 	name string,
 	namespace string,
+	timeout time.Duration,
 ) (servicecatalog.Broker, error) {
 	opts := &servicecatalog.ScopeOptions{
 		Scope:     servicecatalog.AllScope,
 		Namespace: namespace,
 	}
-	broker, err := sc.app.WaitForBroker(name, opts, defaultInterval, &defaultTimeout)
+	broker, err := sc.app.WaitForBroker(name, opts, defaultInterval, &timeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to wait for broker: %v", err)
 	}
@@ -176,8 +177,8 @@ func (sc *Svcat) Deprovision(instance *servicecatalogv1beta1.ServiceInstance) er
 }
 
 // WaitProvisioning waits for an instance to be provisioned.
-func (sc *Svcat) WaitProvisioning(instance *servicecatalogv1beta1.ServiceInstance) error {
-	if _, err := sc.app.WaitForInstance(instance.Namespace, instance.Name, defaultInterval, &defaultTimeout); err != nil {
+func (sc *Svcat) WaitProvisioning(instance *servicecatalogv1beta1.ServiceInstance, timeout time.Duration) error {
+	if _, err := sc.app.WaitForInstance(instance.Namespace, instance.Name, defaultInterval, &timeout); err != nil {
 		return fmt.Errorf("failed to wait for instance to be provisioned: %v", err)
 	}
 
@@ -203,8 +204,8 @@ func (sc *Svcat) Unbind(instance *servicecatalogv1beta1.ServiceInstance) error {
 }
 
 // WaitBinding waits for a service binding to be ready.
-func (sc *Svcat) WaitBinding(binding *servicecatalogv1beta1.ServiceBinding) error {
-	if _, err := sc.app.WaitForBinding(binding.Namespace, binding.Name, defaultInterval, &defaultTimeout); err != nil {
+func (sc *Svcat) WaitBinding(binding *servicecatalogv1beta1.ServiceBinding, timeout time.Duration) error {
+	if _, err := sc.app.WaitForBinding(binding.Namespace, binding.Name, defaultInterval, &timeout); err != nil {
 		return fmt.Errorf("failed to wait for service binding: %v", err)
 	}
 
@@ -241,4 +242,17 @@ func LoadKubeSpec(filepath string, values map[string]interface{}) (runtime.Objec
 	}
 
 	return obj, nil
+}
+
+// MustTimeoutFromEnv parses the environment variable as a time.Duration, failing if it's not
+// parsable or returning the default timeout if the environment variable is not set.
+func MustTimeoutFromEnv(env string) time.Duration {
+	if val := os.Getenv(env); val != "" {
+		timeout, err := time.ParseDuration(val)
+		if err != nil {
+			log.Fatalf("failed to load timeout from environment variable %q: %v", env, err)
+		}
+		return timeout
+	}
+	return defaultTimeout
 }
