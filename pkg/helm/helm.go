@@ -78,9 +78,7 @@ func NewClient(
 // TODO(f0rmiga): add a readiness probe for this initialization process. A health endpoint would be
 // enough.
 func (c *Client) Initialize(repoURL string) error {
-	if l := c.log.V(3).Get(); l != nil {
-		l.Log("helm client: initializing")
-	}
+	c.log.V(3).Log("helm client: initializing")
 
 	// TODO(f0rmiga): Allow private repos with authentication. Entry will need to contain the auth
 	// configuration.
@@ -96,17 +94,13 @@ func (c *Client) Initialize(repoURL string) error {
 		return fmt.Errorf("failed to initialize helm client: %v", err)
 	}
 
-	if l := c.log.V(3).Get(); l != nil {
-		l.Log("helm client: downloading index file")
-	}
+	c.log.V(3).Log("helm client: downloading index file")
 	indexPath, err := c.repositoryClient.DownloadIndex(chartRepo)
 	if err != nil {
 		return fmt.Errorf("failed to initialize helm client: %v", err)
 	}
 
-	if l := c.log.V(3).Get(); l != nil {
-		l.Log("helm client: loading repository")
-	}
+	c.log.V(3).Log("helm client: loading repository")
 	indexFile, err := c.repositoryClient.Load(indexPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize helm client: %v", err)
@@ -115,53 +109,41 @@ func (c *Client) Initialize(repoURL string) error {
 	chartRepo.IndexFile = indexFile
 	c.chartRepo = chartRepo
 
-	if l := c.log.V(3).Get(); l != nil {
-		l.Log("helm client: successfully initialized")
-	}
+	c.log.V(3).Log("helm client: successfully initialized")
 
 	return nil
 }
 
 // ListCharts lists the charts from the chart repository.
 func (c *Client) ListCharts() map[string]repo.ChartVersions {
-	if l := c.log.V(4).Get(); l != nil {
-		l.Log("helm client: listing charts from %s", c.chartRepo.Config.URL)
-		defer l.Log("helm client: listed charts from %s", c.chartRepo.Config.URL)
-	}
+	c.log.V(4).Log("helm client: listing charts from %s", c.chartRepo.Config.URL)
+	defer c.log.V(4).Log("helm client: listed charts from %s", c.chartRepo.Config.URL)
 	return c.chartRepo.IndexFile.Entries
 }
 
 // GetChart gets a chart that exists in the chart repository. IndexFile.Get() cannot be used here
 // since we filter by app version.
 func (c *Client) GetChart(name, appVersion string) (*repo.ChartVersion, error) {
-	if l := c.log.V(4).Get(); l != nil {
-		l.Log("helm client: getting chart %s:%s", name, appVersion)
-	}
+	c.log.V(4).Log("helm client: getting chart %s:%s", name, appVersion)
 
 	charts := c.ListCharts()
 
 	versions, ok := charts[name]
 	if !ok {
 		err := fmt.Errorf("chart not found: %s", name)
-		if l := c.log.V(4).Get(); l != nil {
-			l.Log("helm client: %v", err)
-		}
+		c.log.V(4).Log("helm client: %v", err)
 		return nil, fmt.Errorf("failed to get chart: %v", err)
 	}
 
 	for _, v := range versions {
 		if v.AppVersion == appVersion {
-			if l := c.log.V(4).Get(); l != nil {
-				l.Log("helm client: got chart %s:%s", name, appVersion)
-			}
+			c.log.V(4).Log("helm client: got chart %s:%s", name, appVersion)
 			return v, nil
 		}
 	}
 
 	err := fmt.Errorf("chart app version not found for %q: %s", name, appVersion)
-	if l := c.log.V(4).Get(); l != nil {
-		l.Log("helm client: %v", err)
-	}
+	c.log.V(4).Log("helm client: %v", err)
 	return nil, fmt.Errorf("failed to get chart: %v", err)
 }
 

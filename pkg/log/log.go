@@ -26,6 +26,6 @@ type Verboser interface {
 
 // Logger defines how a logger should be implemented.
 type Logger interface {
-	Get() Logger
+	Enabled() bool
 	Log(format string, args ...interface{})
 }

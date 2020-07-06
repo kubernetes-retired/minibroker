@@ -83,9 +83,7 @@ func (cc *ChartClient) Install(
 	}
 
 	if chartRequested.Metadata.Deprecated {
-		if l := cc.log.V(3).Get(); l != nil {
-			l.Log("minibroker: WARNING: the chart %s:%s is deprecated", chartDef.Name, chartDef.Version)
-		}
+		cc.log.V(3).Log("minibroker: WARNING: the chart %s:%s is deprecated", chartDef.Name, chartDef.Version)
 	}
 
 	// TODO(f0rmiga): ensure chart dependencies are fetched.

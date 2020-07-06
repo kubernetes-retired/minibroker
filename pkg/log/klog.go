@@ -48,12 +48,9 @@ type klogLogger struct {
 	v klog.Verbose
 }
 
-// Get returns the Logger if it's enabled.
-func (l *klogLogger) Get() Logger {
-	if !l.v.Enabled() {
-		return nil
-	}
-	return l
+// Enabled returns whether the Logger is enabled or not.
+func (l *klogLogger) Enabled() bool {
+	return l.v.Enabled()
 }
 
 // Log logs a message.

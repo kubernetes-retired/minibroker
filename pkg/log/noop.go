@@ -32,8 +32,8 @@ func (l *noop) V(Level) Logger {
 
 type noopLogger struct{}
 
-func (l *noopLogger) Get() Logger {
-	return l
+func (l *noopLogger) Enabled() bool {
+	return true
 }
 
 func (l *noopLogger) Log(format string, args ...interface{}) {
