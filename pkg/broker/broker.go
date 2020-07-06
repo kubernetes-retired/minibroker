@@ -31,7 +31,7 @@ import (
 // Broker the parameters passed in.
 func NewBroker(o Options) (*Broker, error) {
 	klog.V(5).Infof("broker: creating a new broker with options %+v", o)
-	mb := minibroker.NewClient(o.Namespace, o.ServiceCatalogEnabledOnly)
+	mb := minibroker.NewClient(o.ConfigNamespace, o.ServiceCatalogEnabledOnly)
 	err := mb.Init(o.HelmRepoURL)
 	if err != nil {
 		return nil, err

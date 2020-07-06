@@ -98,7 +98,7 @@ func runWithContext(ctx context.Context) error {
 
 	addr := ":" + strconv.Itoa(options.Port)
 
-	options.Options.Namespace = os.Getenv("NAMESPACE")
+	options.Options.ConfigNamespace = os.Getenv("CONFIG_NAMESPACE")
 
 	b, err := broker.NewBroker(options.Options)
 	if err != nil {

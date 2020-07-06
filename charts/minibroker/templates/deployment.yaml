@@ -53,7 +53,7 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: NAMESPACE
+        - name: CONFIG_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
