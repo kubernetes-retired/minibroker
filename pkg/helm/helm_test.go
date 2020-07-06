@@ -181,7 +181,7 @@ var _ = Describe("Helm", func() {
 				}
 				client.SetChartRepo(chartRepo)
 				chart, err := client.GetChart("bar", "1.2.3")
-				Expect(err).To(Equal(fmt.Errorf("failed to get chart: chart version not found for \"bar\": 1.2.3")))
+				Expect(err).To(Equal(fmt.Errorf("failed to get chart: chart app version not found for \"bar\": 1.2.3")))
 				Expect(chart).To(BeNil())
 			})
 
