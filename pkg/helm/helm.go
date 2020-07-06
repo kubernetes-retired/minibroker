@@ -136,10 +136,11 @@ func (c *Client) ListCharts() map[string]repo.ChartVersions {
 	return c.chartRepo.IndexFile.Entries
 }
 
-// GetChart gets a chart that exists in the chart repository.
-func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
+// GetChart gets a chart that exists in the chart repository. IndexFile.Get() cannot be used here
+// since we filter by app version.
+func (c *Client) GetChart(name, appVersion string) (*repo.ChartVersion, error) {
 	if l := c.log.V(4).Get(); l != nil {
-		l.Log("helm client: getting chart %s:%s", name, version)
+		l.Log("helm client: getting chart %s:%s", name, appVersion)
 	}
 
 	charts := c.ListCharts()
@@ -154,15 +155,15 @@ func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
 	}
 
 	for _, v := range versions {
-		if v.AppVersion == version {
+		if v.AppVersion == appVersion {
 			if l := c.log.V(4).Get(); l != nil {
-				l.Log("helm client: got chart %s:%s", name, version)
+				l.Log("helm client: got chart %s:%s", name, appVersion)
 			}
 			return v, nil
 		}
 	}
 
-	err := fmt.Errorf("chart version not found for %q: %s", name, version)
+	err := fmt.Errorf("chart app version not found for %q: %s", name, appVersion)
 	if l := c.log.V(4).Get(); l != nil {
 		l.Log("helm client: %v", err)
 	}
