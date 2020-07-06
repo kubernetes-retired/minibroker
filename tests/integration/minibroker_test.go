@@ -152,10 +152,8 @@ var _ = Describe("classes", func() {
 					"DatabaseVersion": "4.2.7",
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
-						"sh", "-c",
-						"mongo" +
-							" ${DATABASE_URL}",
-						" connectionStatus",
+						"sh", "-xc",
+						"mongo ${DATABASE_URL} --eval 'printjson(db.serverStatus())'",
 					},
 				}
 				obj, err := testutil.LoadKubeSpec(tmplPath, values)
@@ -306,9 +304,7 @@ var _ = Describe("classes", func() {
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
 						"sh", "-c",
-						"redis-cli" +
-							" -u ${DATABASE_URL}",
-						" CLUSTER INFO",
+						"redis-cli -u ${DATABASE_URL} CLUSTER INFO",
 					},
 				}
 				obj, err := testutil.LoadKubeSpec(tmplPath, values)
