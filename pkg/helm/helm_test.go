@@ -33,6 +33,16 @@ import (
 
 var _ = Describe("Helm", func() {
 	Context("Client", func() {
+		var ctrl *gomock.Controller
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
 		Describe("NewDefaultClient", func() {
 			It("should create a new Client", func() {
 				client := helm.NewDefaultClient()
@@ -41,16 +51,6 @@ var _ = Describe("Helm", func() {
 		})
 
 		Describe("Initialize", func() {
-			var ctrl *gomock.Controller
-
-			BeforeEach(func() {
-				ctrl = gomock.NewController(GinkgoT())
-			})
-
-			AfterEach(func() {
-				ctrl.Finish()
-			})
-
 			It("should fail when repoInitializer.Initialize fails", func() {
 				repoClient := mocks.NewMockRepositoryInitializeDownloadLoader(ctrl)
 				repoClient.EXPECT().
@@ -143,16 +143,15 @@ var _ = Describe("Helm", func() {
 
 		Describe("ListCharts", func() {
 			It("should return the chart entries", func() {
-				client := helm.NewClient(log.NewNoop(), nil, nil)
 				expectedCharts := map[string]repo.ChartVersions{
 					"foo": make(repo.ChartVersions, 0),
 					"bar": make(repo.ChartVersions, 0),
 				}
-				chartRepo := &repo.ChartRepository{
-					Config:    &repo.Entry{URL: "https://repository"},
-					IndexFile: &repo.IndexFile{Entries: expectedCharts},
-				}
-				client.SetChartRepo(chartRepo)
+				repoClient := newRepoClient(ctrl, expectedCharts)
+				client := helm.NewClient(log.NewNoop(), repoClient, nil)
+				err := client.Initialize("")
+				Expect(err).NotTo(HaveOccurred())
+
 				charts := client.ListCharts()
 				Expect(charts).To(Equal(expectedCharts))
 			})
@@ -160,42 +159,39 @@ var _ = Describe("Helm", func() {
 
 		Describe("GetChart", func() {
 			It("should fail when the chart doesn't exist", func() {
-				client := helm.NewClient(log.NewNoop(), nil, nil)
 				charts := map[string]repo.ChartVersions{"foo": make(repo.ChartVersions, 0)}
-				chartRepo := &repo.ChartRepository{
-					Config:    &repo.Entry{URL: "https://repository"},
-					IndexFile: &repo.IndexFile{Entries: charts},
-				}
-				client.SetChartRepo(chartRepo)
+				repoClient := newRepoClient(ctrl, charts)
+				client := helm.NewClient(log.NewNoop(), repoClient, nil)
+				err := client.Initialize("")
+				Expect(err).NotTo(HaveOccurred())
+
 				chart, err := client.GetChart("bar", "")
 				Expect(err).To(Equal(fmt.Errorf("failed to get chart: chart not found: bar")))
 				Expect(chart).To(BeNil())
 			})
 
 			It("should fail when the chart version doesn't exist", func() {
-				client := helm.NewClient(log.NewNoop(), nil, nil)
 				charts := map[string]repo.ChartVersions{"bar": make(repo.ChartVersions, 0)}
-				chartRepo := &repo.ChartRepository{
-					Config:    &repo.Entry{URL: "https://repository"},
-					IndexFile: &repo.IndexFile{Entries: charts},
-				}
-				client.SetChartRepo(chartRepo)
+				repoClient := newRepoClient(ctrl, charts)
+				client := helm.NewClient(log.NewNoop(), repoClient, nil)
+				err := client.Initialize("")
+				Expect(err).NotTo(HaveOccurred())
+
 				chart, err := client.GetChart("bar", "1.2.3")
 				Expect(err).To(Equal(fmt.Errorf("failed to get chart: chart app version not found for \"bar\": 1.2.3")))
 				Expect(chart).To(BeNil())
 			})
 
 			It("should succeed returning the requested chart", func() {
-				client := helm.NewClient(log.NewNoop(), nil, nil)
 				chartMetadata := &chart.Metadata{AppVersion: "1.2.3"}
 				expectedChart := &repo.ChartVersion{Metadata: chartMetadata}
 				versions := repo.ChartVersions{expectedChart}
 				charts := map[string]repo.ChartVersions{"bar": versions}
-				chartRepo := &repo.ChartRepository{
-					Config:    &repo.Entry{URL: "https://repository"},
-					IndexFile: &repo.IndexFile{Entries: charts},
-				}
-				client.SetChartRepo(chartRepo)
+				repoClient := newRepoClient(ctrl, charts)
+				client := helm.NewClient(log.NewNoop(), repoClient, nil)
+				err := client.Initialize("")
+				Expect(err).NotTo(HaveOccurred())
+
 				chart, err := client.GetChart("bar", "1.2.3")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(chart).To(Equal(expectedChart))
@@ -211,3 +207,23 @@ var _ = Describe("Helm", func() {
 		})
 	})
 })
+
+func newRepoClient(ctrl *gomock.Controller, charts map[string]repo.ChartVersions) helm.RepositoryInitializeDownloadLoader {
+	repoClient := mocks.NewMockRepositoryInitializeDownloadLoader(ctrl)
+	chartRepo := &repo.ChartRepository{Config: &repo.Entry{URL: "https://repository"}}
+	indexPath := "some_path.yaml"
+	indexFile := &repo.IndexFile{Entries: charts}
+	repoClient.EXPECT().
+		Initialize(gomock.Any(), gomock.Any()).
+		Return(chartRepo, nil).
+		Times(1)
+	repoClient.EXPECT().
+		DownloadIndex(chartRepo).
+		Return(indexPath, nil).
+		Times(1)
+	repoClient.EXPECT().
+		Load(indexPath).
+		Return(indexFile, nil).
+		Times(1)
+	return repoClient
+}

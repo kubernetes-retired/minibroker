@@ -113,18 +113,13 @@ func (c *Client) Initialize(repoURL string) error {
 	}
 
 	chartRepo.IndexFile = indexFile
-	c.SetChartRepo(chartRepo)
+	c.chartRepo = chartRepo
 
 	if l := c.log.V(3).Get(); l != nil {
 		l.Log("helm client: successfully initialized")
 	}
 
 	return nil
-}
-
-// SetChartRepo allows setting the chart repository being used by the client.
-func (c *Client) SetChartRepo(chartRepo *repo.ChartRepository) {
-	c.chartRepo = chartRepo
 }
 
 // ListCharts lists the charts from the chart repository.
