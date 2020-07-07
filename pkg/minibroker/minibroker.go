@@ -386,7 +386,6 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 	filterByRelease := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(map[string]string{
 			ReleaseLabel: release.Name,
-			// TODO(f0rmiga): Do we need other selectors here to get the right thing?
 		}).String(),
 	}
 	services, err := c.coreClient.CoreV1().Services(namespace).List(context.TODO(), filterByRelease)
