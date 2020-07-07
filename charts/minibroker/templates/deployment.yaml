@@ -38,7 +38,7 @@ spec:
         - "{{ .Values.defaultNamespace }}"
         {{- end }}
         - --port
-        - "8080"
+        - {{ .Values.broker.port | quote }}
         {{- if .Values.tls.cert }}
         - --tlsCert
         - "{{ .Values.tls.cert }}"
@@ -51,7 +51,8 @@ spec:
         - {{ .Values.logLevel | quote }}
         - -logtostderr
         ports:
-        - containerPort: 8080
+        - name: broker
+          containerPort: {{ .Values.broker.port }}
         env:
         - name: CONFIG_NAMESPACE
           valueFrom:
