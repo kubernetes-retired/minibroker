@@ -52,7 +52,7 @@ wordpressBlogName: User's Blog!
 externalDatabase:
   minibroker:
     ## The plan to request from Minibroker, use svcat get plans --class mysql to see your options
-    servicePlan: 5-7-14
+    servicePlan: 5-7-30
     parameters:
       mysqlDatabase: bitnami_wordpress
       mysqlUser: bn_wordpress
