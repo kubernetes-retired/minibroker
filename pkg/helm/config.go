@@ -57,7 +57,7 @@ func NewConfigProvider(
 	return func(namespace string) (*action.Configuration, error) {
 		restGetter := kube.GetConfig(kubeConfig, context, namespace)
 		debug := func(format string, v ...interface{}) {
-			log.V(4).Log("helm client: %s", fmt.Sprintf(format, v...))
+			log.V(4).Log("helm client: "+format, v...)
 		}
 		cfg, init := configInitializerProvider()
 		if err := init(restGetter, namespace, driver, debug); err != nil {
