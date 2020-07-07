@@ -19,4 +19,4 @@ set -o errexit -o nounset -o pipefail
 VM_DRIVER=none sudo timeout 3m make create-cluster
 timeout 1m kubectl create namespace minibroker-tests
 timeout 10m make deploy
-timeout 5m make test-integration
+timeout 8m make test-integration
