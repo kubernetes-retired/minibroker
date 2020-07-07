@@ -67,7 +67,7 @@ func NewConfigProvider(
 	}
 }
 
-// ConfigInitializer is the interface that wraps the signature of the action.Configuration.Init
+// ConfigInitializer is the function signature of the action.Configuration.Init
 // method to avoid a hidden dependency call in the Config.Provide method.
 type ConfigInitializer func(
 	getter genericclioptions.RESTClientGetter,
