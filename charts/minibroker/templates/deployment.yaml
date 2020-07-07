@@ -58,3 +58,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.broker.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 3
