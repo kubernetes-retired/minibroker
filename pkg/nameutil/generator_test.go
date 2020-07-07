@@ -50,7 +50,7 @@ var _ = Describe("Generator", func() {
 
 				name, err := generator.Generate("a-prefix-")
 				Expect(name).To(Equal(""))
-				Expect(err.Error()).To(Equal("failed to generate a new name: failed rand.Read"))
+				Expect(err).To(MatchError("failed to generate a new name: failed rand.Read"))
 			})
 
 			It("should create a new name", func() {
