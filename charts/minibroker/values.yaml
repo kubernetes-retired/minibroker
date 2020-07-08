@@ -13,8 +13,10 @@ tls:
 
 # The service broker server configuration.
 broker:
-  # A port for the service broker HTTP API.
-  port: 8080
+  # The deployment configuration.
+  deployment:
+    # A port for the service broker HTTP API.
+    port: 8080
 
 # The logging level to use; higher values emit more information
 logLevel: 3

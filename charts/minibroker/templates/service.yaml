@@ -10,4 +10,4 @@ spec:
   ports:
   - protocol: TCP
     port: 80
-    targetPort: {{ .Values.broker.port }}
+    targetPort: {{ .Values.broker.deployment.port }}

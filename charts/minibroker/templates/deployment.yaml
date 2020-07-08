@@ -38,7 +38,7 @@ spec:
         - "{{ .Values.defaultNamespace }}"
         {{- end }}
         - --port
-        - {{ .Values.broker.port | quote }}
+        - {{ .Values.broker.deployment.port | quote }}
         {{- if .Values.tls.cert }}
         - --tlsCert
         - "{{ .Values.tls.cert }}"
@@ -52,7 +52,7 @@ spec:
         - -logtostderr
         ports:
         - name: broker
-          containerPort: {{ .Values.broker.port }}
+          containerPort: {{ .Values.broker.deployment.port }}
         env:
         - name: CONFIG_NAMESPACE
           valueFrom:
@@ -61,7 +61,7 @@ spec:
         readinessProbe:
           httpGet: &readinessHTTPGet
             path: /healthz
-            port: {{ .Values.broker.port }}
+            port: {{ .Values.broker.deployment.port }}
           initialDelaySeconds: 5
           periodSeconds: 3
         livenessProbe:
