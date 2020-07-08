@@ -18,165 +18,136 @@ package helm
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"path/filepath"
 
-	"github.com/pkg/errors"
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm/environment"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/repo"
-	klog "k8s.io/klog/v2"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/helmpath"
+	"helm.sh/helm/v3/pkg/repo"
+
+	"github.com/kubernetes-sigs/minibroker/pkg/log"
 )
 
-const stableURL = "https://kubernetes-charts.storage.googleapis.com"
+const (
+	stableURL = "https://kubernetes-charts.storage.googleapis.com"
+	// As old versions of Kubernetes had a limit on names of 63 characters, Helm uses 53, reserving
+	// 10 characters for charts to add data.
+	helmMaxNameLength = 53
+)
 
+// Client represents a Helm client to interact with the k8s cluster.
 type Client struct {
-	repoURL string
-	home    helmpath.Home
-	rf      *repo.RepoFile
+	log              log.Verboser
+	repositoryClient RepositoryInitializeDownloadLoader
+	chartClient      *ChartClient
+
+	settings  *cli.EnvSettings
+	chartRepo *repo.ChartRepository
 }
 
-func NewClient(repoURL string) *Client {
-	if repoURL == "" {
-		repoURL = stableURL
+// NewDefaultClient creates a new Client with the default dependencies.
+func NewDefaultClient() *Client {
+	return NewClient(
+		log.NewKlog(),
+		NewDefaultRepositoryClient(),
+		NewDefaultChartClient(),
+	)
+}
+
+// NewClient creates a new client with explicit dependencies.
+func NewClient(
+	log log.Verboser,
+	repositoryClient RepositoryInitializeDownloadLoader,
+	chartClient *ChartClient,
+) *Client {
+	settings := &cli.EnvSettings{
+		RegistryConfig:   helmpath.ConfigPath("registry.json"),
+		RepositoryConfig: helmpath.ConfigPath("repositories.yaml"),
+		RepositoryCache:  helmpath.CachePath("repository"),
 	}
-
-	return &Client{repoURL: repoURL}
+	return &Client{
+		log:              log,
+		repositoryClient: repositoryClient,
+		chartClient:      chartClient,
+		settings:         settings,
+	}
 }
 
-func (c *Client) Init() error {
-	klog.V(5).Infof("helm client: initializing client")
+// Initialize initializes a chart repository.
+// TODO(f0rmiga): be able to handle multiple repositories. How can we handle charts with the same
+// name across repositories?
+// TODO(f0rmiga): add a readiness probe for this initialization process. A health endpoint would be
+// enough.
+func (c *Client) Initialize(repoURL string) error {
+	c.log.V(3).Log("helm client: initializing")
 
-	c.home = helmpath.Home(environment.DefaultHelmHome)
-	klog.V(3).Infof("helm client: helm home: %s", c.home)
-	f, err := repo.LoadRepositoriesFile(c.home.RepositoryFile())
+	// TODO(f0rmiga): Allow private repos with authentication. Entry will need to contain the auth
+	// configuration.
+	chartCfg := repo.Entry{
+		Name: "stable",
+		URL:  repoURL,
+	}
+	if chartCfg.URL == "" {
+		chartCfg.URL = stableURL
+	}
+	chartRepo, err := c.repositoryClient.Initialize(&chartCfg, getter.All(c.settings))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize helm client: %v", err)
 	}
 
-	klog.V(3).Infof("helm client: caching stable repository")
-	cif := c.home.CacheIndex("stable")
-	cr := repo.Entry{
-		Name:  "stable",
-		Cache: cif,
-		URL:   c.repoURL,
-	}
-
-	var settings environment.EnvSettings
-	r, err := repo.NewChartRepository(&cr, getter.All(settings))
+	c.log.V(3).Log("helm client: downloading index file")
+	indexPath, err := c.repositoryClient.DownloadIndex(chartRepo)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize helm client: %v", err)
 	}
 
-	if err := r.DownloadIndexFile(c.home.Cache()); err != nil {
-		return errors.Wrapf(err, "Looks like %q is not a valid chart repository or cannot be reached", cr.URL)
+	c.log.V(3).Log("helm client: loading repository")
+	indexFile, err := c.repositoryClient.Load(indexPath)
+	if err != nil {
+		return fmt.Errorf("failed to initialize helm client: %v", err)
 	}
 
-	f.Update(&cr)
-	f.WriteFile(c.home.RepositoryFile(), 0644)
+	chartRepo.IndexFile = indexFile
+	c.chartRepo = chartRepo
 
-	// Load the repositories.yaml
-	c.rf, err = repo.LoadRepositoriesFile(c.home.RepositoryFile())
+	c.log.V(3).Log("helm client: successfully initialized")
 
-	klog.V(5).Infof("helm client: initialized client")
-
-	return err
+	return nil
 }
 
-func (c *Client) ListCharts() (map[string]repo.ChartVersions, error) {
-	klog.V(4).Infof("helm client: listing charts")
-
-	charts := map[string]repo.ChartVersions{}
-
-	// TODO: handle non-unique names across repos
-	for _, r := range c.rf.Repositories {
-		n := r.Name
-		f := c.home.CacheIndex(n)
-		index, err := repo.LoadIndexFile(f)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Could not load helm repository index at %s", f)
-		}
-
-		for chart, chartVersions := range index.Entries {
-			charts[chart] = chartVersions
-		}
-	}
-
-	klog.V(4).Infof("helm client: listed charts")
-
-	return charts, nil
+// ListCharts lists the charts from the chart repository.
+func (c *Client) ListCharts() map[string]repo.ChartVersions {
+	c.log.V(4).Log("helm client: listing charts from %s", c.chartRepo.Config.URL)
+	defer c.log.V(4).Log("helm client: listed charts from %s", c.chartRepo.Config.URL)
+	return c.chartRepo.IndexFile.Entries
 }
 
-func (c *Client) GetChart(name, version string) (*repo.ChartVersion, error) {
-	klog.V(4).Infof("helm client: getting chart %s:%s", name, version)
+// GetChart gets a chart that exists in the chart repository. IndexFile.Get() cannot be used here
+// since we filter by app version.
+func (c *Client) GetChart(name, appVersion string) (*repo.ChartVersion, error) {
+	c.log.V(4).Log("helm client: getting chart %s:%s", name, appVersion)
 
-	charts, err := c.ListCharts()
-	if err != nil {
-		return nil, err
-	}
+	charts := c.ListCharts()
 
 	versions, ok := charts[name]
 	if !ok {
-		return nil, fmt.Errorf("chart not found: %s", name)
+		err := fmt.Errorf("chart not found: %s", name)
+		c.log.V(4).Log("helm client: %v", err)
+		return nil, fmt.Errorf("failed to get chart: %v", err)
 	}
 
 	for _, v := range versions {
-		if v.AppVersion == version {
-			klog.V(4).Infof("helm client: got chart %s:%s", name, version)
+		if v.AppVersion == appVersion {
+			c.log.V(4).Log("helm client: got chart %s:%s", name, appVersion)
 			return v, nil
 		}
 	}
 
-	return nil, fmt.Errorf("version not found: %s @ %s", name, version)
+	err := fmt.Errorf("chart app version not found for %q: %s", name, appVersion)
+	c.log.V(4).Log("helm client: %v", err)
+	return nil, fmt.Errorf("failed to get chart: %v", err)
 }
 
-func LoadChart(chartURL string) (*chart.Chart, error) {
-	klog.V(3).Infof("helm: loading chart %q", chartURL)
-
-	resp, err := http.Get(chartURL)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to download chart from %s", chartURL)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		err = errors.Errorf("got status code %d trying to download chart at %s", resp.StatusCode, chartURL)
-		return nil, err
-	}
-	tmpDir, err := ioutil.TempDir("", "helm")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create temp helm chart directory")
-	}
-
-	fullChartPath := filepath.Join(tmpDir, "chart")
-	fd, err := os.Create(fullChartPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create temp chart file")
-	}
-	defer func() {
-		if err := fd.Close(); err != nil {
-			klog.V(2).Infof("helm: failed to close file descriptor for chart at %q: %v", fullChartPath, err)
-		}
-	}()
-
-	klog.V(3).Infof("helm: downloading chart %q to %q", chartURL, fullChartPath)
-	if _, err := io.Copy(fd, resp.Body); err != nil {
-		return nil, errors.Wrapf(err, "failed to download chart contents to %s", fullChartPath)
-	}
-
-	klog.V(3).Infof("helm: loading chart from disk %q", fullChartPath)
-	chart, err := chartutil.Load(fullChartPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to load chart from disk")
-	}
-
-	klog.V(3).Infof("helm: successfully loaded chart downloaded from %q", chartURL)
-
-	return chart, nil
+// ChartClient returns the chart client for installing and uninstalling a chart.
+func (c *Client) ChartClient() *ChartClient {
+	return c.chartClient
 }

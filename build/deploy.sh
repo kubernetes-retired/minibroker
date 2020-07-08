@@ -32,4 +32,5 @@ helm upgrade minibroker \
   --set "image=${IMAGE}:${TAG}" \
   --set "imagePullPolicy=${IMAGE_PULL_POLICY}" \
   --set "deploymentStrategy=Recreate" \
+  --set "logLevel=${LOG_LEVEL:-4}" \
   charts/minibroker

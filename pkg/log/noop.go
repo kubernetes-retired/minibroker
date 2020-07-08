@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package log
 
-type Options struct {
-	HelmRepoURL string
-	CatalogPath string
-	// The namespace where Minibroker stores configmaps.
-	ConfigNamespace string
-	// The default namespace wheer Minibroker deploys service instances.
-	DefaultNamespace          string
-	ServiceCatalogEnabledOnly bool
+// NewNoop creates a new noop wrapped in the Verboser interface. The noop verboser and logger should
+// be used when a logger is required, but shouldn't log anything.
+func NewNoop() Verboser {
+	return &noop{&noopLogger{}}
+}
+
+type noop struct {
+	log *noopLogger
+}
+
+func (l *noop) V(Level) Logger {
+	return l.log
+}
+
+type noopLogger struct{}
+
+func (l *noopLogger) Enabled() bool {
+	return true
+}
+
+func (l *noopLogger) Log(format string, args ...interface{}) {
 }

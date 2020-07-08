@@ -29,8 +29,12 @@ lint-go-vet:
 lint-go-mod:
 	go mod tidy
 
-lint-modified-files: | lint-go-mod
+lint-modified-files: | lint-go-mod generate
 	./build/verify-modified-files.sh
+
+generate:
+	find . -type d -name '*mocks' -print -prune -exec rm -rf '{}' \;
+	go generate ./...
 
 build:
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o $(OUTPUT_DIR)/minibroker $(PKG)
@@ -60,7 +64,7 @@ verify-boilerplate:
 	./build/verify-boilerplate.sh
 
 test-unit:
-	go test -v ./cmd/... ./pkg/...
+	ginkgo -cover cmd/... pkg/...
 
 test-integration:
 	(cd ./tests/integration; NAMESPACE=minibroker-tests ginkgo --nodes 4 --slowSpecThreshold 180 .)

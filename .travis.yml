@@ -1,8 +1,6 @@
 language: go
 
-go:
-- 1.13.x
-- 1.14.x
+go: 1.14.x
 
 os: linux
 dist: bionic
@@ -13,13 +11,6 @@ cache:
   - ${GOPATH}/pkg/mod
   - ${GOPATH}/bin
 
-services:
-- docker
-
-script:
-- make build
-- make test-unit
-
 jobs:
   include:
   - name: Verify
@@ -27,10 +18,18 @@ jobs:
     script: make verify
   - name: Lint
     stage: lint
-    go: 1.14.x
+    before_script:
+    - GO111MODULE=on go install github.com/golang/mock/mockgen
     script: make lint
+  - name: Test
+    stage: test
+    before_script:
+    - go install github.com/onsi/ginkgo/ginkgo
+    script: make test-unit
   - name: Integration tests
     stage: test-integration
+    services:
+    - docker
     env:
     - CHANGE_MINIKUBE_NONE_USER=false
     - MINIKUBE_HOME=${HOME}
@@ -40,7 +39,8 @@ jobs:
     before_install:
     - sudo apt-get -qq -y install conntrack
     before_script:
-    - ci/install_tools.sh
+    - ci/install/integration.sh
+    - go install github.com/onsi/ginkgo/ginkgo
     script: ci/test_integration.sh
 
 stages:

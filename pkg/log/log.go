@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package log
 
-type Options struct {
-	HelmRepoURL string
-	CatalogPath string
-	// The namespace where Minibroker stores configmaps.
-	ConfigNamespace string
-	// The default namespace wheer Minibroker deploys service instances.
-	DefaultNamespace          string
-	ServiceCatalogEnabledOnly bool
+// Level represents a log level.
+type Level int32
+
+// Verboser wraps the V method for providing a Logger.
+type Verboser interface {
+	V(Level) Logger
+}
+
+// Logger defines how a logger should be implemented.
+type Logger interface {
+	Enabled() bool
+	Log(format string, args ...interface{})
 }
