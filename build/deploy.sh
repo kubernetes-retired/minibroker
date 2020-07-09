@@ -26,9 +26,9 @@ fi
 
 helm upgrade minibroker \
   --install \
-  --force \
   --recreate-pods \
   --namespace minibroker \
+  --wait \
   --set "image=${IMAGE}:${TAG}" \
   --set "imagePullPolicy=${IMAGE_PULL_POLICY}" \
   --set "deploymentStrategy=Recreate" \
