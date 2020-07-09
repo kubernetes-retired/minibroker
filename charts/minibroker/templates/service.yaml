@@ -9,5 +9,5 @@ spec:
     app: {{ template "minibroker.fullname" . }}
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: {{ .Values.broker.deployment.port }}
+    port: {{ .Values.broker.service.port }}
+    targetPort: broker

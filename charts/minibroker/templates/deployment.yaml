@@ -1,3 +1,5 @@
+{{- $deploymentPort := 8080 }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -38,7 +40,7 @@ spec:
         - "{{ .Values.defaultNamespace }}"
         {{- end }}
         - --port
-        - {{ .Values.broker.deployment.port | quote }}
+        - {{ $deploymentPort | quote }}
         {{- if .Values.tls.cert }}
         - --tlsCert
         - "{{ .Values.tls.cert }}"
@@ -52,7 +54,7 @@ spec:
         - -logtostderr
         ports:
         - name: broker
-          containerPort: {{ .Values.broker.deployment.port }}
+          containerPort: {{ $deploymentPort }}
         env:
         - name: CONFIG_NAMESPACE
           valueFrom:
@@ -61,7 +63,7 @@ spec:
         readinessProbe:
           httpGet: &readinessHTTPGet
             path: /healthz
-            port: {{ .Values.broker.deployment.port }}
+            port: {{ $deploymentPort }}
           initialDelaySeconds: 5
           periodSeconds: 3
         livenessProbe:

@@ -6,5 +6,5 @@ metadata:
   labels:
     {{- include "minibroker.labels" . | nindent 4 }}
 spec:
-  url: http://{{ template "minibroker.fullname" . }}.{{ .Release.Namespace }}.svc
+  url: {{ printf "http://%s.%s.svc:%d" (include "minibroker.fullname" .) .Release.Namespace (int .Values.broker.service.port) | quote }}
 {{ end }}
