@@ -11,6 +11,13 @@ tls:
   # base-64 encoded PEM data for the private key matching the certificate
   key:
 
+# The service broker server configuration.
+broker:
+  # The service configuration.
+  service:
+    # A port for the service broker HTTP API.
+    port: 80
+
 # The logging level to use; higher values emit more information
 logLevel: 3
 
