@@ -16,6 +16,7 @@ services:
 * postgres
 * mariadb
 * mongodb
+* redis
 
 Minibroker has built-in support for these charts so that the credentials are formatted
 in a format that Service Catalog Ready charts expect.
@@ -23,27 +24,26 @@ in a format that Service Catalog Ready charts expect.
 # Prerequisites
 
 * Kubernetes 1.9+ cluster
-* [Helm](https://helm.sh)
+* [Helm 3](https://helm.sh)
 * [Service Catalog](https://svc-cat.io/docs/install)
 * [Service Catalog CLI (svcat)](http://svc-cat.io/docs/install/#installing-the-service-catalog-cli)
 
 Run the following commands to set up a cluster:
 
 ```
-minikube start --kubernetes-version=v1.9.6 --bootstrapper=kubeadm
-
-kubectl apply -f https://raw.githubusercontent.com/Azure/helm-charts/master/docs/prerequisities/helm-rbac-config.yaml
-helm init --service-account tiller --wait
+minikube start
 
 helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
-helm install --name catalog --namespace svc-cat svc-cat/catalog --wait
+kubectl create namespace svc-cat
+helm install catalog --namespace svc-cat svc-cat/catalog
 ```
 
 # Install Minibroker
 
 ```
 helm repo add minibroker https://minibroker.blob.core.windows.net/charts
-helm install --name minibroker --namespace minibroker minibroker/minibroker
+kubectl create namespace minibroker
+helm install minibroker --namespace minibroker minibroker/minibroker
 ```
 
 ## Installation Options
@@ -56,9 +56,9 @@ helm install --name minibroker --namespace minibroker minibroker/minibroker
 # Update Minibroker
 
 ```
-helm upgrade --install minibroker \
-	--recreate-pods --force minibroker/minibroker \
-	--set imagePullPolicy="Always",deploymentStrategy="Recreate"
+helm upgrade minibroker minibroker/minibroker \
+  --install \
+  --set deploymentStrategy="Recreate"
 ```
 
 # Usage with Cloud Foundry
@@ -68,20 +68,23 @@ can be used to respond to requests from a CF system.
 
 ## Installation
 
-CF doesn't use a service catalog as the Cloud Controller handles the request
-for services.
+CF doesn't require the Service Catalog to be installed. The Cloud Controller,
+which is part of the CFAR (Clouf Foundry Application Runtime), is the Platform
+as specified in the OSBAPI.
 
 ```
 helm repo add minibroker https://minibroker.blob.core.windows.net/charts
-helm install --name minibroker --namespace minibroker minibroker/minibroker \
-	--set "deployServiceCatalog=false" \
-        --set "defaultNamespace=minibroker"
+kubectl create namespace minibroker
+helm install minibroker minibroker/minibroker \
+  --namespace minibroker \
+  --set "deployServiceCatalog=false" \
+  --set "defaultNamespace=minibroker"
 ```
 
 ## Usage
 
 The following usage instructions assume a successful login to the CF system,
-with an Org and Space available. It also assumes a CF system like [SUSE CAP](https://github.com/SUSE/scf)
+with an Org and Space available. It also assumes a CF system like [KubeCF](https://github.com/cloudfoundry-incubator/kubecf)
 that runs in the same Kubernetes cluster as the minibroker. It should be
 possible to run the minibroker separately, but this would need a proper
 ingress setup.
@@ -186,7 +189,7 @@ To see Minibroker in action try out our Wordpress chart, that relies on Minibrok
 to supply a database:
 
 ```
-helm install --name minipress minibroker/wordpress
+helm install minipress minibroker/wordpress
 ```
 
 Follow the instructions output to the console to log into Wordpress.
@@ -201,14 +204,14 @@ the database to create, etc.
 ## Requirements
 
 * Docker
-* [Minikube v0.25+](https://github.com/kubernetes/minikube/releases/tag/v0.25.0)
-* [Helm v2.8.2+](https://helm.sh)
+* [Minikube](https://github.com/kubernetes/minikube/releases/)
+* [Helm 3](https://helm.sh)
 * [Service Catalog CLI (svcat)](http://svc-cat.io/docs/install/#installing-the-service-catalog-cli)
 
 ## Setup
 
 1. Create a Minikube cluster for local development by running `make create-cluster`. It defaults to
-  using VirtualBox as a VM driver. If you want to use a different VM driver, set the `VM_DRIVER`
+  using Docker as a VM driver. If you want to use a different VM driver, set the `VM_DRIVER`
   environment variable. E.g. `VM_DRIVER=kvm2 make create-cluster`.
 2. Point your Docker to use the Minikube Docker daemon on the current shell session by running
   `eval $(minikube docker-env)`.
@@ -221,9 +224,6 @@ Compile and deploy the broker to your local cluster by running
 ## Test
 
 `make test`
-
-Each of the tests is broken down into steps, so if you'd like to see what was
-created before the testdata is removed just just the setup-* target, e.g. `make setup-mysql`.
 
 There is an example chart for Wordpress that has been tweaked to use Minibroker for the
 database provider, run `make setup-wordpress` to try it out.
