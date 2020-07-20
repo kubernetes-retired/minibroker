@@ -204,7 +204,7 @@ the database to create, etc.
 ## Requirements
 
 * Docker
-* [Minikube](https://github.com/kubernetes/minikube/releases/)
+* [Minikube](https://minikube.sigs.k8s.io/)
 * [Helm 3](https://helm.sh)
 * [Service Catalog CLI (svcat)](http://svc-cat.io/docs/install/#installing-the-service-catalog-cli)
 
