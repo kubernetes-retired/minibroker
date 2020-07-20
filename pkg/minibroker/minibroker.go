@@ -98,6 +98,7 @@ func NewClient(namespace string, serviceCatalogEnabledOnly bool) *Client {
 			"postgresql": PostgresProvider{},
 			"mongodb":    MongodbProvider{},
 			"redis":      RedisProvider{},
+			"rabbitmq":   RabbitmqProvider{},
 		},
 	}
 }
