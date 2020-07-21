@@ -5,6 +5,7 @@
 /minibroker-linux
 /image/minibroker
 /vendor
+/tmp
 
 *.test
 *.coverprofile
