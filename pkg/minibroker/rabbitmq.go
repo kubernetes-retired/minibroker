@@ -17,6 +17,9 @@ limitations under the License.
 package minibroker
 
 import (
+	"fmt"
+	"net/url"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -56,9 +59,14 @@ func (p RabbitmqProvider) Bind(services []corev1.Service, params map[string]inte
 		Host:     host,
 		Username: "user",
 		Password: password,
-		Database: "%2F",
+		Database: "/",
 	}
-	creds.URI = buildURI(creds)
+	creds.URI = buildRabbitmqURI(creds)
 
 	return &creds, nil
+}
+
+func buildRabbitmqURI(c Credentials) string {
+	return fmt.Sprintf("%s://%s:%s@%s:%d/%s",
+		c.Protocol, c.Username, c.Password, c.Host, c.Port, url.QueryEscape(c.Database))
 }
