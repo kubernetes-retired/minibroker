@@ -29,7 +29,9 @@ RUN go mod download
 COPY cmd/ ./cmd/
 COPY pkg/ ./pkg/
 COPY Makefile ./
-RUN make build-linux
+ARG TAG
+ENV TAG $TAG
+RUN make build
 
 # --------------------------------------------------------------------------------------------------
 # The downloading stage.
@@ -60,7 +62,7 @@ FROM ${RUNNING_IMAGE}
 
 COPY --from=cert_builder /tmp/ca-bundle.crt /etc/ssl/certs/ca-bundle.crt
 COPY --from=downloader /tmp/dumb-init /usr/local/bin/dumb-init
-COPY --from=builder /build/minibroker/output/minibroker-linux /usr/local/bin/minibroker
+COPY --from=builder /build/minibroker/output/minibroker /usr/local/bin/minibroker
 
 COPY docker/rootfs/etc/passwd /etc/passwd
 COPY --chown=1000 docker/rootfs/home/minibroker /home/minibroker

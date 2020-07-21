@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path"
 	"strconv"
 	"syscall"
 
@@ -33,6 +32,11 @@ import (
 
 	"github.com/pmorie/osb-broker-lib/pkg/rest"
 	"github.com/pmorie/osb-broker-lib/pkg/server"
+)
+
+var (
+	version   = "0.0.0"
+	buildDate = ""
 )
 
 var options struct {
@@ -87,7 +91,7 @@ func run() error {
 
 func runWithContext(ctx context.Context) error {
 	if flag.Arg(0) == "version" {
-		klog.V(0).Infof("%s/%s", path.Base(os.Args[0]), "0.1.0")
+		fmt.Printf("Minibroker %s - built %s\n", version, buildDate)
 		return nil
 	}
 	if (options.TLSCert != "" || options.TLSKey != "") &&

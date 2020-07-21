@@ -17,8 +17,12 @@
 set -o errexit -o nounset -o pipefail
 
 if [[ "${BUILD_IN_MINIKUBE}" == "1" ]]; then
+  if ! minikube version 1> /dev/null 2> /dev/null; then
+    >&2 echo "minikube not found in \$PATH"
+    exit 1
+  fi
   # shellcheck disable=SC2046
   eval $(minikube -p minikube docker-env)
 fi
 
-docker build --tag "${IMAGE}:${TAG}" --file docker/Dockerfile .
+docker build --tag "${IMAGE}:${TAG}" --build-arg "TAG=${TAG}" --file docker/Dockerfile .

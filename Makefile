@@ -18,6 +18,7 @@ PKG ?= $(REPO)/cmd/$(BINARY)
 OUTPUT_DIR ?= output
 REGISTRY ?= quay.io/kubernetes-service-catalog/
 IMAGE ?= $(REGISTRY)minibroker
+DATE ?= $(shell date --utc)
 TAG ?= canary
 IMAGE_PULL_POLICY ?= Never
 
@@ -37,11 +38,7 @@ generate:
 	go generate ./...
 
 build:
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o $(OUTPUT_DIR)/minibroker $(PKG)
-
-build-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-		go build -ldflags="-s -w" -o $(OUTPUT_DIR)/$(BINARY)-linux $(PKG)
+	CGO_ENABLED=0 go build -ldflags="-s -w -X 'main.version=$(TAG)' -X 'main.buildDate=$(DATE)'" -o $(OUTPUT_DIR)/minibroker $(PKG)
 
 build-image:
 	docker build -t minibroker-build ./build/build-image
