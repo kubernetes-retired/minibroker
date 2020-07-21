@@ -42,16 +42,18 @@ jobs:
     - ci/install/integration.sh
     - go install github.com/onsi/ginkgo/ginkgo
     script: ci/test_integration.sh
+  - name: Release
+    stage: release
+    services:
+    - docker
+    before_script:
+    - ci/install/release.sh
+    script: make release
 
 stages:
 - verify
 - lint
 - test
 - test-integration
-
-deploy:
-  provider: script
-  script: make release
-  on:
-    repo: kubernetes-sigs/minibroker
-    all_branches: true
+- name: release
+  if: (tag IS present) AND (branch = master) AND (repo = "kubernetes-sigs/minibroker")

@@ -43,9 +43,6 @@ generate:
 build:
 	CGO_ENABLED=0 go build -ldflags="-s -w -X 'main.version=$(TAG)' -X 'main.buildDate=$(DATE)'" -o $(OUTPUT_DIR)/minibroker $(PKG)
 
-build-image:
-	docker build -t minibroker-build ./build/build-image
-
 image:
 	BUILD_IN_MINIKUBE=0 IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/image.sh
 
@@ -99,12 +96,12 @@ create-cluster:
 deploy: image-in-minikube charts
 	IMAGE="$(IMAGE)" TAG="$(TAG)" IMAGE_PULL_POLICY="$(IMAGE_PULL_POLICY)" OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" ./build/deploy.sh
 
-release: release-images release-charts
+release: clean release-images release-charts
 
-release-images: push
+release-images: image
+	IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/release-images.sh
 
-release-charts: build-image
-	docker run --rm -it -v `pwd`:/go/src/$(REPO) -e AZURE_STORAGE_CONNECTION_STRING minibroker-build ./build/publish-charts.sh
-
+release-charts: charts
+	OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" ./build/release-charts.sh
 
 .PHONY: build log test image charts clean push create-cluster deploy release
