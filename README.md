@@ -17,6 +17,7 @@ services:
 * mariadb
 * mongodb
 * redis
+* rabbitmq
 
 Minibroker has built-in support for these charts so that the credentials are formatted
 in a format that Service Catalog Ready charts expect.
