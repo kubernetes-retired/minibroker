@@ -24,9 +24,12 @@ import (
 type RabbitmqProvider struct{}
 
 func (p RabbitmqProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+	if len(services) == 0 {
+		return nil, errors.Errorf("no services to process")
+	}
 	service := services[0]
 
-	var amqpPort *corev1.ServicePort = nil
+	var amqpPort *corev1.ServicePort
 	for _, port := range service.Spec.Ports {
 		if port.Name == "amqp" {
 			amqpPort = &port
@@ -37,12 +40,14 @@ func (p RabbitmqProvider) Bind(services []corev1.Service, params map[string]inte
 		return nil, errors.Errorf("no amqp port found")
 	}
 
-	var password string
 	passwordVal, ok := chartSecrets["rabbitmq-password"]
 	if !ok {
 		return nil, errors.Errorf("password not found in secret keys")
 	}
-	password = passwordVal.(string)
+	password, ok := passwordVal.(string)
+	if !ok {
+		return nil, errors.Errorf("invalid password type")
+	}
 
 	host := buildHostFromService(service)
 	creds := Credentials{
