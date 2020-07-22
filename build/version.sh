@@ -16,7 +16,7 @@
 
 set -o errexit -o nounset -o pipefail
 
-git_dirty=$([[ -z $(git status --short) ]] || echo "-dirty")
+git_dirty=$([[ -z "$(git status --short)" ]] || echo "-dirty")
 git_tag=$(git tag --points-at HEAD)
 if [ -z "${git_tag}" ]; then
     # No git tag found for current commit, use git describe to construct the
