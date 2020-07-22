@@ -16,7 +16,5 @@
 
 set -o errexit -o nounset -o pipefail
 
-: "${SERVER:=quay.io}"
-
-docker login -u "$DOCKER_USERNAME" --password-stdin "${SERVER}" <<<"${DOCKER_PASSWORD}"
+docker login -u "$DOCKER_USERNAME" --password-stdin "${DOCKER_SERVER}" <<<"${DOCKER_PASSWORD}"
 make release
