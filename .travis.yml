@@ -56,4 +56,7 @@ stages:
 - test
 - test-integration
 - name: release
-  if: (tag IS present) AND (branch = master) AND (repo = "kubernetes-sigs/minibroker")
+  if: >-
+    (tag IS present) AND
+    (branch = master) AND
+    (repo = "kubernetes-sigs/minibroker")

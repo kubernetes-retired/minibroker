@@ -21,7 +21,7 @@ version="v3.2.1"
 sha256="018f9908cb950701a5d59e757653a790c66d8eda288625dbb185354ca6f41f6b"
 asset_path="${HOME}/assets/helm.tar.gz"
 asset_url="https://get.helm.sh/helm-${version}-linux-amd64.tar.gz"
-if [ ! -f "${asset_path}" ] || [[ "$(sha256sum "${asset_path}" | awk '{ print $1 }')" != "${sha256}" ]]; then
+if ! echo "${sha256} ${asset_path}" | sha256sum --check; then
   curl -Lo "${asset_path}" "${asset_url}"
 fi
 sudo tar zxf "${asset_path}" --strip-components=1 --directory /usr/local/bin/ linux-amd64/helm

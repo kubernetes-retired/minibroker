@@ -23,7 +23,7 @@ index_url="${CHART_REPOSITORY_ROOT}/${AZURE_STORAGE_CONTAINER}"
 >&2 echo "Generating final index.yaml..."
 helm repo index \
     --url "${index_url}" \
-    --merge <(curl -L --silent "${index_url}/index.yaml") \
+    --merge <(curl -L --silent --fail "${index_url}/index.yaml") \
     "${OUTPUT_CHARTS_DIR}"
 
 if [ ! -v AZURE_STORAGE_CONNECTION_STRING ]; then

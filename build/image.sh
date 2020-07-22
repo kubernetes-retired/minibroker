@@ -17,7 +17,7 @@
 set -o errexit -o nounset -o pipefail
 
 if [[ "${BUILD_IN_MINIKUBE}" == "1" ]]; then
-  if ! minikube version 1> /dev/null 2> /dev/null; then
+  if ! type -t minikube &>/dev/null; then
     >&2 echo "minikube not found in \$PATH"
     exit 1
   fi

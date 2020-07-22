@@ -94,7 +94,11 @@ create-cluster:
 	./hack/create-cluster.sh
 
 deploy: image-in-minikube charts
-	IMAGE="$(IMAGE)" TAG="$(TAG)" IMAGE_PULL_POLICY="$(IMAGE_PULL_POLICY)" OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" ./build/deploy.sh
+	IMAGE="$(IMAGE)" \
+	TAG="$(TAG)" \
+	IMAGE_PULL_POLICY="$(IMAGE_PULL_POLICY)" \
+	OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" \
+	./build/deploy.sh
 
 release: clean release-images release-charts
 
