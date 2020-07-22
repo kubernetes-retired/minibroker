@@ -48,7 +48,7 @@ jobs:
     - docker
     before_script:
     - ci/install/release.sh
-    script: make release
+    script: ci/release.sh
 
 stages:
 - verify
