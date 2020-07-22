@@ -16,13 +16,11 @@
 
 set -o errexit -o nounset -o pipefail
 
+git_tag=$(git describe --tags)
+# This dirty check also takes into consideration new files not staged for
+# commit.
 git_dirty=$([[ -z "$(git status --short)" ]] || echo "-dirty")
-git_tag=$(git tag --points-at HEAD)
-if [ -z "${git_tag}" ]; then
-    # No git tag found for current commit, use git describe to construct the
-    # version.
-    git_tag=$(git describe --tags)
-fi
 
-# Use the git tag, removing the leading 'v' if it exists.
+# Use the git tag, removing the leading 'v' if it exists, appended with -dirty
+# if there are changes in the tree.
 echo "${git_tag/#v/}${git_dirty}"
