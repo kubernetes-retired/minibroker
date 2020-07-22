@@ -18,12 +18,11 @@ set -o errexit -o nounset -o pipefail
 
 git_dirty=$([[ -z $(git status --short) ]] || echo "-dirty")
 git_tag=$(git tag --points-at HEAD)
-if [ -n "${git_tag}" ]; then
-    # Use the git tag, removing the leading 'v' if it exists.
-    echo "${git_tag/#v/}${git_dirty}"
-else
-    # No git tag found for current commit, the version is unknown, but we use
-    # the short hash for reference.
-    git_hash_short=$(git rev-parse --short HEAD)
-    echo "0.0.0-${git_hash_short}${git_dirty}"
+if [ -z "${git_tag}" ]; then
+    # No git tag found for current commit, use git describe to construct the
+    # version.
+    git_tag=$(git describe --tags)
 fi
+
+# Use the git tag, removing the leading 'v' if it exists.
+echo "${git_tag/#v/}${git_dirty}"
