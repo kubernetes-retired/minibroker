@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -91,7 +92,7 @@ func run() error {
 
 func runWithContext(ctx context.Context) error {
 	if flag.Arg(0) == "version" {
-		fmt.Printf("Minibroker %s - built %s\n", version, buildDate)
+		printVersion()
 		return nil
 	}
 	if (options.TLSCert != "" || options.TLSKey != "") &&
@@ -145,4 +146,14 @@ func cancelOnInterrupt(ctx context.Context, f context.CancelFunc) {
 			os.Exit(0)
 		}
 	}
+}
+
+func printVersion() {
+	v := map[string]interface{}{
+		"version":    version,
+		"build_date": buildDate,
+	}
+	encoder := json.NewEncoder(os.Stderr)
+	encoder.SetIndent("", "  ")
+	encoder.Encode(v)
 }
