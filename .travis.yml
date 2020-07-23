@@ -5,58 +5,7 @@ go: 1.14.x
 os: linux
 dist: bionic
 
-cache:
-  directories:
-  - ${HOME}/assets
-  - ${GOPATH}/pkg/mod
-  - ${GOPATH}/bin
-
 jobs:
   include:
-  - name: Verify
-    stage: verify
-    script: make verify
-  - name: Lint
-    stage: lint
-    before_script:
-    - GO111MODULE=on go install github.com/golang/mock/mockgen
-    script: make lint
-  - name: Test
-    stage: test
-    before_script:
-    - go install github.com/onsi/ginkgo/ginkgo
-    script: make test-unit
-  - name: Integration tests
-    stage: test-integration
-    services:
-    - docker
-    env:
-    - CHANGE_MINIKUBE_NONE_USER=false
-    - MINIKUBE_HOME=${HOME}
-    - TEST_PROVISION_TIMEOUT=5m
-    - TEST_BIND_TIMEOUT=5m
-    - TEST_ASSERT_TIMEOUT=2m
-    before_install:
-    - sudo apt-get -qq -y install conntrack
-    before_script:
-    - ci/install/integration.sh
-    - go install github.com/onsi/ginkgo/ginkgo
-    script: ci/test_integration.sh
-  - name: Release
-    stage: release
-    services:
-    - docker
-    before_script:
-    - ci/install/release.sh
-    script: ci/release.sh
-
-stages:
-- verify
-- lint
-- test
-- test-integration
-- name: release
-  if: >-
-    (tag IS present) AND
-    (branch = master) AND
-    (repo = "kubernetes-sigs/minibroker")
+  - name: Tag list
+    script: git tag --list
