@@ -16,21 +16,15 @@
 
 set -o errexit -o nounset -o pipefail
 
-until svcat version | grep -m 1 'Server Version: v' ; do
-  sleep 1;
-done
-
-if ! kubectl get namespace minibroker 1> /dev/null 2> /dev/null; then
-  kubectl create namespace minibroker
+# Install helm.
+version="v3.2.1"
+sha256="018f9908cb950701a5d59e757653a790c66d8eda288625dbb185354ca6f41f6b"
+asset_path="${HOME}/assets/helm.tar.gz"
+asset_url="https://get.helm.sh/helm-${version}-linux-amd64.tar.gz"
+if ! echo "${sha256} ${asset_path}" | sha256sum --check; then
+  curl -Lo "${asset_path}" "${asset_url}"
 fi
+sudo tar zxf "${asset_path}" --strip-components=1 --directory /usr/local/bin/ linux-amd64/helm
 
-helm upgrade minibroker \
-  --install \
-  --recreate-pods \
-  --namespace minibroker \
-  --wait \
-  --set "image=${IMAGE}:${TAG}" \
-  --set "imagePullPolicy=${IMAGE_PULL_POLICY}" \
-  --set "deploymentStrategy=Recreate" \
-  --set "logLevel=${LOG_LEVEL:-4}" \
-  "${OUTPUT_CHARTS_DIR}/minibroker-${TAG}.tgz"
+# Install Azure CLI.
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash

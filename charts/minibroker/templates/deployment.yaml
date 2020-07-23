@@ -21,7 +21,7 @@ spec:
       serviceAccountName: minibroker
       containers:
       - name: minibroker
-        image: {{ .Values.image }}
+        image: {{ .Values.image | quote }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         securityContext:
           runAsNonRoot: true

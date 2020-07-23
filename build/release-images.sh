@@ -16,21 +16,4 @@
 
 set -o errexit -o nounset -o pipefail
 
-until svcat version | grep -m 1 'Server Version: v' ; do
-  sleep 1;
-done
-
-if ! kubectl get namespace minibroker 1> /dev/null 2> /dev/null; then
-  kubectl create namespace minibroker
-fi
-
-helm upgrade minibroker \
-  --install \
-  --recreate-pods \
-  --namespace minibroker \
-  --wait \
-  --set "image=${IMAGE}:${TAG}" \
-  --set "imagePullPolicy=${IMAGE_PULL_POLICY}" \
-  --set "deploymentStrategy=Recreate" \
-  --set "logLevel=${LOG_LEVEL:-4}" \
-  "${OUTPUT_CHARTS_DIR}/minibroker-${TAG}.tgz"
+docker push "${IMAGE}:${TAG}"

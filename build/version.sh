@@ -16,21 +16,11 @@
 
 set -o errexit -o nounset -o pipefail
 
-until svcat version | grep -m 1 'Server Version: v' ; do
-  sleep 1;
-done
+git_tag=$(git describe --tags)
+# This dirty check also takes into consideration new files not staged for
+# commit.
+git_dirty=$([[ -z "$(git status --short)" ]] || echo "-dirty")
 
-if ! kubectl get namespace minibroker 1> /dev/null 2> /dev/null; then
-  kubectl create namespace minibroker
-fi
-
-helm upgrade minibroker \
-  --install \
-  --recreate-pods \
-  --namespace minibroker \
-  --wait \
-  --set "image=${IMAGE}:${TAG}" \
-  --set "imagePullPolicy=${IMAGE_PULL_POLICY}" \
-  --set "deploymentStrategy=Recreate" \
-  --set "logLevel=${LOG_LEVEL:-4}" \
-  "${OUTPUT_CHARTS_DIR}/minibroker-${TAG}.tgz"
+# Use the git tag, removing the leading 'v' if it exists, appended with -dirty
+# if there are changes in the tree.
+echo "${git_tag/#v/}${git_dirty}"

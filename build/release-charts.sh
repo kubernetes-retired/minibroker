@@ -16,21 +16,22 @@
 
 set -o errexit -o nounset -o pipefail
 
-until svcat version | grep -m 1 'Server Version: v' ; do
-  sleep 1;
-done
+CHART_REPOSITORY_ROOT=https://minibroker.blob.core.windows.net
+AZURE_STORAGE_CONTAINER=charts
+index_url="${CHART_REPOSITORY_ROOT}/${AZURE_STORAGE_CONTAINER}"
 
-if ! kubectl get namespace minibroker 1> /dev/null 2> /dev/null; then
-  kubectl create namespace minibroker
+>&2 echo "Generating final index.yaml..."
+helm repo index \
+    --url "${index_url}" \
+    --merge <(curl -L --silent --fail "${index_url}/index.yaml") \
+    "${OUTPUT_CHARTS_DIR}"
+
+if [ ! -v AZURE_STORAGE_CONNECTION_STRING ]; then
+    >&2 echo "AZURE_STORAGE_CONNECTION_STRING env var required to publish"
+    exit 1
 fi
 
-helm upgrade minibroker \
-  --install \
-  --recreate-pods \
-  --namespace minibroker \
-  --wait \
-  --set "image=${IMAGE}:${TAG}" \
-  --set "imagePullPolicy=${IMAGE_PULL_POLICY}" \
-  --set "deploymentStrategy=Recreate" \
-  --set "logLevel=${LOG_LEVEL:-4}" \
-  "${OUTPUT_CHARTS_DIR}/minibroker-${TAG}.tgz"
+>&2 echo "Uploading from ${OUTPUT_CHARTS_DIR}"
+az storage blob upload-batch \
+    --destination "${AZURE_STORAGE_CONTAINER}" \
+    --source "${OUTPUT_CHARTS_DIR}"

@@ -1,3 +1,4 @@
 name: minibroker
 description: A minibroker for your minikube
-version: 0.3.1
+version: 0.0.0
+appVersion: 0.0.0

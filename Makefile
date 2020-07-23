@@ -16,10 +16,14 @@ REPO ?= github.com/kubernetes-sigs/minibroker
 BINARY ?= minibroker
 PKG ?= $(REPO)/cmd/$(BINARY)
 OUTPUT_DIR ?= output
+OUTPUT_CHARTS_DIR ?= $(OUTPUT_DIR)/charts
 REGISTRY ?= quay.io/kubernetes-service-catalog/
 IMAGE ?= $(REGISTRY)minibroker
-TAG ?= canary
+TAG ?= $(shell ./build/version.sh)
+DATE ?= $(shell date --utc)
+CHART_SIGN_KEY ?=
 IMAGE_PULL_POLICY ?= Never
+TMP_BUILD_DIR ?= tmp
 
 lint: lint-go-vet lint-go-mod lint-modified-files
 
@@ -37,14 +41,7 @@ generate:
 	go generate ./...
 
 build:
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o $(OUTPUT_DIR)/minibroker $(PKG)
-
-build-linux:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-		go build -ldflags="-s -w" -o $(OUTPUT_DIR)/$(BINARY)-linux $(PKG)
-
-build-image:
-	docker build -t minibroker-build ./build/build-image
+	CGO_ENABLED=0 go build -ldflags="-s -w -X 'main.version=$(TAG)' -X 'main.buildDate=$(DATE)'" -o $(OUTPUT_DIR)/minibroker $(PKG)
 
 image:
 	BUILD_IN_MINIKUBE=0 IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/image.sh
@@ -52,11 +49,20 @@ image:
 image-in-minikube:
 	BUILD_IN_MINIKUBE=1 IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/image.sh
 
-clean:
-	-rm -rf $(OUTPUT_DIR)
+charts:
+	CHART_SRC="charts/minibroker" \
+	TMP_BUILD_DIR="$(TMP_BUILD_DIR)" \
+	OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" \
+	APP_VERSION="$(TAG)" \
+	VERSION="$(TAG)" \
+	CHART_SIGN_KEY="$(CHART_SIGN_KEY)" \
+	IMAGE="$(IMAGE)" \
+	TAG="$(TAG)" \
+	./build/charts.sh
 
-push: image
-	IMAGE=$(IMAGE) TAG=$(TAG) ./build/publish-images.sh
+clean:
+	-rm -rf "$(OUTPUT_DIR)"
+	-rm -rf "$(TMP_BUILD_DIR)"
 
 verify: verify-boilerplate
 
@@ -87,15 +93,19 @@ log:
 create-cluster:
 	./hack/create-cluster.sh
 
-deploy: image-in-minikube
-	IMAGE=$(IMAGE) TAG=$(TAG) IMAGE_PULL_POLICY=$(IMAGE_PULL_POLICY) ./build/deploy.sh
+deploy: image-in-minikube charts
+	IMAGE="$(IMAGE)" \
+	TAG="$(TAG)" \
+	IMAGE_PULL_POLICY="$(IMAGE_PULL_POLICY)" \
+	OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" \
+	./build/deploy.sh
 
-release: release-images release-charts
+release: clean release-images release-charts
 
-release-images: push
+release-images: image
+	IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/release-images.sh
 
-release-charts: build-image
-	docker run --rm -it -v `pwd`:/go/src/$(REPO) -e AZURE_STORAGE_CONNECTION_STRING minibroker-build ./build/publish-charts.sh
+release-charts: charts
+	OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" ./build/release-charts.sh
 
-
-.PHONY: build log build-linux test image clean push create-cluster deploy release
+.PHONY: build log test image charts clean push create-cluster deploy release

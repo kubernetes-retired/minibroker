@@ -1,15 +1,15 @@
 # Default values for the minibroker
 # Image to use
-image: quay.io/kubernetes-service-catalog/minibroker:canary
+image: <%image%>
 # ImagePullPolicy; valid values are "IfNotPresent", "Never", and "Always"
 imagePullPolicy: IfNotPresent
 deploymentPolicy: RollingUpdate
 # Certificate details to use for TLS. Leave blank to not use TLS
 tls:
   # base-64 encoded PEM data for the TLS certificate
-  cert:
+  cert: ~
   # base-64 encoded PEM data for the private key matching the certificate
-  key:
+  key: ~
 
 # The service broker server configuration.
 broker:

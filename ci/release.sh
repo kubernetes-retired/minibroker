@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The Kubernetes Authors.
+# Copyright 2020 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -euo pipefail
+set -o errexit -o nounset -o pipefail
 
-SERVER=${SERVER:-quay.io}
-IMAGE=${IMAGE:-quay.io/kubernetes-service-catalog/minibroker}
-TAG=${TAG:-canary}
-
-if [[ -v DOCKER_PASSWORD && -v DOCKER_USERNAME ]]; then
-    echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin $SERVER
-fi
-
-docker push "$IMAGE:$TAG"
+docker login -u "$DOCKER_USERNAME" --password-stdin "${DOCKER_SERVER}" <<<"${DOCKER_PASSWORD}"
+make release

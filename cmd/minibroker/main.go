@@ -18,11 +18,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
-	"path"
 	"strconv"
 	"syscall"
 
@@ -33,6 +33,11 @@ import (
 
 	"github.com/pmorie/osb-broker-lib/pkg/rest"
 	"github.com/pmorie/osb-broker-lib/pkg/server"
+)
+
+var (
+	version   = "0.0.0"
+	buildDate = ""
 )
 
 var options struct {
@@ -87,7 +92,7 @@ func run() error {
 
 func runWithContext(ctx context.Context) error {
 	if flag.Arg(0) == "version" {
-		klog.V(0).Infof("%s/%s", path.Base(os.Args[0]), "0.1.0")
+		printVersion()
 		return nil
 	}
 	if (options.TLSCert != "" || options.TLSKey != "") &&
@@ -141,4 +146,14 @@ func cancelOnInterrupt(ctx context.Context, f context.CancelFunc) {
 			os.Exit(0)
 		}
 	}
+}
+
+func printVersion() {
+	v := map[string]interface{}{
+		"version":    version,
+		"build_date": buildDate,
+	}
+	encoder := json.NewEncoder(os.Stderr)
+	encoder.SetIndent("", "  ")
+	encoder.Encode(v)
 }
