@@ -2,6 +2,8 @@
 
 > A minibroker for your minikube!
 
+[![Build Status](https://travis-ci.org/kubernetes-sigs/minibroker.svg?branch=master)](https://travis-ci.org/kubernetes-sigs/minibroker)
+
 Minibroker is an implementation of the [Open Service Broker API](https://openservicebrokerapi.org)
 suited for local development and testing. Rather than provisioning services
 from a cloud provider, Minibroker provisions services in containers on the cluster.
