@@ -16,7 +16,20 @@
 
 set -o errexit -o nounset -o pipefail
 
+if [ -z "$(git tag --list)" ]; then
+    if [ -n "${VERSION_FORCE_TAG_FETCH:-}" ]; then
+        >&2 echo "fetching git tags"
+        git fetch --tags --all 1> /dev/null 2> /dev/null
+        >&2 echo "unshallowing git repository"
+        git fetch --unshallow 1> /dev/null 2> /dev/null
+    else
+        >&2 echo "failed to fetch git tags"
+        exit 1
+    fi
+fi
+
 git_tag=$(git describe --tags)
+
 # This dirty check also takes into consideration new files not staged for
 # commit.
 git_dirty=$([[ -z "$(git status --short)" ]] || echo "-dirty")

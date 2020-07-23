@@ -36,6 +36,8 @@ jobs:
     - TEST_PROVISION_TIMEOUT=5m
     - TEST_BIND_TIMEOUT=5m
     - TEST_ASSERT_TIMEOUT=2m
+    # Forces the version.sh script to fetch tags and unshallow the git repository.
+    - VERSION_FORCE_TAG_FETCH=true
     before_install:
     - sudo apt-get -qq -y install conntrack
     before_script:
@@ -46,6 +48,9 @@ jobs:
     stage: release
     services:
     - docker
+    env:
+    # Forces the version.sh script to fetch tags and unshallow the git repository.
+    - VERSION_FORCE_TAG_FETCH=true
     before_script:
     - ci/install/release.sh
     script: ci/release.sh
