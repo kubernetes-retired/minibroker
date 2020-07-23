@@ -8,4 +8,4 @@ dist: bionic
 jobs:
   include:
   - name: Tag list
-    script: git tag --list
+    script: git fetch --all --tags && git tag --list
