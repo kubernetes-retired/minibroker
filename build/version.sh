@@ -16,7 +16,12 @@
 
 set -o errexit -o nounset -o pipefail
 
+if [ -z "$(git tag --list)" ]; then
+    git fetch --tags --all
+fi
+
 git_tag=$(git describe --tags)
+
 # This dirty check also takes into consideration new files not staged for
 # commit.
 git_dirty=$([[ -z "$(git status --short)" ]] || echo "-dirty")
