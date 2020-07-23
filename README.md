@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/kubernetes-sigs/minibroker.svg?branch=master)](https://travis-ci.org/kubernetes-sigs/minibroker)
+
 # Minibroker
 
 > A minibroker for your minikube!
