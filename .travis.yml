@@ -39,6 +39,7 @@ jobs:
     before_install:
     - sudo apt-get -qq -y install conntrack
     before_script:
+    - git fetch --all --tags
     - ci/install/integration.sh
     - go install github.com/onsi/ginkgo/ginkgo
     script: ci/test_integration.sh
@@ -47,6 +48,7 @@ jobs:
     services:
     - docker
     before_script:
+    - git fetch --all --tags
     - ci/install/release.sh
     script: ci/release.sh
 
