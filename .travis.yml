@@ -4,6 +4,31 @@ go: 1.14.x
 os: linux
 dist: bionic
 
+if: &release_condition >-
+  (repo = "kubernetes-sigs/minibroker")
+  AND (tag IS present)
+  AND (branch ~= /^(?x)
+      v(0|[1-9][0-9]*)  # major
+      \.
+      (0|[1-9][0-9]*)  # minor
+      \.
+      (0|[1-9][0-9]*)  # patch
+      (?:
+        - # pre-release
+        (
+          (?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)
+          (?:\.
+            (?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)
+          )*
+        )
+      )?
+      # build
+      (?:\+([0-9a-zA-Z-]+
+        (?:\.[0-9a-zA-Z-]+)*
+      )
+    )?
+  $/)
+
 cache:
   directories:
   - ${HOME}/assets
@@ -60,27 +85,4 @@ stages:
 - test
 - test-integration
 - name: release
-  if: >-
-    (repo = "kubernetes-sigs/minibroker") AND
-    (tag IS present) AND
-    (branch ~= /^(?x)
-        v(0|[1-9][0-9]*)  # major
-        \.
-        (0|[1-9][0-9]*)  # minor
-        \.
-        (0|[1-9][0-9]*)  # patch
-        (?:
-          - # pre-release
-          (
-            (?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)
-            (?:\.
-              (?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)
-            )*
-          )
-        )?
-        # build
-        (?:\+([0-9a-zA-Z-]+
-          (?:\.[0-9a-zA-Z-]+)*
-        )
-      )?
-    $/)
+  if: *release_condition
