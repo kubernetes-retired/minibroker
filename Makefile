@@ -24,6 +24,7 @@ DATE ?= $(shell date --utc)
 CHART_SIGN_KEY ?=
 IMAGE_PULL_POLICY ?= Never
 TMP_BUILD_DIR ?= tmp
+WORDPRESS_CHART ?= $(shell pwd)/charts/wordpress
 
 lint: lint-go-vet lint-go-mod lint-modified-files
 
@@ -73,19 +74,9 @@ test-unit:
 	ginkgo -cover cmd/... pkg/...
 
 test-integration:
-	(cd ./tests/integration; NAMESPACE=minibroker-tests ginkgo --nodes 4 --slowSpecThreshold 180 .)
+	(cd ./tests/integration; NAMESPACE=minibroker-tests WORDPRESS_CHART="$(WORDPRESS_CHART)" ginkgo --nodes 4 --slowSpecThreshold 180 .)
 
 test: test-unit test-integration test-wordpress
-
-test-wordpress: setup-wordpress teardown-wordpress
-
-setup-wordpress:
-	kubectl create namespace minibroker-test-wordpress
-	helm install minipress charts/wordpress --namespace minibroker-test-wordpress --wait
-
-teardown-wordpress:
-	helm delete minipress --namespace minibroker-test-wordpress
-	kubectl delete namespace minibroker-test-wordpress
 
 log:
 	kubectl log -n minibroker deploy/minibroker-minibroker -c minibroker
