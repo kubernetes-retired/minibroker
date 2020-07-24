@@ -4,6 +4,27 @@ go: 1.14.x
 os: linux
 dist: bionic
 
+# Don't indent any line more than one level to avoid '\n' characters in the converter string,
+# which breaks the regex free-spacing modifier. Also, do NOT include comments in the regex string.
+# The logic:
+#   * Build on push to branches on forks that setup Travis - not tied to the
+#     kubernetes-sigs/minibroker Travis account.
+#   * Build on branch master that is not tagged.
+#   * Build on kubernetes-sigs/minibroker when a tag is present and the branch matches a semver
+#     string.
+if: >-
+  (repo != "kubernetes-sigs/minibroker")
+  OR ((branch = master) AND (tag IS NOT present))
+  OR (
+  (repo = "kubernetes-sigs/minibroker")
+  AND (tag IS present)
+  AND (branch ~= /^(?x)
+  v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)
+  (?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?
+  (?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?
+  $/)
+  )
+
 cache:
   directories:
   - ${HOME}/assets
@@ -60,27 +81,4 @@ stages:
 - test
 - test-integration
 - name: release
-  if: >-
-    (repo = "kubernetes-sigs/minibroker") AND
-    (tag IS present) AND
-    (branch ~= /^(?x)
-        v(0|[1-9][0-9]*)  # major
-        \.
-        (0|[1-9][0-9]*)  # minor
-        \.
-        (0|[1-9][0-9]*)  # patch
-        (?:
-          - # pre-release
-          (
-            (?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)
-            (?:\.
-              (?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)
-            )*
-          )
-        )?
-        # build
-        (?:\+([0-9a-zA-Z-]+
-          (?:\.[0-9a-zA-Z-]+)*
-        )
-      )?
-    $/)
+  if: (repo = "kubernetes-sigs/minibroker") AND (tag IS present) AND (branch != master)
