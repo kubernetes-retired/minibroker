@@ -17,9 +17,8 @@ limitations under the License.
 package testutil
 
 import (
+	"fmt"
 	"os/exec"
-
-	"github.com/pkg/errors"
 )
 
 type Helm struct {
@@ -33,19 +32,19 @@ func NewHelm(ns string) Helm {
 }
 
 func (h Helm) Install(name, chart string) error {
-	cmd := exec.Command("helm", "install", name, chart, "-n", h.namespace, "--wait")
+	cmd := exec.Command("helm", "install", name, chart, "--namespace", h.namespace, "--wait")
 	err := cmd.Run()
 	if err != nil {
-		return errors.Wrap(err, "failed to install helm chart '"+chart+"'")
+		return fmt.Errorf("failed to install helm chart %q: %w", chart, err)
 	}
 	return nil
 }
 
 func (h Helm) Uninstall(name string) error {
-	cmd := exec.Command("helm", "delete", name, "-n", h.namespace)
+	cmd := exec.Command("helm", "delete", name, "--namespace", h.namespace)
 	err := cmd.Run()
 	if err != nil {
-		return errors.Wrap(err, "failed to uninstall helm release '"+name+"'")
+		return fmt.Errorf("failed to uninstall helm release %q: %w", name, err)
 	}
 	return nil
 }
