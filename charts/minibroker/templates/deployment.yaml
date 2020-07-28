@@ -1,4 +1,5 @@
 {{- $deploymentPort := 8080 }}
+{{- $defaultValuesMountPath := "/minibroker" }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -52,6 +53,8 @@ spec:
         - -v
         - {{ .Values.logLevel | quote }}
         - -logtostderr
+        - --defaultChartValues
+        - {{ printf "%s/defaultChartValues.yaml" $defaultValuesMountPath }}
         ports:
         - name: broker
           containerPort: {{ $deploymentPort }}
@@ -71,3 +74,12 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 15
           failureThreshold: 2
+        volumeMounts:
+        - name: default-values
+          mountPath: {{ $defaultValuesMountPath | quote}}
+          readOnly: true
+      volumes:
+      - name: default-values
+        configMap:
+          name: {{ printf "%s-default-chart-values" .Release.Name | quote }}
+          defaultMode: 0755

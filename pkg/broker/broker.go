@@ -18,18 +18,65 @@ package broker
 
 import (
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"sync"
 
 	"github.com/kubernetes-sigs/minibroker/pkg/minibroker"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/pmorie/osb-broker-lib/pkg/broker"
+	"gopkg.in/yaml.v2"
 	klog "k8s.io/klog/v2"
 )
 
-// NewBroker is a hook that is called with the Options the program is run
+// DefaultChartValues holds optional default values for helm charts
+type DefaultChartValues struct {
+	Mariadb  map[string]interface{} `yaml:"mariadb"`
+	Mongodb  map[string]interface{} `yaml:"mongodb"`
+	Mysql    map[string]interface{} `yaml:"mysql"`
+	Postgres map[string]interface{} `yaml:"postgres"`
+	Rabbitmq map[string]interface{} `yaml:"rabbitmq"`
+	Redis    map[string]interface{} `yaml:"redis"`
+}
+
+func (d DefaultChartValues) ValuesForService(service string) (map[string]interface{}, bool) {
+	values := map[string]interface{}{}
+
+	switch service {
+	case "mariadb":
+		values = d.Mariadb
+	case "mongodb":
+		values = d.Mongodb
+	case "mysql":
+		values = d.Mysql
+	case "postgres":
+		values = d.Postgres
+	case "rabbitmq":
+		values = d.Rabbitmq
+	case "redis":
+		values = d.Redis
+	}
+
+	return values, values != nil
+}
+
+// MinibrokerClient defines the interface of the client the broker operates on
+type MinibrokerClient interface {
+	Init(repoURL string) error
+	ListServices() ([]osb.Service, error)
+	Provision(instanceID, serviceID, planID, namespace string, acceptsIncomplete bool, provisionParams map[string]interface{}) (string, error)
+	Bind(instanceID, serviceID, bindingID string, acceptsIncomplete bool, bindParams map[string]interface{}) (string, error)
+	Unbind(instanceID, bindingID string) error
+	GetBinding(instanceID, bindingID string) (*osb.GetBindingResponse, error)
+	Deprovision(instanceID string, acceptsIncomplete bool) (string, error)
+	LastOperationState(instanceID string, operationKey *osb.OperationKey) (*osb.LastOperationResponse, error)
+	LastBindingOperationState(instanceID, bindingID string) (*osb.LastOperationResponse, error)
+}
+
+// NewBrokerFromOptions is a hook that is called with the Options the program is run
 // with. NewBroker is the place where you will initialize your
 // Broker the parameters passed in.
-func NewBroker(o Options) (*Broker, error) {
+func NewBrokerFromOptions(o Options) (*Broker, error) {
 	klog.V(5).Infof("broker: creating a new broker with options %+v", o)
 	mb := minibroker.NewClient(o.ConfigNamespace, o.ServiceCatalogEnabledOnly)
 	err := mb.Init(o.HelmRepoURL)
@@ -37,19 +84,35 @@ func NewBroker(o Options) (*Broker, error) {
 		return nil, err
 	}
 
-	// For example, if your Broker requires a parameter from the command
-	// line, you would unpack it from the Options and set it on the
-	// Broker here.
+	defaultChartValues := DefaultChartValues{}
+	if len(o.DefaultChartValues) > 0 {
+		data, err := ioutil.ReadFile(o.DefaultChartValues)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read default chart values file '%q': %w", o.DefaultChartValues, err)
+		}
+		err = yaml.Unmarshal(data, &defaultChartValues)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse default chart values file '%q': %w", o.DefaultChartValues, err)
+		}
+		klog.V(2).Infof("broker: got default chart values: %#v", defaultChartValues)
+	}
+
+	return NewBroker(mb, o.DefaultNamespace, defaultChartValues), nil
+}
+
+// NewBroker creates a Broker instance with the given dependencies
+func NewBroker(mb MinibrokerClient, defaultNamespace string, defaultChartValues DefaultChartValues) *Broker {
 	return &Broker{
-		Client:           mb,
-		async:            true,
-		defaultNamespace: o.DefaultNamespace,
-	}, nil
+		Client:             mb,
+		async:              true,
+		defaultNamespace:   defaultNamespace,
+		defaultChartValues: defaultChartValues,
+	}
 }
 
 // Broker provides an implementation of broker.Interface
 type Broker struct {
-	Client *minibroker.Client
+	Client MinibrokerClient
 
 	// Indiciates if the broker should handle the requests asynchronously.
 	async bool
@@ -57,6 +120,8 @@ type Broker struct {
 	sync.RWMutex
 	// Default namespace to run brokers if not specified during request
 	defaultNamespace string
+	// Default chart values
+	defaultChartValues DefaultChartValues
 }
 
 var _ broker.Interface = &Broker{}
@@ -94,7 +159,11 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 
 	klog.V(4).Infof("broker: provisioning request %+v in namespace %q", request, namespace)
 
-	operationName, err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.AcceptsIncomplete, request.Parameters)
+	params, found := b.defaultChartValues.ValuesForService(request.ServiceID)
+	if !found {
+		params = request.Parameters
+	}
+	operationName, err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.AcceptsIncomplete, params)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to provision request %q: %v", request.InstanceID, err)
 		return nil, err

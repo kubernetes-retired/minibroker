@@ -42,3 +42,14 @@ rbac:
     name: minibroker
     annotations: {}
     labels: {}
+
+# Optional default values for each of the supported charts.
+# If defined these values take precedence over user-supplied values.
+defaultChartValues:
+  mariadb: ~
+  mongodb: ~
+  mysql: ~
+  postgres:
+    replicas: 1
+  rabbitmq: ~
+  redis: ~
