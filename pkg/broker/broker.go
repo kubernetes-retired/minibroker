@@ -29,8 +29,8 @@ import (
 	klog "k8s.io/klog/v2"
 )
 
-// DefaultChartValues holds optional default values for helm charts
-type DefaultChartValues struct {
+// OverrideChartParams holds optional default values for helm charts
+type OverrideChartParams struct {
 	Mariadb    map[string]interface{} `yaml:"mariadb"`
 	Mongodb    map[string]interface{} `yaml:"mongodb"`
 	Mysql      map[string]interface{} `yaml:"mysql"`
@@ -39,7 +39,7 @@ type DefaultChartValues struct {
 	Redis      map[string]interface{} `yaml:"redis"`
 }
 
-func (d DefaultChartValues) ValuesForService(service string) (map[string]interface{}, bool) {
+func (d OverrideChartParams) ValuesForService(service string) (map[string]interface{}, bool) {
 	values := map[string]interface{}{}
 
 	switch service {
@@ -84,29 +84,29 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 		return nil, err
 	}
 
-	defaultChartValues := DefaultChartValues{}
-	if len(o.DefaultChartValues) > 0 {
-		data, err := ioutil.ReadFile(o.DefaultChartValues)
+	overrideChartParams := OverrideChartParams{}
+	if len(o.OverrideChartParams) > 0 {
+		data, err := ioutil.ReadFile(o.OverrideChartParams)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read default chart values file '%q': %w", o.DefaultChartValues, err)
+			return nil, fmt.Errorf("Failed to read default chart values file '%q': %w", o.OverrideChartParams, err)
 		}
-		err = yaml.Unmarshal(data, &defaultChartValues)
+		err = yaml.Unmarshal(data, &overrideChartParams)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse default chart values file '%q': %w", o.DefaultChartValues, err)
+			return nil, fmt.Errorf("Failed to parse default chart values file '%q': %w", o.OverrideChartParams, err)
 		}
-		klog.V(2).Infof("broker: got default chart values: %#v", defaultChartValues)
+		klog.V(2).Infof("broker: got default chart values: %#v", overrideChartParams)
 	}
 
-	return NewBroker(mb, o.DefaultNamespace, defaultChartValues), nil
+	return NewBroker(mb, o.DefaultNamespace, overrideChartParams), nil
 }
 
 // NewBroker creates a Broker instance with the given dependencies
-func NewBroker(mb MinibrokerClient, defaultNamespace string, defaultChartValues DefaultChartValues) *Broker {
+func NewBroker(mb MinibrokerClient, defaultNamespace string, overrideChartParams OverrideChartParams) *Broker {
 	return &Broker{
-		Client:             mb,
-		async:              true,
-		defaultNamespace:   defaultNamespace,
-		defaultChartValues: defaultChartValues,
+		Client:              mb,
+		async:               true,
+		defaultNamespace:    defaultNamespace,
+		overrideChartParams: overrideChartParams,
 	}
 }
 
@@ -121,7 +121,7 @@ type Broker struct {
 	// Default namespace to run brokers if not specified during request
 	defaultNamespace string
 	// Default chart values
-	defaultChartValues DefaultChartValues
+	overrideChartParams OverrideChartParams
 }
 
 var _ broker.Interface = &Broker{}
@@ -159,7 +159,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 
 	klog.V(4).Infof("broker: provisioning request %+v in namespace %q", request, namespace)
 
-	params, found := b.defaultChartValues.ValuesForService(request.ServiceID)
+	params, found := b.overrideChartParams.ValuesForService(request.ServiceID)
 	if !found {
 		params = request.Parameters
 	}

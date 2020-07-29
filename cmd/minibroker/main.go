@@ -63,8 +63,8 @@ func main() {
 		"The url to the helm repo")
 	flag.StringVar(&options.DefaultNamespace, "defaultNamespace", "",
 		"The default namespace for brokers when the request doesn't specify")
-	flag.StringVar(&options.DefaultChartValues, "defaultChartValues", "",
-		"The path to the YAML file where the optional default chart values are stored")
+	flag.StringVar(&options.OverrideChartParams, "overrideChartParams", "",
+		"The path to the YAML file where the optional override chart parameters are stored")
 	flag.Parse()
 
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)

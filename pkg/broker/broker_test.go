@@ -37,8 +37,8 @@ var _ = Describe("Broker", func() {
 		b        *broker.Broker
 		mbclient *mocks.MockMinibrokerClient
 
-		defaultChartValues = broker.DefaultChartValues{}
-		namespace          = "namespace"
+		overrideChartParams = broker.OverrideChartParams{}
+		namespace           = "namespace"
 	)
 
 	BeforeEach(func() {
@@ -47,7 +47,7 @@ var _ = Describe("Broker", func() {
 	})
 
 	JustBeforeEach(func() {
-		b = broker.NewBroker(mbclient, namespace, defaultChartValues)
+		b = broker.NewBroker(mbclient, namespace, overrideChartParams)
 	})
 
 	AfterEach(func() {
@@ -77,7 +77,7 @@ var _ = Describe("Broker", func() {
 
 		Context("with default chart values", func() {
 			BeforeEach(func() {
-				defaultChartValues = broker.DefaultChartValues{
+				overrideChartParams = broker.OverrideChartParams{
 					Mariadb:    map[string]interface{}{"Mariadb": "value"},
 					Mongodb:    map[string]interface{}{"Mongodb": "value"},
 					Mysql:      map[string]interface{}{"Mysql": "value"},
@@ -92,7 +92,7 @@ var _ = Describe("Broker", func() {
 
 				for _, service := range services {
 					provisionRequest.ServiceID = service
-					expectedValues, found := defaultChartValues.ValuesForService(service)
+					expectedValues, found := overrideChartParams.ValuesForService(service)
 					Expect(found).To(BeTrue())
 
 					mbclient.EXPECT().

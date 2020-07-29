@@ -43,13 +43,12 @@ rbac:
     annotations: {}
     labels: {}
 
-# Optional default values for each of the supported charts.
-# If defined these values take precedence over user-supplied values.
-defaultChartValues:
+# Optional override parameters for each of the supported charts.
+# If defined these params take precedence over user-supplied values.
+overrideChartParams:
   mariadb: ~
   mongodb: ~
   mysql: ~
-  postgres:
-    replicas: 1
+  postgresql: ~
   rabbitmq: ~
   redis: ~

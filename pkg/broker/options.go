@@ -25,5 +25,5 @@ type Options struct {
 	DefaultNamespace          string
 	ServiceCatalogEnabledOnly bool
 	// The YAML file where the optional default chart values are stored.
-	DefaultChartValues string
+	OverrideChartParams string
 }
