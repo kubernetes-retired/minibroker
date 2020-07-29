@@ -31,12 +31,12 @@ import (
 
 // DefaultChartValues holds optional default values for helm charts
 type DefaultChartValues struct {
-	Mariadb  map[string]interface{} `yaml:"mariadb"`
-	Mongodb  map[string]interface{} `yaml:"mongodb"`
-	Mysql    map[string]interface{} `yaml:"mysql"`
-	Postgres map[string]interface{} `yaml:"postgres"`
-	Rabbitmq map[string]interface{} `yaml:"rabbitmq"`
-	Redis    map[string]interface{} `yaml:"redis"`
+	Mariadb    map[string]interface{} `yaml:"mariadb"`
+	Mongodb    map[string]interface{} `yaml:"mongodb"`
+	Mysql      map[string]interface{} `yaml:"mysql"`
+	Postgresql map[string]interface{} `yaml:"postgresql"`
+	Rabbitmq   map[string]interface{} `yaml:"rabbitmq"`
+	Redis      map[string]interface{} `yaml:"redis"`
 }
 
 func (d DefaultChartValues) ValuesForService(service string) (map[string]interface{}, bool) {
@@ -49,8 +49,8 @@ func (d DefaultChartValues) ValuesForService(service string) (map[string]interfa
 		values = d.Mongodb
 	case "mysql":
 		values = d.Mysql
-	case "postgres":
-		values = d.Postgres
+	case "postgresql":
+		values = d.Postgresql
 	case "rabbitmq":
 		values = d.Rabbitmq
 	case "redis":

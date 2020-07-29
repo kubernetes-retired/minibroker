@@ -78,17 +78,17 @@ var _ = Describe("Broker", func() {
 		Context("with default chart values", func() {
 			BeforeEach(func() {
 				defaultChartValues = broker.DefaultChartValues{
-					Mariadb:  map[string]interface{}{"Mariadb": "value"},
-					Mongodb:  map[string]interface{}{"Mongodb": "value"},
-					Mysql:    map[string]interface{}{"Mysql": "value"},
-					Postgres: map[string]interface{}{"Postgres": "value"},
-					Rabbitmq: map[string]interface{}{"Rabbitmq": "value"},
-					Redis:    map[string]interface{}{"Redis": "value"},
+					Mariadb:    map[string]interface{}{"Mariadb": "value"},
+					Mongodb:    map[string]interface{}{"Mongodb": "value"},
+					Mysql:      map[string]interface{}{"Mysql": "value"},
+					Postgresql: map[string]interface{}{"Postgresql": "value"},
+					Rabbitmq:   map[string]interface{}{"Rabbitmq": "value"},
+					Redis:      map[string]interface{}{"Redis": "value"},
 				}
 			})
 
 			It("passes on default chart values", func() {
-				services := []string{"mariadb", "mongodb", "mysql", "postgres", "rabbitmq", "redis"}
+				services := []string{"mariadb", "mongodb", "mysql", "postgresql", "rabbitmq", "redis"}
 
 				for _, service := range services {
 					provisionRequest.ServiceID = service
