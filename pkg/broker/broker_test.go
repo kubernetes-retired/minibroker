@@ -22,6 +22,7 @@ import (
 	osbbroker "github.com/pmorie/osb-broker-lib/pkg/broker"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/kubernetes-sigs/minibroker/pkg/broker"
 	"github.com/kubernetes-sigs/minibroker/pkg/broker/mocks"
@@ -33,18 +34,16 @@ var _ = Describe("Broker", func() {
 	var (
 		ctrl *gomock.Controller
 
-		b                  *broker.Broker
-		mbclient           *mocks.MockMinibrokerClient
-		defaultChartValues broker.DefaultChartValues
+		b        *broker.Broker
+		mbclient *mocks.MockMinibrokerClient
 
-		namespace = "namespace"
+		defaultChartValues = broker.DefaultChartValues{}
+		namespace          = "namespace"
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-
 		mbclient = mocks.NewMockMinibrokerClient(ctrl)
-		defaultChartValues = broker.DefaultChartValues{}
 	})
 
 	JustBeforeEach(func() {
@@ -70,8 +69,7 @@ var _ = Describe("Broker", func() {
 		Context("without default chart values", func() {
 			It("passes on unaltered provision params", func() {
 				mbclient.EXPECT().
-					Provision(gomock.Any(), gomock.Eq("redis"), gomock.Any(), gomock.Eq(namespace), gomock.Any(), gomock.Eq(provisionParams)).
-					Return("foo", nil)
+					Provision(gomock.Any(), gomock.Eq("redis"), gomock.Any(), gomock.Eq(namespace), gomock.Any(), gomock.Eq(provisionParams))
 
 				b.Provision(provisionRequest, requestContext)
 			})
@@ -80,18 +78,28 @@ var _ = Describe("Broker", func() {
 		Context("with default chart values", func() {
 			BeforeEach(func() {
 				defaultChartValues = broker.DefaultChartValues{
-					Redis: map[string]interface{}{
-						"rediskey": "redisvalue",
-					},
+					Mariadb:  map[string]interface{}{"Mariadb": "value"},
+					Mongodb:  map[string]interface{}{"Mongodb": "value"},
+					Mysql:    map[string]interface{}{"Mysql": "value"},
+					Postgres: map[string]interface{}{"Postgres": "value"},
+					Rabbitmq: map[string]interface{}{"Rabbitmq": "value"},
+					Redis:    map[string]interface{}{"Redis": "value"},
 				}
 			})
 
 			It("passes on default chart values", func() {
-				mbclient.EXPECT().
-					Provision(gomock.Any(), gomock.Eq("redis"), gomock.Any(), gomock.Eq(namespace), gomock.Any(), gomock.Eq(defaultChartValues.Redis)).
-					Return("foo", nil)
+				services := []string{"mariadb", "mongodb", "mysql", "postgres", "rabbitmq", "redis"}
 
-				b.Provision(provisionRequest, requestContext)
+				for _, service := range services {
+					provisionRequest.ServiceID = service
+					expectedValues, found := defaultChartValues.ValuesForService(service)
+					Expect(found).To(BeTrue())
+
+					mbclient.EXPECT().
+						Provision(gomock.Any(), gomock.Eq(service), gomock.Any(), gomock.Eq(namespace), gomock.Any(), gomock.Eq(expectedValues))
+
+					b.Provision(provisionRequest, requestContext)
+				}
 			})
 		})
 	})
