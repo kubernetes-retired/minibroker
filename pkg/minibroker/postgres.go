@@ -34,20 +34,27 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 
 	host := buildHostFromService(service)
 
-	database := ""
 	dbVal, ok := params["postgresqlDatabase"]
-	if ok {
-		database = dbVal.(string)
+	if !ok {
+		// Some older chart versions use postgresDatabase instead of postgresqlDatabase.
+		dbVal, ok = params["postgresDatabase"]
+		if !ok {
+			dbVal = ""
+		}
 	}
+	database := dbVal.(string)
 
-	var user, password string
 	userVal, ok := params["postgresqlUsername"]
-	if ok {
-		user = userVal.(string)
-	} else {
-		user = "postgres"
+	if !ok {
+		// Some older chart versions use postgresUsername instead of postgresqlUsername.
+		userVal, ok = params["postgresUsername"]
+		if !ok {
+			userVal = "postgres"
+		}
 	}
+	user := userVal.(string)
 
+	var password string
 	if user != "postgres" {
 		// postgresql-postgres-password is used when postgresqlPostgresPassword is set and
 		// postgresqlUsername is not 'postgres'.
@@ -60,11 +67,11 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 		}
 		password = passwordVal.(string)
 	} else {
-		passwordVal, ok := chartSecrets["postgres-password"]
+		passwordVal, ok := chartSecrets["postgresql-password"]
 		if !ok {
-			// Chart versions 2.0+ use postgresqlPassword instead of postresPassword
+			// Chart versions <2.0 use postgres-password instead of postgresql-password.
 			// See https://github.com/kubernetes-sigs/minibroker/issues/17
-			passwordVal, ok = chartSecrets["postgresql-password"]
+			passwordVal, ok = chartSecrets["postgres-password"]
 			if !ok {
 				return nil, errors.Errorf("password not found in secret keys")
 			}
