@@ -39,8 +39,14 @@ type OverrideChartParams struct {
 	Redis      map[string]interface{} `yaml:"redis"`
 }
 
+// LoadYaml parses param definitons from raw yaml
+func (d *OverrideChartParams) LoadYaml(data []byte) error {
+	err := yaml.UnmarshalStrict(data, d)
+	return err
+}
+
 // ForService returns the parameters for the given service
-func (d OverrideChartParams) ForService(service string) (map[string]interface{}, bool) {
+func (d *OverrideChartParams) ForService(service string) (map[string]interface{}, bool) {
 	values := map[string]interface{}{}
 
 	switch service {
@@ -85,13 +91,13 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 		return nil, err
 	}
 
-	overrideChartParams := OverrideChartParams{}
+	overrideChartParams := &OverrideChartParams{}
 	if len(o.OverrideChartParams) > 0 {
 		data, err := ioutil.ReadFile(o.OverrideChartParams)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read default chart values file '%q': %w", o.OverrideChartParams, err)
 		}
-		err = yaml.Unmarshal(data, &overrideChartParams)
+		overrideChartParams.LoadYaml(data)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to parse default chart values file '%q': %w", o.OverrideChartParams, err)
 		}
@@ -102,7 +108,7 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 }
 
 // NewBroker creates a Broker instance with the given dependencies
-func NewBroker(mb MinibrokerClient, defaultNamespace string, overrideChartParams OverrideChartParams) *Broker {
+func NewBroker(mb MinibrokerClient, defaultNamespace string, overrideChartParams *OverrideChartParams) *Broker {
 	return &Broker{
 		Client:              mb,
 		async:               true,
@@ -122,7 +128,7 @@ type Broker struct {
 	// Default namespace to run brokers if not specified during request
 	defaultNamespace string
 	// Default chart values
-	overrideChartParams OverrideChartParams
+	overrideChartParams *OverrideChartParams
 }
 
 var _ broker.Interface = &Broker{}

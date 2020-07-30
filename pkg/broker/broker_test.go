@@ -37,7 +37,7 @@ var _ = Describe("Broker", func() {
 		b        *broker.Broker
 		mbclient *mocks.MockMinibrokerClient
 
-		overrideChartParams = broker.OverrideChartParams{}
+		overrideChartParams = &broker.OverrideChartParams{}
 		namespace           = "namespace"
 	)
 
@@ -77,14 +77,21 @@ var _ = Describe("Broker", func() {
 
 		Context("with default chart values", func() {
 			BeforeEach(func() {
-				overrideChartParams = broker.OverrideChartParams{
-					Mariadb:    map[string]interface{}{"Mariadb": "value"},
-					Mongodb:    map[string]interface{}{"Mongodb": "value"},
-					Mysql:      map[string]interface{}{"Mysql": "value"},
-					Postgresql: map[string]interface{}{"Postgresql": "value"},
-					Rabbitmq:   map[string]interface{}{"Rabbitmq": "value"},
-					Redis:      map[string]interface{}{"Redis": "value"},
-				}
+				overrideChartParams = &broker.OverrideChartParams{}
+				err := overrideChartParams.LoadYaml([]byte(`mariadb:
+  mariadb: value
+mongodb:
+  mongodb: value
+mysql:
+  mysql: value
+postgresql:
+  postgresql: value
+rabbitmq:
+  rabbitmq: value
+redis:
+  redis: value
+`))
+				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("passes on default chart values", func() {
@@ -101,6 +108,34 @@ var _ = Describe("Broker", func() {
 					b.Provision(provisionRequest, requestContext)
 				}
 			})
+		})
+	})
+})
+
+var _ = Describe("OverrideChartParams", func() {
+	Describe("LoadYaml", func() {
+		var (
+			ocp = &broker.OverrideChartParams{}
+		)
+
+		It("Loads valid data", func() {
+			yaml := []byte(`rabbitmq:
+  rabbitmqdata: thevalue`)
+
+			err := ocp.LoadYaml(yaml)
+
+			Expect(err).ToNot(HaveOccurred())
+			p, _ := ocp.ForService("rabbitmq")
+			Expect(p["rabbitmqdata"]).To(Equal("thevalue"))
+		})
+
+		It("returns an error on unknown fields", func() {
+			yaml := []byte(`unknownservice:
+  key: value`)
+
+			err := ocp.LoadYaml(yaml)
+
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })
