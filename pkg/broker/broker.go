@@ -39,7 +39,7 @@ type OverrideChartParams struct {
 	Redis      map[string]interface{} `yaml:"redis"`
 }
 
-// LoadYaml parses param definitons from raw yaml
+// LoadYaml parses param definitions from raw yaml
 func (d *OverrideChartParams) LoadYaml(data []byte) error {
 	err := yaml.UnmarshalStrict(data, d)
 	return err
