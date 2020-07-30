@@ -33,30 +33,42 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 	host := buildHostFromService(service)
 
 	database := ""
-	dbVal, ok := params["postgresDatabase"]
+	dbVal, ok := params["postgresqlDatabase"]
 	if ok {
 		database = dbVal.(string)
 	}
 
 	var user, password string
-	userVal, ok := params["postgresUser"]
+	userVal, ok := params["postgresqlUsername"]
 	if ok {
 		user = userVal.(string)
 	} else {
 		user = "postgres"
 	}
 
-	passwordVal, ok := chartSecrets["postgres-password"]
-	if !ok {
-		// Chart versions 2.0+ use postgresqlPassword instead of postresPassword
-		// See https://github.com/kubernetes-sigs/minibroker/issues/17
-		passwordVal, ok = chartSecrets["postgresql-password"]
-
+	if user != "postgres" {
+		// postgresql-postgres-password is used when postgresqlPostgresPassword is set and
+		// postgresqlUsername is not 'postgres'.
+		passwordVal, ok := chartSecrets["postgresql-postgres-password"]
 		if !ok {
-			return nil, errors.Errorf("neither postgres-password nor postgresql-password not found in secret keys")
+			passwordVal, ok = chartSecrets["postgresql-password"]
+			if !ok {
+				return nil, errors.Errorf("password not found in secret keys")
+			}
 		}
+		password = passwordVal.(string)
+	} else {
+		passwordVal, ok := chartSecrets["postgres-password"]
+		if !ok {
+			// Chart versions 2.0+ use postgresqlPassword instead of postresPassword
+			// See https://github.com/kubernetes-sigs/minibroker/issues/17
+			passwordVal, ok = chartSecrets["postgresql-password"]
+			if !ok {
+				return nil, errors.Errorf("password not found in secret keys")
+			}
+		}
+		password = passwordVal.(string)
 	}
-	password = passwordVal.(string)
 
 	creds := Credentials{
 		Protocol: svcPort.Name,
