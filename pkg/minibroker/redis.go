@@ -21,6 +21,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const redisProtocolName = "redis"
+
 type RedisProvider struct{}
 
 func (p RedisProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
@@ -50,7 +52,7 @@ func (p RedisProvider) Bind(services []corev1.Service, params map[string]interfa
 	password = passwordVal.(string)
 
 	creds := Credentials{
-		Protocol: svcPort.Name,
+		Protocol: redisProtocolName,
 		Port:     svcPort.Port,
 		Host:     host,
 		Password: password,

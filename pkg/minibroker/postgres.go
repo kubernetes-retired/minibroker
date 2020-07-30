@@ -21,6 +21,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const postgresqlProtocolName = "postgresql"
+
 type PostgresProvider struct{}
 
 func (p PostgresProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
@@ -59,7 +61,7 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 	password = passwordVal.(string)
 
 	creds := Credentials{
-		Protocol: svcPort.Name,
+		Protocol: postgresqlProtocolName,
 		Port:     svcPort.Port,
 		Host:     host,
 		Username: user,
