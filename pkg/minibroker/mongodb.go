@@ -21,6 +21,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const mongodbProtocolName = "mongodb"
+
 type MongodbProvider struct{}
 
 func (p MongodbProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
@@ -59,7 +61,7 @@ func (p MongodbProvider) Bind(services []corev1.Service, params map[string]inter
 	}
 
 	creds := Credentials{
-		Protocol: svcPort.Name,
+		Protocol: mongodbProtocolName,
 		Port:     svcPort.Port,
 		Host:     host,
 		Username: user,

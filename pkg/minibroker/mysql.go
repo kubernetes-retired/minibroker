@@ -21,6 +21,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const mysqlProtocolName = "mysql"
+
 type MySQLProvider struct{}
 
 func (p MySQLProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
@@ -59,7 +61,7 @@ func (p MySQLProvider) Bind(services []corev1.Service, params map[string]interfa
 	}
 
 	creds := Credentials{
-		Protocol: svcPort.Name,
+		Protocol: mysqlProtocolName,
 		Port:     svcPort.Port,
 		Host:     host,
 		Username: user,

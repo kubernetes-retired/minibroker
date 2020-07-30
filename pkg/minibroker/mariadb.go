@@ -21,6 +21,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const mariadbProtocolName = "mysql"
+
 type MariadbProvider struct{}
 
 func (p MariadbProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
@@ -64,7 +66,7 @@ func (p MariadbProvider) Bind(services []corev1.Service, params map[string]inter
 	}
 
 	creds := Credentials{
-		Protocol: svcPort.Name,
+		Protocol: mariadbProtocolName,
 		Port:     svcPort.Port,
 		Host:     host,
 		Username: user,
