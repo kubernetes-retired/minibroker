@@ -96,7 +96,8 @@ deploy-cf:
 	TAG="$(TAG)" \
 	IMAGE_PULL_POLICY="$(IMAGE_PULL_POLICY)" \
 	OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" \
-	./build/deploy-cf.sh
+	CLOUDFOUNDRY=true \
+	./build/deploy.sh
 
 deploy-dev: image-in-minikube charts deploy
 
