@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit -o nounset -o pipefail -o xtrace
+set -o errexit -o nounset -o pipefail ${XTRACE:+-o xtrace}
 
 until svcat version | grep -m 1 'Server Version: v' ; do
   sleep 1;
