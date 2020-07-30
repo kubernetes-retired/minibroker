@@ -92,7 +92,7 @@ var _ = Describe("Broker", func() {
 
 				for _, service := range services {
 					provisionRequest.ServiceID = service
-					expectedValues, found := overrideChartParams.ValuesForService(service)
+					expectedValues, found := overrideChartParams.ForService(service)
 					Expect(found).To(BeTrue())
 
 					mbclient.EXPECT().

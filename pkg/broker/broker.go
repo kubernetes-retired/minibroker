@@ -39,7 +39,8 @@ type OverrideChartParams struct {
 	Redis      map[string]interface{} `yaml:"redis"`
 }
 
-func (d OverrideChartParams) ValuesForService(service string) (map[string]interface{}, bool) {
+// ForService returns the parameters for the given service
+func (d OverrideChartParams) ForService(service string) (map[string]interface{}, bool) {
 	values := map[string]interface{}{}
 
 	switch service {
@@ -159,7 +160,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 
 	klog.V(4).Infof("broker: provisioning request %+v in namespace %q", request, namespace)
 
-	params, found := b.overrideChartParams.ValuesForService(request.ServiceID)
+	params, found := b.overrideChartParams.ForService(request.ServiceID)
 	if !found {
 		params = request.Parameters
 	}
