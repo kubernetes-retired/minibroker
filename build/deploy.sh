@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit -o nounset -o pipefail
+set -o errexit -o nounset -o pipefail ${XTRACE:+-o xtrace}
 
 until svcat version | grep -m 1 'Server Version: v' ; do
   sleep 1;
@@ -26,11 +26,12 @@ fi
 
 helm upgrade minibroker \
   --install \
-  --recreate-pods \
   --namespace minibroker \
   --wait \
   --set "image=${IMAGE}:${TAG}" \
   --set "imagePullPolicy=${IMAGE_PULL_POLICY}" \
   --set "deploymentStrategy=Recreate" \
   --set "logLevel=${LOG_LEVEL:-4}" \
+  ${CLOUDFOUNDRY:+--set "deployServiceCatalog=false"} \
+  ${CLOUDFOUNDRY:+--set "defaultNamespace=minibroker"} \
   "${OUTPUT_CHARTS_DIR}/minibroker-${TAG}.tgz"
