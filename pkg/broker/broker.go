@@ -22,10 +22,10 @@ import (
 	"io/ioutil"
 	"sync"
 
+	"github.com/ghodss/yaml"
 	"github.com/kubernetes-sigs/minibroker/pkg/minibroker"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	"github.com/pmorie/osb-broker-lib/pkg/broker"
-	"gopkg.in/yaml.v2"
 	klog "k8s.io/klog/v2"
 )
 
@@ -46,7 +46,7 @@ type ServiceProvisioningSettings struct {
 
 // LoadYaml parses param definitions from raw yaml.
 func (d *ProvisioningSettings) LoadYaml(data []byte) error {
-	if err := yaml.UnmarshalStrict(data, d); err != nil {
+	if err := yaml.UnmarshalStrict(data, d, yaml.DisallowUnknownFields); err != nil {
 		return fmt.Errorf("failed to load override chart parameters: %w", err)
 	}
 
