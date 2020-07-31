@@ -31,25 +31,26 @@ import (
 //go:generate mockgen -destination=./mocks/mock_broker.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/broker MinibrokerClient
 
 const (
-	overrideParamsYaml = `provisioning:
-	mariadb:
-		overrideParams:
-			mariadb: value
-	mongodb:
-		overrideParams:
-			mongodb: value
-	mysql:
-		overrideParams:
-			mysql: value
-	postgresql:
-		overrideParams:
-			postgresql: value
-	rabbitmq:
-		overrideParams:
-			rabbitmq: value
-	redis:
-		overrideParams:
-			redis: value
+	overrideParamsYaml = `
+provisioning:
+  mariadb:
+    overrideParams:
+      mariadb: value
+  mongodb:
+    overrideParams:
+      mongodb: value
+  mysql:
+    overrideParams:
+      mysql: value
+  postgresql:
+    overrideParams:
+      postgresql: value
+  rabbitmq:
+    overrideParams:
+      rabbitmq: value
+  redis:
+    overrideParams:
+      redis: value
 `
 )
 
