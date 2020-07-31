@@ -20,7 +20,6 @@ require (
 	k8s.io/apimachinery v0.18.0
 	k8s.io/cli-runtime v0.18.0
 	k8s.io/client-go v0.18.0
-	k8s.io/helm v2.16.9+incompatible
 	k8s.io/klog/v2 v2.0.0
 	rsc.io/letsencrypt v0.0.3 // indirect
 )
