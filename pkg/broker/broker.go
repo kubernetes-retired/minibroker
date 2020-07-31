@@ -169,10 +169,13 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 
 	klog.V(4).Infof("broker: provisioning request %+v in namespace %q", request, namespace)
 
+	// Check if override parameters are defined for the service to be provisioned
+	// If defined those parameters will be used instead of what the user provided
 	params, found := b.overrideChartParams.ForService(request.ServiceID)
 	if !found {
 		params = request.Parameters
 	}
+
 	operationName, err := b.client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.AcceptsIncomplete, params)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to provision request %q: %v", request.InstanceID, err)
