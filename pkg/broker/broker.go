@@ -49,7 +49,7 @@ func (d *OverrideChartParams) LoadYaml(data []byte) error {
 
 // ForService returns the parameters for the given service.
 func (d *OverrideChartParams) ForService(service string) (map[string]interface{}, bool) {
-	values := map[string]interface{}{}
+	var values map[string]interface{}
 
 	switch service {
 	case "mariadb":
