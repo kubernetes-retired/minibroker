@@ -82,4 +82,3 @@ spec:
       - name: override-params
         configMap:
           name: {{ printf "%s-override-chart-params" .Release.Name | quote }}
-          defaultMode: 0755
