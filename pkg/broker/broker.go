@@ -58,26 +58,22 @@ func (d *ProvisioningSettings) LoadYaml(data []byte) error {
 
 // ForService returns the parameters for the given service.
 func (d *ProvisioningSettings) ForService(service string) (*ServiceProvisioningSettings, bool) {
-	var values *ServiceProvisioningSettings
-
 	switch service {
 	case "mariadb":
-		values = d.Mariadb
+		return d.Mariadb, true
 	case "mongodb":
-		values = d.Mongodb
+		return d.Mongodb, true
 	case "mysql":
-		values = d.Mysql
+		return d.Mysql, true
 	case "postgresql":
-		values = d.Postgresql
+		return d.Postgresql, true
 	case "rabbitmq":
-		values = d.Rabbitmq
+		return d.Rabbitmq, true
 	case "redis":
-		values = d.Redis
+		return d.Redis, true
 	default:
-		panic(fmt.Errorf("invalid service class"))
+		return nil, false
 	}
-
-	return values, values != nil
 }
 
 // MinibrokerClient defines the interface of the client the broker operates on.
