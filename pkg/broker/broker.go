@@ -113,7 +113,7 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 // NewBroker creates a Broker instance with the given dependencies.
 func NewBroker(mb MinibrokerClient, defaultNamespace string, overrideChartParams *OverrideChartParams) *Broker {
 	return &Broker{
-		Client:              mb,
+		client:              mb,
 		async:               true,
 		defaultNamespace:    defaultNamespace,
 		overrideChartParams: overrideChartParams,
@@ -122,7 +122,7 @@ func NewBroker(mb MinibrokerClient, defaultNamespace string, overrideChartParams
 
 // Broker provides an implementation of broker.Interface
 type Broker struct {
-	Client MinibrokerClient
+	client MinibrokerClient
 
 	// Indiciates if the broker should handle the requests asynchronously.
 	async bool
@@ -138,7 +138,7 @@ var _ broker.Interface = &Broker{}
 
 func (b *Broker) GetCatalog(c *broker.RequestContext) (*broker.CatalogResponse, error) {
 	klog.V(4).Infoln("broker: getting catalog")
-	services, err := b.Client.ListServices()
+	services, err := b.client.ListServices()
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 	if !found {
 		params = request.Parameters
 	}
-	operationName, err := b.Client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.AcceptsIncomplete, params)
+	operationName, err := b.client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.AcceptsIncomplete, params)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to provision request %q: %v", request.InstanceID, err)
 		return nil, err
@@ -196,7 +196,7 @@ func (b *Broker) Deprovision(request *osb.DeprovisionRequest, _ *broker.RequestC
 	b.Lock()
 	defer b.Unlock()
 
-	operationName, err := b.Client.Deprovision(request.InstanceID, request.AcceptsIncomplete)
+	operationName, err := b.client.Deprovision(request.InstanceID, request.AcceptsIncomplete)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to deprovision %q: %v", request.InstanceID, err)
 		return nil, err
@@ -220,7 +220,7 @@ func (b *Broker) LastOperation(request *osb.LastOperationRequest, _ *broker.Requ
 	b.Lock()
 	defer b.Unlock()
 
-	response, err := b.Client.LastOperationState(request.InstanceID, request.OperationKey)
+	response, err := b.client.LastOperationState(request.InstanceID, request.OperationKey)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to get last operation for instance %q: %v", request.InstanceID, err)
 		return nil, err
@@ -238,7 +238,7 @@ func (b *Broker) Bind(request *osb.BindRequest, _ *broker.RequestContext) (*brok
 	b.Lock()
 	defer b.Unlock()
 
-	operationName, err := b.Client.Bind(request.InstanceID, request.ServiceID, request.BindingID, request.AcceptsIncomplete, request.Parameters)
+	operationName, err := b.client.Bind(request.InstanceID, request.ServiceID, request.BindingID, request.AcceptsIncomplete, request.Parameters)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to bind %q: %v", request.InstanceID, err)
 		return nil, err
@@ -257,7 +257,7 @@ func (b *Broker) Bind(request *osb.BindRequest, _ *broker.RequestContext) (*brok
 	}
 
 	// Get the response back out of the configmaps
-	operationState, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID)
+	operationState, err := b.client.LastBindingOperationState(request.InstanceID, request.BindingID)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to bind %q: %v", request.InstanceID, err)
 		return nil, err
@@ -266,7 +266,7 @@ func (b *Broker) Bind(request *osb.BindRequest, _ *broker.RequestContext) (*brok
 		klog.V(4).Infof("broker: failed to bind instance %q: state is %q", request.InstanceID, operationState.State)
 		return nil, errors.New("Failed to bind instance")
 	}
-	binding, err := b.Client.GetBinding(request.InstanceID, request.BindingID)
+	binding, err := b.client.GetBinding(request.InstanceID, request.BindingID)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to bind %q: %v", request.InstanceID, err)
 		return nil, err
@@ -289,7 +289,7 @@ func (b *Broker) Bind(request *osb.BindRequest, _ *broker.RequestContext) (*brok
 func (b *Broker) GetBinding(request *osb.GetBindingRequest, _ *broker.RequestContext) (*broker.GetBindingResponse, error) {
 	klog.V(4).Infof("broker: getting binding request %+v", request)
 
-	binding, err := b.Client.GetBinding(request.InstanceID, request.BindingID)
+	binding, err := b.client.GetBinding(request.InstanceID, request.BindingID)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to get binding %q for instance %q: %v", request.BindingID, request.InstanceID, err)
 		return nil, err
@@ -306,7 +306,7 @@ func (b *Broker) GetBinding(request *osb.GetBindingRequest, _ *broker.RequestCon
 func (b *Broker) BindingLastOperation(request *osb.BindingLastOperationRequest, _ *broker.RequestContext) (*broker.LastOperationResponse, error) {
 	klog.V(4).Infof("broker: getting binding last operation request %+v", request)
 
-	state, err := b.Client.LastBindingOperationState(request.InstanceID, request.BindingID)
+	state, err := b.client.LastBindingOperationState(request.InstanceID, request.BindingID)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to get binding %q last operation for instance %q: %v", request.BindingID, request.InstanceID, err)
 		return nil, err
@@ -322,7 +322,7 @@ func (b *Broker) BindingLastOperation(request *osb.BindingLastOperationRequest, 
 func (b *Broker) Unbind(request *osb.UnbindRequest, c *broker.RequestContext) (*broker.UnbindResponse, error) {
 	klog.V(4).Infof("broker: unbinding request %+v", request)
 
-	if err := b.Client.Unbind(request.InstanceID, request.BindingID); err != nil {
+	if err := b.client.Unbind(request.InstanceID, request.BindingID); err != nil {
 		klog.V(4).Infof("broker: failed to unbind instance %q: %v", request.InstanceID, err)
 		return nil, err
 	}
