@@ -29,7 +29,7 @@ import (
 	klog "k8s.io/klog/v2"
 )
 
-// OverrideChartParams holds optional default values for helm charts
+// OverrideChartParams represents optional default values for helm charts.
 type OverrideChartParams struct {
 	Mariadb    map[string]interface{} `yaml:"mariadb"`
 	Mongodb    map[string]interface{} `yaml:"mongodb"`
@@ -39,13 +39,13 @@ type OverrideChartParams struct {
 	Redis      map[string]interface{} `yaml:"redis"`
 }
 
-// LoadYaml parses param definitions from raw yaml
+// LoadYaml parses param definitions from raw yaml.
 func (d *OverrideChartParams) LoadYaml(data []byte) error {
 	err := yaml.UnmarshalStrict(data, d)
 	return err
 }
 
-// ForService returns the parameters for the given service
+// ForService returns the parameters for the given service.
 func (d *OverrideChartParams) ForService(service string) (map[string]interface{}, bool) {
 	values := map[string]interface{}{}
 
@@ -107,7 +107,7 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 	return NewBroker(mb, o.DefaultNamespace, overrideChartParams), nil
 }
 
-// NewBroker creates a Broker instance with the given dependencies
+// NewBroker creates a Broker instance with the given dependencies.
 func NewBroker(mb MinibrokerClient, defaultNamespace string, overrideChartParams *OverrideChartParams) *Broker {
 	return &Broker{
 		Client:              mb,
@@ -127,7 +127,7 @@ type Broker struct {
 	sync.RWMutex
 	// Default namespace to run brokers if not specified during request
 	defaultNamespace string
-	// Default chart values
+	// Default chart values.
 	overrideChartParams *OverrideChartParams
 }
 

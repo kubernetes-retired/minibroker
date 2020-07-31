@@ -43,8 +43,9 @@ rbac:
     annotations: {}
     labels: {}
 
-# Optional override parameters for each of the supported charts.
-# If defined these params take precedence over user-supplied values.
+# Optional override parameters for each of the supported service classes.
+# If defined, user-provided parameters during provisioning are ignored and
+# these overrides are used.
 overrideChartParams:
   mariadb: ~
   mongodb: ~
