@@ -17,6 +17,7 @@ limitations under the License.
 package broker_test
 
 import (
+	"github.com/ghodss/yaml"
 	"github.com/golang/mock/gomock"
 	osb "github.com/pmorie/go-open-service-broker-client/v2"
 	osbbroker "github.com/pmorie/osb-broker-lib/pkg/broker"
@@ -32,25 +33,24 @@ import (
 
 const (
 	overrideParamsYaml = `
-provisioning:
-  mariadb:
-    overrideParams:
-      mariadb: value
-  mongodb:
-    overrideParams:
-      mongodb: value
-  mysql:
-    overrideParams:
-      mysql: value
-  postgresql:
-    overrideParams:
-      postgresql: value
-  rabbitmq:
-    overrideParams:
-      rabbitmq: value
-  redis:
-    overrideParams:
-      redis: value
+mariadb:
+  overrideParams:
+    mariadb: value
+mongodb:
+  overrideParams:
+    mongodb: value
+mysql:
+  overrideParams:
+    mysql: value
+postgresql:
+  overrideParams:
+    postgresql: value
+rabbitmq:
+  overrideParams:
+    rabbitmq: value
+redis:
+  overrideParams:
+    redis: value
 `
 )
 
@@ -61,8 +61,8 @@ var _ = Describe("Broker", func() {
 		b        *broker.Broker
 		mbclient *mocks.MockMinibrokerClient
 
-		overrideChartParams = &broker.OverrideChartParams{}
-		namespace           = "namespace"
+		provisioningSettings = &broker.ProvisioningSettings{}
+		namespace            = "namespace"
 	)
 
 	BeforeEach(func() {
@@ -71,7 +71,7 @@ var _ = Describe("Broker", func() {
 	})
 
 	JustBeforeEach(func() {
-		b = broker.NewBroker(mbclient, namespace, overrideChartParams)
+		b = broker.NewBroker(mbclient, namespace, provisioningSettings)
 	})
 
 	AfterEach(func() {
@@ -101,8 +101,8 @@ var _ = Describe("Broker", func() {
 
 		Context("with default chart values", func() {
 			BeforeEach(func() {
-				overrideChartParams = &broker.OverrideChartParams{}
-				err := overrideChartParams.LoadYaml([]byte(overrideParamsYaml))
+				provisioningSettings = &broker.ProvisioningSettings{}
+				err := provisioningSettings.LoadYaml([]byte(overrideParamsYaml))
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -111,11 +111,12 @@ var _ = Describe("Broker", func() {
 
 				for _, service := range services {
 					provisionRequest.ServiceID = service
-					expectedValues, found := overrideChartParams.ForService(service)
+					provisioningSettings, found := provisioningSettings.ForService(service)
 					Expect(found).To(BeTrue())
+					params := provisioningSettings.OverrideParams
 
 					mbclient.EXPECT().
-						Provision(gomock.Any(), gomock.Eq(service), gomock.Any(), gomock.Eq(namespace), gomock.Any(), gomock.Eq(expectedValues))
+						Provision(gomock.Any(), gomock.Eq(service), gomock.Any(), gomock.Eq(namespace), gomock.Any(), gomock.Eq(params))
 
 					b.Provision(provisionRequest, requestContext)
 				}
@@ -127,25 +128,35 @@ var _ = Describe("Broker", func() {
 var _ = Describe("OverrideChartParams", func() {
 	Describe("LoadYaml", func() {
 		var (
-			ocp = &broker.OverrideChartParams{}
+			ocp = &broker.ProvisioningSettings{}
 		)
 
 		It("Loads valid data", func() {
-			yaml := []byte(`rabbitmq:
-  rabbitmqdata: thevalue`)
+			yamlStr, _ := yaml.Marshal(map[string]interface{}{
+				"rabbitmq": map[string]interface{}{
+					"overrideParams": map[string]interface{}{
+						"rabbitmqdata": "thevalue",
+					},
+				},
+			})
 
-			err := ocp.LoadYaml(yaml)
+			err := ocp.LoadYaml(yamlStr)
 
 			Expect(err).ToNot(HaveOccurred())
 			p, _ := ocp.ForService("rabbitmq")
-			Expect(p["rabbitmqdata"]).To(Equal("thevalue"))
+			Expect(p.OverrideParams["rabbitmqdata"]).To(Equal("thevalue"))
 		})
 
 		It("returns an error on unknown fields", func() {
-			yaml := []byte(`unknownservice:
-  key: value`)
+			yamlStr, _ := yaml.Marshal(map[string]interface{}{
+				"unknownservice": map[string]interface{}{
+					"overrideParams": map[string]interface{}{
+						"key": "value",
+					},
+				},
+			})
 
-			err := ocp.LoadYaml(yaml)
+			err := ocp.LoadYaml(yamlStr)
 
 			Expect(err).To(HaveOccurred())
 		})
