@@ -29,14 +29,6 @@ import (
 	klog "k8s.io/klog/v2"
 )
 
-// OverrideParams represents optional default values for helm charts.
-type OverrideParams map[string]interface{}
-
-// ServiceProvisioningSettings represents provisioning settings for a specific service.
-type ServiceProvisioningSettings struct {
-	OverrideParams OverrideParams `yaml:"overrideParams"`
-}
-
 // ProvisioningSettings represents the configuration regarding the provisioning of services.
 type ProvisioningSettings struct {
 	Mariadb    *ServiceProvisioningSettings `yaml:"mariadb"`
@@ -45,6 +37,11 @@ type ProvisioningSettings struct {
 	Postgresql *ServiceProvisioningSettings `yaml:"postgresql"`
 	Rabbitmq   *ServiceProvisioningSettings `yaml:"rabbitmq"`
 	Redis      *ServiceProvisioningSettings `yaml:"redis"`
+}
+
+// ServiceProvisioningSettings represents provisioning settings for a specific service.
+type ServiceProvisioningSettings struct {
+	OverrideParams map[string]interface{} `yaml:"overrideParams"`
 }
 
 // LoadYaml parses param definitions from raw yaml.
@@ -179,7 +176,7 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 	// If defined, those parameters will be used instead of what the user provided.
 	provisioningSettings, found := b.provisioningSettings.ForService(request.ServiceID)
 	var params map[string]interface{}
-	if found && provisioningSettings.OverrideParams != nil {
+	if found && provisioningSettings != nil && provisioningSettings.OverrideParams != nil {
 		params = provisioningSettings.OverrideParams
 	} else {
 		params = request.Parameters
