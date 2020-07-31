@@ -41,8 +41,10 @@ type OverrideChartParams struct {
 
 // LoadYaml parses param definitions from raw yaml.
 func (d *OverrideChartParams) LoadYaml(data []byte) error {
-	err := yaml.UnmarshalStrict(data, d)
-	return err
+	if err := yaml.UnmarshalStrict(data, d); err != nil {
+		return fmt.Errorf("failed to load override chart parameters: %w", err)
+	}
+	return nil
 }
 
 // ForService returns the parameters for the given service.
@@ -95,11 +97,11 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 	if len(o.OverrideChartParams) > 0 {
 		data, err := ioutil.ReadFile(o.OverrideChartParams)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read default chart values file '%q': %w", o.OverrideChartParams, err)
+			return nil, fmt.Errorf("failed to initialize the broker: %w", err)
 		}
 		overrideChartParams.LoadYaml(data)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to parse default chart values file '%q': %w", o.OverrideChartParams, err)
+			return nil, fmt.Errorf("failed to initialize the broker: %w", err)
 		}
 		klog.V(2).Infof("broker: got default chart values: %#v", overrideChartParams)
 	}
