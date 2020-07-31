@@ -105,7 +105,6 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize the broker: %w", err)
 		}
-		klog.V(2).Infof("broker: got default chart values: %#v", overrideChartParams)
 	}
 
 	return NewBroker(mb, o.DefaultNamespace, overrideChartParams), nil
