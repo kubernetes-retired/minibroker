@@ -96,8 +96,8 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 	}
 
 	overrideChartParams := &OverrideChartParams{}
-	if len(o.OverrideChartParams) > 0 {
-		data, err := ioutil.ReadFile(o.OverrideChartParams)
+	if len(o.OverrideChartParamsPath) > 0 {
+		data, err := ioutil.ReadFile(o.OverrideChartParamsPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize the broker: %w", err)
 		}

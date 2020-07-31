@@ -63,7 +63,7 @@ func main() {
 		"The url to the helm repo")
 	flag.StringVar(&options.DefaultNamespace, "defaultNamespace", "",
 		"The default namespace for brokers when the request doesn't specify")
-	flag.StringVar(&options.OverrideChartParams, "overrideChartParams", "",
+	flag.StringVar(&options.OverrideChartParamsPath, "overrideChartParams", "",
 		"The path to the YAML file where the optional override chart parameters are stored")
 	flag.Parse()
 
