@@ -46,10 +46,16 @@ rbac:
 # Optional override parameters for each of the supported service classes.
 # If defined, user-provided parameters during provisioning are ignored and
 # these overrides are used.
-overrideChartParams:
-  mariadb: ~
-  mongodb: ~
-  mysql: ~
-  postgresql: ~
-  rabbitmq: ~
-  redis: ~
+provisioning:
+  mariadb:
+    overrideParams: ~
+  mongodb:
+    overrideParams: ~
+  mysql:
+    overrideParams: ~
+  postgresql:
+    overrideParams: ~
+  rabbitmq:
+    overrideParams: ~
+  redis:
+    overrideParams: ~

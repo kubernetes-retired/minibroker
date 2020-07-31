@@ -53,8 +53,8 @@ spec:
         - -v
         - {{ .Values.logLevel | quote }}
         - -logtostderr
-        - --overrideChartParams
-        - {{ printf "%s/overrideChartParams.yaml" $configPath }}
+        - --provisioningSettings
+        - {{ printf "%s/provisioning-settings.yaml" $configPath }}
         ports:
         - name: broker
           containerPort: {{ $deploymentPort }}
@@ -75,10 +75,10 @@ spec:
           periodSeconds: 15
           failureThreshold: 2
         volumeMounts:
-        - name: override-params
+        - name: provisioning-settings
           mountPath: {{ $configPath | quote}}
           readOnly: true
       volumes:
-      - name: override-params
+      - name: provisioning-settings
         configMap:
-          name: {{ printf "%s-override-chart-params" .Release.Name | quote }}
+          name: {{ printf "%s-provisioning-settings" .Release.Name | quote }}

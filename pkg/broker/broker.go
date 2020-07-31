@@ -29,27 +29,36 @@ import (
 	klog "k8s.io/klog/v2"
 )
 
-// OverrideChartParams represents optional default values for helm charts.
-type OverrideChartParams struct {
-	Mariadb    map[string]interface{} `yaml:"mariadb"`
-	Mongodb    map[string]interface{} `yaml:"mongodb"`
-	Mysql      map[string]interface{} `yaml:"mysql"`
-	Postgresql map[string]interface{} `yaml:"postgresql"`
-	Rabbitmq   map[string]interface{} `yaml:"rabbitmq"`
-	Redis      map[string]interface{} `yaml:"redis"`
+// OverrideParams represents optional default values for helm charts.
+type OverrideParams map[string]interface{}
+
+// ServiceProvisioningSettings represents provisioning settings for a specific service
+type ServiceProvisioningSettings struct {
+	OverrideParams OverrideParams `yaml:"overrideParams"`
+}
+
+// ProvisioningSettings represents the configuration regarding the provisioning of services
+type ProvisioningSettings struct {
+	Mariadb    *ServiceProvisioningSettings `yaml:"mariadb"`
+	Mongodb    *ServiceProvisioningSettings `yaml:"mongodb"`
+	Mysql      *ServiceProvisioningSettings `yaml:"mysql"`
+	Postgresql *ServiceProvisioningSettings `yaml:"postgresql"`
+	Rabbitmq   *ServiceProvisioningSettings `yaml:"rabbitmq"`
+	Redis      *ServiceProvisioningSettings `yaml:"redis"`
 }
 
 // LoadYaml parses param definitions from raw yaml.
-func (d *OverrideChartParams) LoadYaml(data []byte) error {
+func (d *ProvisioningSettings) LoadYaml(data []byte) error {
 	if err := yaml.UnmarshalStrict(data, d); err != nil {
 		return fmt.Errorf("failed to load override chart parameters: %w", err)
 	}
+
 	return nil
 }
 
 // ForService returns the parameters for the given service.
-func (d *OverrideChartParams) ForService(service string) (map[string]interface{}, bool) {
-	var values map[string]interface{}
+func (d *ProvisioningSettings) ForService(service string) (*ServiceProvisioningSettings, bool) {
+	var values *ServiceProvisioningSettings
 
 	switch service {
 	case "mariadb":
@@ -95,28 +104,29 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 		return nil, err
 	}
 
-	overrideChartParams := &OverrideChartParams{}
-	if len(o.OverrideChartParamsPath) > 0 {
-		data, err := ioutil.ReadFile(o.OverrideChartParamsPath)
+	provisioningSettings := &ProvisioningSettings{}
+	if len(o.ProvisioningSettingsPath) > 0 {
+		data, err := ioutil.ReadFile(o.ProvisioningSettingsPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize the broker: %w", err)
 		}
-		overrideChartParams.LoadYaml(data)
+		provisioningSettings.LoadYaml(data)
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize the broker: %w", err)
 		}
 	}
 
-	return NewBroker(mb, o.DefaultNamespace, overrideChartParams), nil
+	return NewBroker(mb, o.DefaultNamespace, provisioningSettings), nil
 }
 
 // NewBroker creates a Broker instance with the given dependencies.
-func NewBroker(mb MinibrokerClient, defaultNamespace string, overrideChartParams *OverrideChartParams) *Broker {
+func NewBroker(mb MinibrokerClient, defaultNamespace string, provisioningSettings *ProvisioningSettings) *Broker {
 	return &Broker{
-		client:              mb,
-		async:               true,
-		defaultNamespace:    defaultNamespace,
-		overrideChartParams: overrideChartParams,
+		client:               mb,
+		async:                true,
+		defaultNamespace:     defaultNamespace,
+		provisioningSettings: provisioningSettings,
 	}
 }
 
@@ -130,8 +140,8 @@ type Broker struct {
 	sync.RWMutex
 	// Default namespace to run brokers if not specified during request
 	defaultNamespace string
-	// Default chart values.
-	overrideChartParams *OverrideChartParams
+	// Provisioning settings.
+	provisioningSettings *ProvisioningSettings
 }
 
 var _ broker.Interface = &Broker{}
@@ -171,8 +181,11 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 
 	// Check if override parameters are defined for the service to be provisioned
 	// If defined those parameters will be used instead of what the user provided
-	params, found := b.overrideChartParams.ForService(request.ServiceID)
-	if !found {
+	provisioningSettings, found := b.provisioningSettings.ForService(request.ServiceID)
+	var params map[string]interface{}
+	if found && provisioningSettings.OverrideParams != nil {
+		params = provisioningSettings.OverrideParams
+	} else {
 		params = request.Parameters
 	}
 

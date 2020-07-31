@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "%s-provisioning-settings" .Release.Name | quote }}
+  namespace: {{ .Release.Namespace | quote }}
+data:
+  provisioning-settings.yaml: |
+    {{- toYaml .Values.provisioning | nindent 4 }}
