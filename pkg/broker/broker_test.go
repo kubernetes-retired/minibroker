@@ -30,6 +30,22 @@ import (
 
 //go:generate mockgen -destination=./mocks/mock_broker.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/broker MinibrokerClient
 
+const (
+	overrideParamsYaml = `mariadb:
+	mariadb: value
+mongodb:
+	mongodb: value
+mysql:
+	mysql: value
+postgresql:
+	postgresql: value
+rabbitmq:
+	rabbitmq: value
+redis:
+	redis: value
+`
+)
+
 var _ = Describe("Broker", func() {
 	var (
 		ctrl *gomock.Controller
@@ -78,19 +94,7 @@ var _ = Describe("Broker", func() {
 		Context("with default chart values", func() {
 			BeforeEach(func() {
 				overrideChartParams = &broker.OverrideChartParams{}
-				err := overrideChartParams.LoadYaml([]byte(`mariadb:
-  mariadb: value
-mongodb:
-  mongodb: value
-mysql:
-  mysql: value
-postgresql:
-  postgresql: value
-rabbitmq:
-  rabbitmq: value
-redis:
-  redis: value
-`))
+				err := overrideChartParams.LoadYaml([]byte(overrideParamsYaml))
 				Expect(err).ToNot(HaveOccurred())
 			})
 
