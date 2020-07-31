@@ -32,12 +32,12 @@ import (
 // OverrideParams represents optional default values for helm charts.
 type OverrideParams map[string]interface{}
 
-// ServiceProvisioningSettings represents provisioning settings for a specific service
+// ServiceProvisioningSettings represents provisioning settings for a specific service.
 type ServiceProvisioningSettings struct {
 	OverrideParams OverrideParams `yaml:"overrideParams"`
 }
 
-// ProvisioningSettings represents the configuration regarding the provisioning of services
+// ProvisioningSettings represents the configuration regarding the provisioning of services.
 type ProvisioningSettings struct {
 	Mariadb    *ServiceProvisioningSettings `yaml:"mariadb"`
 	Mongodb    *ServiceProvisioningSettings `yaml:"mongodb"`
@@ -80,7 +80,7 @@ func (d *ProvisioningSettings) ForService(service string) (*ServiceProvisioningS
 	return values, values != nil
 }
 
-// MinibrokerClient defines the interface of the client the broker operates on
+// MinibrokerClient defines the interface of the client the broker operates on.
 type MinibrokerClient interface {
 	Init(repoURL string) error
 	ListServices() ([]osb.Service, error)
@@ -179,8 +179,8 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 
 	klog.V(4).Infof("broker: provisioning request %+v in namespace %q", request, namespace)
 
-	// Check if override parameters are defined for the service to be provisioned
-	// If defined those parameters will be used instead of what the user provided
+	// Check if override parameters are defined for the service to be provisioned.
+	// If defined, those parameters will be used instead of what the user provided.
 	provisioningSettings, found := b.provisioningSettings.ForService(request.ServiceID)
 	var params map[string]interface{}
 	if found && provisioningSettings.OverrideParams != nil {
