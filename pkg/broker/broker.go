@@ -64,6 +64,8 @@ func (d *OverrideChartParams) ForService(service string) (map[string]interface{}
 		values = d.Rabbitmq
 	case "redis":
 		values = d.Redis
+	default:
+		panic(fmt.Errorf("invalid service class"))
 	}
 
 	return values, values != nil
