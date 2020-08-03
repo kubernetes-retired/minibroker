@@ -51,7 +51,8 @@ rbac:
 # provisioning:
 #   rabbitmq:
 #     replicas: 1
-#     ingress.enabled: false
+#     ingress:
+#       enabled: false
 provisioning:
   mariadb:
     overrideParams: ~
