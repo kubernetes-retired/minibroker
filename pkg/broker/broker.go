@@ -103,8 +103,8 @@ func NewBrokerFromOptions(o Options) (*Broker, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize the broker: %w", err)
 		}
-		provisioningSettings.LoadYaml(data)
 
+		err = provisioningSettings.LoadYaml(data)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize the broker: %w", err)
 		}
