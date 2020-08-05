@@ -49,6 +49,14 @@ kubectl create namespace minibroker
 helm install minibroker --namespace minibroker minibroker/minibroker
 ```
 
+*NOTE*: Platform users provisioning service instances will be able to set
+arbitrary parameters, which can be potentially dangerous, e.g. if setting a
+high number of replicas.
+To prevent this, it is possible to define override parameters per service in
+the according fields of the `provisioning` chart value. If defined, the
+user-defined parameters are dropped and the override parameters are used
+instead.
+
 ## Installation Options
 * Only Service Catalog Enabled services are included with Minibroker by default,
   to include all available charts specify `--set serviceCatalogEnabledOnly=false`.

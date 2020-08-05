@@ -42,3 +42,27 @@ rbac:
     name: minibroker
     annotations: {}
     labels: {}
+
+# Optional override parameters for each of the supported service classes.
+# If defined, user-provided parameters during provisioning are ignored and
+# these overrides are used.
+# Example:
+#
+# provisioning:
+#   rabbitmq:
+#     replicas: 1
+#     ingress:
+#       enabled: false
+provisioning:
+  mariadb:
+    overrideParams: ~
+  mongodb:
+    overrideParams: ~
+  mysql:
+    overrideParams: ~
+  postgresql:
+    overrideParams: ~
+  rabbitmq:
+    overrideParams: ~
+  redis:
+    overrideParams: ~
