@@ -24,67 +24,61 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-const amqpProtocolName = "amqp"
+const (
+	amqpProtocolName        = "amqp"
+	defaultRabbitmqUsername = "user"
+)
 
 type RabbitmqProvider struct{}
 
-func (p RabbitmqProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+func (p RabbitmqProvider) Bind(
+	services []corev1.Service,
+	_ BindParams,
+	provisionParams ProvisionParams,
+	chartSecrets Object,
+) (Object, error) {
 	if len(services) == 0 {
 		return nil, errors.Errorf("no services to process")
 	}
 	service := services[0]
 
-	var amqpPort *corev1.ServicePort
+	var svcPort *corev1.ServicePort
 	for _, port := range service.Spec.Ports {
 		if port.Name == amqpProtocolName {
-			amqpPort = &port
+			svcPort = &port
 			break
 		}
 	}
-	if amqpPort == nil {
+	if svcPort == nil {
 		return nil, errors.Errorf("no amqp port found")
 	}
 
-	rabbitmqParams, ok := params["rabbitmq"].(map[string]interface{})
-	if !ok {
-		rabbitmqParams = make(map[string]interface{})
-	}
-
-	var username string
-	usernameVal, ok := rabbitmqParams["username"]
-	if ok {
-		username, ok = usernameVal.(string)
-		if !ok {
-			return nil, errors.Errorf("username not a string")
+	username := provisionParams.DigStringOr("rabbitmq.username", defaultRabbitmqUsername)
+	password, err := chartSecrets.DigString("rabbitmq-password")
+	if err != nil {
+		switch err {
+		case ErrDigNotFound:
+			return nil, fmt.Errorf("password not found in secret keys")
+		case ErrDigNotString:
+			return nil, fmt.Errorf("password not a string")
+		default:
+			return nil, err
 		}
-	} else {
-		username = "user"
-	}
-
-	passwordVal, ok := chartSecrets["rabbitmq-password"]
-	if !ok {
-		return nil, errors.Errorf("password not found in secret keys")
-	}
-	password, ok := passwordVal.(string)
-	if !ok {
-		return nil, errors.Errorf("password not a string")
 	}
 
 	host := buildHostFromService(service)
-	creds := Credentials{
-		Protocol: amqpProtocolName,
-		Port:     amqpPort.Port,
-		Host:     host,
-		Username: username,
-		Password: password,
-		Database: "/",
+	creds := Object{
+		"protocol": amqpProtocolName,
+		"port":     svcPort.Port,
+		"host":     host,
+		"username": username,
+		"password": password,
+		"uri": (&url.URL{
+			Scheme: amqpProtocolName,
+			User:   url.UserPassword(username, password),
+			Host:   fmt.Sprintf("%s:%d", host, svcPort.Port),
+		}).String(),
 	}
-	creds.URI = buildRabbitmqURI(creds)
 
-	return &creds, nil
-}
-
-func buildRabbitmqURI(c Credentials) string {
-	return fmt.Sprintf("%s://%s:%s@%s:%d/%s",
-		c.Protocol, c.Username, c.Password, c.Host, c.Port, url.QueryEscape(c.Database))
+	return creds, nil
 }

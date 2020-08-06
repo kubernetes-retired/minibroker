@@ -17,15 +17,26 @@ limitations under the License.
 package minibroker
 
 import (
+	"fmt"
+	"net/url"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
-const mongodbProtocolName = "mongodb"
+const (
+	mongodbProtocolName = "mongodb"
+	rootMongodbUsername = "root"
+)
 
 type MongodbProvider struct{}
 
-func (p MongodbProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+func (p MongodbProvider) Bind(
+	services []corev1.Service,
+	_ BindParams,
+	provisionParams ProvisionParams,
+	chartSecrets Object,
+) (Object, error) {
 	service := services[0]
 	if len(service.Spec.Ports) == 0 {
 		return nil, errors.Errorf("no ports found")
@@ -34,53 +45,41 @@ func (p MongodbProvider) Bind(services []corev1.Service, params map[string]inter
 
 	host := buildHostFromService(service)
 
-	database := ""
-	dbVal, ok := params["mongodbDatabase"]
-	if ok {
-		database, ok = dbVal.(string)
-		if !ok {
-			return nil, errors.Errorf("mongodbDatabase not a string")
-		}
-	}
+	database := provisionParams.DigStringOr("mongodbDatabase", "")
+	user := provisionParams.DigStringOr("mongodbUsername", rootMongodbUsername)
 
-	var user, password string
-	userVal, ok := params["mongodbUsername"]
-	if ok {
-		user, ok = userVal.(string)
-		if !ok {
-			return nil, errors.Errorf("mongodbUsername not a string")
-		}
-
-		passwordVal, ok := chartSecrets["mongodb-password"]
-		if !ok {
-			return nil, errors.Errorf("mongodb-password not found in secret keys")
-		}
-		password, ok = passwordVal.(string)
-		if !ok {
-			return nil, errors.Errorf("password not a string")
-		}
+	var passwordKey string
+	if user == rootMongodbUsername {
+		passwordKey = "mongodb-root-password"
 	} else {
-		user = "root"
-
-		rootPassword, ok := chartSecrets["mongodb-root-password"]
-		if !ok {
-			return nil, errors.Errorf("mongodb-root-password not found in secret keys")
-		}
-		password, ok = rootPassword.(string)
-		if !ok {
-			return nil, errors.Errorf("password not a string")
+		passwordKey = "mongodb-password"
+	}
+	password, err := chartSecrets.DigString(passwordKey)
+	if err != nil {
+		switch err {
+		case ErrDigNotFound:
+			return nil, fmt.Errorf("password not found in secret keys")
+		case ErrDigNotString:
+			return nil, fmt.Errorf("password not a string")
+		default:
+			return nil, err
 		}
 	}
 
-	creds := Credentials{
-		Protocol: mongodbProtocolName,
-		Port:     svcPort.Port,
-		Host:     host,
-		Username: user,
-		Password: password,
-		Database: database,
+	creds := Object{
+		"protocol": mongodbProtocolName,
+		"port":     svcPort.Port,
+		"host":     host,
+		"username": user,
+		"password": password,
+		"database": database,
+		"uri": (&url.URL{
+			Scheme: mongodbProtocolName,
+			User:   url.UserPassword(user, password),
+			Host:   fmt.Sprintf("%s:%d", host, svcPort.Port),
+			Path:   database,
+		}).String(),
 	}
-	creds.URI = buildURI(creds)
 
-	return &creds, nil
+	return creds, nil
 }

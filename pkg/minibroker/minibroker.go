@@ -369,7 +369,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 }
 
 // provisionSynchronously will provision the service instance synchronously.
-func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams map[string]interface{}) error {
+func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams ProvisionParams) error {
 	klog.V(3).Infof("minibroker: provisioning %s/%s using helm chart %s@%s", serviceID, planID, chartName, chartVersion)
 
 	chartDef, err := c.helm.GetChart(chartName, chartVersion)
@@ -394,7 +394,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 		return err
 	}
 	for _, service := range services.Items {
-		err := c.labelService(service, instanceID, provisionParams)
+		err := c.labelService(service, instanceID)
 		if err != nil {
 			return err
 		}
@@ -424,7 +424,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 	return nil
 }
 
-func (c *Client) labelService(service corev1.Service, instanceID string, params map[string]interface{}) error {
+func (c *Client) labelService(service corev1.Service, instanceID string) error {
 	ctx := context.TODO()
 
 	labeledService := service.DeepCopy()
@@ -501,7 +501,7 @@ func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete
 	rawProvisionParams := config.Data[ProvisionParamsKey]
 	operationName := generateOperationName(OperationPrefixBind)
 
-	var provisionParams map[string]interface{}
+	var provisionParams ProvisionParams
 	err = json.Unmarshal([]byte(rawProvisionParams), &provisionParams)
 	if err != nil {
 		return "", errors.Wrapf(err, "could not unmarshall provision parameters for instance %q", instanceID)
@@ -510,14 +510,28 @@ func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete
 	if acceptsIncomplete {
 		klog.V(3).Infof("minibroker: initializing asynchronous binding %q", bindingID)
 		go func() {
-			_ = c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams)
+			_ = c.bindSynchronously(
+				instanceID,
+				serviceID,
+				bindingID,
+				releaseNamespace,
+				BindParams(bindParams),
+				provisionParams,
+			)
 			klog.V(3).Infof("minibroker: asynchronously bound instance %q, service %q, binding %q", instanceID, serviceID, bindingID)
 		}()
 		return operationName, nil
 	}
 
 	klog.V(3).Infof("minibroker: initializing synchronous binding %q", bindingID)
-	if err = c.bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace, bindParams, provisionParams); err != nil {
+	if err := c.bindSynchronously(
+		instanceID,
+		serviceID,
+		bindingID,
+		releaseNamespace,
+		BindParams(bindParams),
+		provisionParams,
+	); err != nil {
 		return "", err
 	}
 
@@ -529,20 +543,18 @@ func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete
 // bindSynchronously creates a new binding for the given service instance.  All
 // results are only reported via the service instance configmap (under the
 // appropriate key for the binding) for lookup by LastBindingOperationState().
-func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseNamespace string, bindParams, provisionParams map[string]interface{}) error {
+func (c *Client) bindSynchronously(
+	instanceID,
+	serviceID,
+	bindingID,
+	releaseNamespace string,
+	bindParams BindParams,
+	provisionParams ProvisionParams,
+) error {
 	ctx := context.TODO()
 
 	// Wrap most of the code in an inner function to simplify error handling
 	err := func() error {
-		// Smoosh all the params together
-		params := make(map[string]interface{}, len(bindParams)+len(provisionParams))
-		for k, v := range provisionParams {
-			params[k] = v
-		}
-		for k, v := range bindParams {
-			params[k] = v
-		}
-
 		filterByInstance := metav1.ListOptions{
 			LabelSelector: labels.SelectorFromSet(map[string]string{
 				InstanceLabel: instanceID,
@@ -569,7 +581,7 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 			return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
 		}
 
-		data := make(map[string]interface{})
+		data := make(Object)
 		for _, secret := range secrets.Items {
 			for key, value := range secret.Data {
 				data[key] = string(value)
@@ -579,11 +591,16 @@ func (c *Client) bindSynchronously(instanceID, serviceID, bindingID, releaseName
 		// Apply additional provisioning logic for Service Catalog Enabled services
 		provider, ok := c.providers[serviceID]
 		if ok {
-			creds, err := provider.Bind(services.Items, params, data)
+			creds, err := provider.Bind(
+				services.Items,
+				bindParams,
+				provisionParams,
+				data,
+			)
 			if err != nil {
 				return errors.Wrapf(err, "unable to bind instance %s", instanceID)
 			}
-			for k, v := range creds.ToMap() {
+			for k, v := range creds {
 				data[k] = v
 			}
 		}

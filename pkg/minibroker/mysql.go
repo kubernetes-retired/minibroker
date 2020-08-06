@@ -17,15 +17,26 @@ limitations under the License.
 package minibroker
 
 import (
+	"fmt"
+	"net/url"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
-const mysqlProtocolName = "mysql"
+const (
+	mysqlProtocolName = "mysql"
+	rootMysqlUsername = "root"
+)
 
 type MySQLProvider struct{}
 
-func (p MySQLProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+func (p MySQLProvider) Bind(
+	services []corev1.Service,
+	_ BindParams,
+	provisionParams ProvisionParams,
+	chartSecrets Object,
+) (Object, error) {
 	service := services[0]
 	if len(service.Spec.Ports) == 0 {
 		return nil, errors.Errorf("no ports found")
@@ -34,53 +45,41 @@ func (p MySQLProvider) Bind(services []corev1.Service, params map[string]interfa
 
 	host := buildHostFromService(service)
 
-	database := ""
-	dbVal, ok := params["mysqlDatabase"]
-	if ok {
-		database, ok = dbVal.(string)
-		if !ok {
-			return nil, errors.Errorf("mysqlDatabase not a string")
-		}
-	}
+	database := provisionParams.DigStringOr("mysqlDatabase", "")
+	user := provisionParams.DigStringOr("mysqlUser", rootMysqlUsername)
 
-	var user, password string
-	userVal, ok := params["mysqlUser"]
-	if ok {
-		user, ok = userVal.(string)
-		if !ok {
-			return nil, errors.Errorf("mysqlUser not a string")
-		}
-
-		passwordVal, ok := chartSecrets["mysql-password"]
-		if !ok {
-			return nil, errors.Errorf("mysql-password not found in secret keys")
-		}
-		password, ok = passwordVal.(string)
-		if !ok {
-			return nil, errors.Errorf("password not a string")
-		}
+	var passwordKey string
+	if user == rootMysqlUsername {
+		passwordKey = "mysql-root-password"
 	} else {
-		user = "root"
-
-		rootPassword, ok := chartSecrets["mysql-root-password"]
-		if !ok {
-			return nil, errors.Errorf("mysql-root-password not found in secret keys")
-		}
-		password, ok = rootPassword.(string)
-		if !ok {
-			return nil, errors.Errorf("password not a string")
+		passwordKey = "mysql-password"
+	}
+	password, err := chartSecrets.DigString(passwordKey)
+	if err != nil {
+		switch err {
+		case ErrDigNotFound:
+			return nil, fmt.Errorf("password not found in secret keys")
+		case ErrDigNotString:
+			return nil, fmt.Errorf("password not a string")
+		default:
+			return nil, err
 		}
 	}
 
-	creds := Credentials{
-		Protocol: mysqlProtocolName,
-		Port:     svcPort.Port,
-		Host:     host,
-		Username: user,
-		Password: password,
-		Database: database,
+	creds := Object{
+		"protocol": mysqlProtocolName,
+		"port":     svcPort.Port,
+		"host":     host,
+		"username": user,
+		"password": password,
+		"database": database,
+		"uri": (&url.URL{
+			Scheme: mysqlProtocolName,
+			User:   url.UserPassword(user, password),
+			Host:   fmt.Sprintf("%s:%d", host, svcPort.Port),
+			Path:   database,
+		}).String(),
 	}
-	creds.URI = buildURI(creds)
 
-	return &creds, nil
+	return creds, nil
 }
