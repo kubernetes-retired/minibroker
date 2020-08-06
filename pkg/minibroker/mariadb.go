@@ -42,19 +42,28 @@ func (p MariadbProvider) Bind(services []corev1.Service, params map[string]inter
 	database := ""
 	dbVal, ok := dbParams["name"]
 	if ok {
-		database = dbVal.(string)
+		database, ok = dbVal.(string)
+		if !ok {
+			return nil, errors.Errorf("db.name not a string")
+		}
 	}
 
 	var user, password string
 	userVal, ok := dbParams["user"]
 	if ok {
-		user = userVal.(string)
+		user, ok = userVal.(string)
+		if !ok {
+			return nil, errors.Errorf("db.user not a string")
+		}
 
 		passwordVal, ok := chartSecrets["mariadb-password"]
 		if !ok {
 			return nil, errors.Errorf("mariadb-password not found in secret keys")
 		}
-		password = passwordVal.(string)
+		password, ok = passwordVal.(string)
+		if !ok {
+			return nil, errors.Errorf("password not a string")
+		}
 	} else {
 		user = "root"
 
@@ -62,7 +71,10 @@ func (p MariadbProvider) Bind(services []corev1.Service, params map[string]inter
 		if !ok {
 			return nil, errors.Errorf("mariadb-root-password not found in secret keys")
 		}
-		password = rootPassword.(string)
+		password, ok = rootPassword.(string)
+		if !ok {
+			return nil, errors.Errorf("password not a string")
+		}
 	}
 
 	creds := Credentials{

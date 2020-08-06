@@ -37,19 +37,28 @@ func (p MySQLProvider) Bind(services []corev1.Service, params map[string]interfa
 	database := ""
 	dbVal, ok := params["mysqlDatabase"]
 	if ok {
-		database = dbVal.(string)
+		database, ok = dbVal.(string)
+		if !ok {
+			return nil, errors.Errorf("mysqlDatabase not a string")
+		}
 	}
 
 	var user, password string
 	userVal, ok := params["mysqlUser"]
 	if ok {
-		user = userVal.(string)
+		user, ok = userVal.(string)
+		if !ok {
+			return nil, errors.Errorf("mysqlUser not a string")
+		}
 
 		passwordVal, ok := chartSecrets["mysql-password"]
 		if !ok {
 			return nil, errors.Errorf("mysql-password not found in secret keys")
 		}
-		password = passwordVal.(string)
+		password, ok = passwordVal.(string)
+		if !ok {
+			return nil, errors.Errorf("password not a string")
+		}
 	} else {
 		user = "root"
 
@@ -57,7 +66,10 @@ func (p MySQLProvider) Bind(services []corev1.Service, params map[string]interfa
 		if !ok {
 			return nil, errors.Errorf("mysql-root-password not found in secret keys")
 		}
-		password = rootPassword.(string)
+		password, ok = rootPassword.(string)
+		if !ok {
+			return nil, errors.Errorf("password not a string")
+		}
 	}
 
 	creds := Credentials{
