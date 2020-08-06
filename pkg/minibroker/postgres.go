@@ -42,7 +42,10 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 			dbVal = ""
 		}
 	}
-	database := dbVal.(string)
+	database, ok := dbVal.(string)
+	if !ok {
+		return nil, errors.Errorf("database not a string")
+	}
 
 	userVal, ok := params["postgresqlUsername"]
 	if !ok {
@@ -52,7 +55,10 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 			userVal = "postgres"
 		}
 	}
-	user := userVal.(string)
+	user, ok := userVal.(string)
+	if !ok {
+		return nil, errors.Errorf("username not a string")
+	}
 
 	var password string
 	if user != "postgres" {
@@ -65,7 +71,10 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 				return nil, errors.Errorf("password not found in secret keys")
 			}
 		}
-		password = passwordVal.(string)
+		password, ok = passwordVal.(string)
+		if !ok {
+			return nil, errors.Errorf("password not a string")
+		}
 	} else {
 		passwordVal, ok := chartSecrets["postgresql-password"]
 		if !ok {
@@ -76,7 +85,10 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 				return nil, errors.Errorf("password not found in secret keys")
 			}
 		}
-		password = passwordVal.(string)
+		password, ok = passwordVal.(string)
+		if !ok {
+			return nil, errors.Errorf("password not a string")
+		}
 	}
 
 	creds := Credentials{

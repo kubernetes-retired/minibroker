@@ -53,7 +53,10 @@ func (p RabbitmqProvider) Bind(services []corev1.Service, params map[string]inte
 	var username string
 	usernameVal, ok := rabbitmqParams["username"]
 	if ok {
-		username = usernameVal.(string)
+		username, ok = usernameVal.(string)
+		if !ok {
+			return nil, errors.Errorf("username not a string")
+		}
 	} else {
 		username = "user"
 	}
@@ -64,7 +67,7 @@ func (p RabbitmqProvider) Bind(services []corev1.Service, params map[string]inte
 	}
 	password, ok := passwordVal.(string)
 	if !ok {
-		return nil, errors.Errorf("invalid password type")
+		return nil, errors.Errorf("password not a string")
 	}
 
 	host := buildHostFromService(service)

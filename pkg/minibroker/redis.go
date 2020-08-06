@@ -49,7 +49,10 @@ func (p RedisProvider) Bind(services []corev1.Service, params map[string]interfa
 	if !ok {
 		return nil, errors.Errorf("redis-password not found in secret keys")
 	}
-	password = passwordVal.(string)
+	password, ok = passwordVal.(string)
+	if !ok {
+		return nil, errors.Errorf("password not a string")
+	}
 
 	creds := Credentials{
 		Protocol: redisProtocolName,
