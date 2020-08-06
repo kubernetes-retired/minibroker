@@ -45,6 +45,19 @@ func (p RabbitmqProvider) Bind(services []corev1.Service, params map[string]inte
 		return nil, errors.Errorf("no amqp port found")
 	}
 
+	rabbitmqParams, ok := params["rabbitmq"].(map[string]interface{})
+	if !ok {
+		rabbitmqParams = make(map[string]interface{})
+	}
+
+	var username string
+	usernameVal, ok := rabbitmqParams["username"]
+	if ok {
+		username = usernameVal.(string)
+	} else {
+		username = "user"
+	}
+
 	passwordVal, ok := chartSecrets["rabbitmq-password"]
 	if !ok {
 		return nil, errors.Errorf("password not found in secret keys")
@@ -59,7 +72,7 @@ func (p RabbitmqProvider) Bind(services []corev1.Service, params map[string]inte
 		Protocol: amqpProtocolName,
 		Port:     amqpPort.Port,
 		Host:     host,
-		Username: "user",
+		Username: username,
 		Password: password,
 		Database: "/",
 	}
