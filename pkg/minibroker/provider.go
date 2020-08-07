@@ -86,12 +86,10 @@ func (o Object) DigStringAlt(altKeys []string) (string, error) {
 	for _, altKey := range altKeys {
 		valStr, err := o.DigString(altKey)
 		if err != nil {
-			switch err {
-			case ErrDigNotFound:
+			if err == ErrDigNotFound {
 				continue
-			default:
-				return "", err
 			}
+			return "", err
 		}
 		return valStr, nil
 	}
@@ -102,12 +100,10 @@ func (o Object) DigStringAlt(altKeys []string) (string, error) {
 func (o Object) DigStringOr(key string, defaultValue string) (string, error) {
 	str, err := o.DigString(key)
 	if err != nil {
-		switch err {
-		case ErrDigNotFound:
+		if err == ErrDigNotFound {
 			return defaultValue, nil
-		default:
-			return "", err
 		}
+		return "", err
 	}
 	return str, nil
 }
@@ -117,12 +113,10 @@ func (o Object) DigStringOr(key string, defaultValue string) (string, error) {
 func (o Object) DigStringAltOr(altKeys []string, defaultValue string) (string, error) {
 	str, err := o.DigStringAlt(altKeys)
 	if err != nil {
-		switch err {
-		case ErrDigNotFound:
+		if err == ErrDigNotFound {
 			return defaultValue, nil
-		default:
-			return "", err
 		}
+		return "", err
 	}
 	return str, nil
 }
