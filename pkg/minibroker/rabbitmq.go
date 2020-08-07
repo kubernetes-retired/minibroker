@@ -53,7 +53,11 @@ func (p RabbitmqProvider) Bind(
 		return nil, errors.Errorf("no amqp port found")
 	}
 
-	username := provisionParams.DigStringOr("rabbitmq.username", defaultRabbitmqUsername)
+	user, err := provisionParams.DigStringOr("rabbitmq.username", defaultRabbitmqUsername)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username: %w", err)
+	}
+
 	password, err := chartSecrets.DigString("rabbitmq-password")
 	if err != nil {
 		switch err {
@@ -71,11 +75,11 @@ func (p RabbitmqProvider) Bind(
 		"protocol": amqpProtocolName,
 		"port":     svcPort.Port,
 		"host":     host,
-		"username": username,
+		"username": user,
 		"password": password,
 		"uri": (&url.URL{
 			Scheme: amqpProtocolName,
-			User:   url.UserPassword(username, password),
+			User:   url.UserPassword(user, password),
 			Host:   fmt.Sprintf("%s:%d", host, svcPort.Port),
 		}).String(),
 	}

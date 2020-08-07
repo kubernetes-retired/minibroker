@@ -80,14 +80,50 @@ func (o Object) DigString(key string) (string, error) {
 	return valStr, nil
 }
 
-// DigStringOr wraps Object.DigString and returns defaultValue if any error is returned from
-// Object.DigString.
-func (o Object) DigStringOr(key string, defaultValue string) string {
+// DigStringAlt digs for the alternative keys. It returns the first found, if any.
+func (o Object) DigStringAlt(altKeys []string) (string, error) {
+	for _, altKey := range altKeys {
+		valStr, err := o.DigString(altKey)
+		if err != nil {
+			switch err {
+			case ErrDigNotFound:
+				continue
+			default:
+				return "", err
+			}
+		}
+		return valStr, nil
+	}
+	return "", ErrDigNotFound
+}
+
+// DigStringOr wraps Object.DigString and returns defaultValue if the value was not found.
+func (o Object) DigStringOr(key string, defaultValue string) (string, error) {
 	str, err := o.DigString(key)
 	if err != nil {
-		return defaultValue
+		switch err {
+		case ErrDigNotFound:
+			return defaultValue, nil
+		default:
+			return "", err
+		}
 	}
-	return str
+	return str, nil
+}
+
+// DigStringAltOr wraps Object.DigStringAlt and returns defaultValue if none of the alternative
+// keys are found.
+func (o Object) DigStringAltOr(altKeys []string, defaultValue string) (string, error) {
+	str, err := o.DigStringAlt(altKeys)
+	if err != nil {
+		switch err {
+		case ErrDigNotFound:
+			return defaultValue, nil
+		default:
+			return "", err
+		}
+	}
+	return str, nil
 }
 
 // BindParams is a specialization of Object for binding parameters, ensuring type checking.

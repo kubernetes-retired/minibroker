@@ -45,8 +45,14 @@ func (p MongodbProvider) Bind(
 
 	host := buildHostFromService(service)
 
-	database := provisionParams.DigStringOr("mongodbDatabase", "")
-	user := provisionParams.DigStringOr("mongodbUsername", rootMongodbUsername)
+	database, err := provisionParams.DigStringOr("mongodbDatabase", "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database name: %w", err)
+	}
+	user, err := provisionParams.DigStringOr("mongodbUsername", rootMongodbUsername)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username: %w", err)
+	}
 
 	var passwordKey string
 	if user == rootMongodbUsername {

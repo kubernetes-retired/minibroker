@@ -45,16 +45,22 @@ func (p PostgresProvider) Bind(
 
 	host := buildHostFromService(service)
 
-	database := provisionParams.DigStringOr(
-		"postgresqlDatabase",
+	database, err := provisionParams.DigStringAltOr(
 		// Some older chart versions use postgresDatabase instead of postgresqlDatabase.
-		provisionParams.DigStringOr("postgresDatabase", ""),
+		[]string{"postgresqlDatabase", "postgresDatabase"},
+		"",
 	)
-	user := provisionParams.DigStringOr(
-		"postgresqlUsername",
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database name: %w", err)
+	}
+	user, err := provisionParams.DigStringAltOr(
 		// Some older chart versions use postgresUsername instead of postgresqlUsername.
-		provisionParams.DigStringOr("postgresUsername", defaultPostgresqlUsername),
+		[]string{"postgresqlUsername", "postgresUsername"},
+		defaultPostgresqlUsername,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username: %w", err)
+	}
 
 	var passwordKey, altPasswordKey string
 	// postgresql-postgres-password is used when postgresqlPostgresPassword is set and

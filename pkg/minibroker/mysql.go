@@ -45,8 +45,14 @@ func (p MySQLProvider) Bind(
 
 	host := buildHostFromService(service)
 
-	database := provisionParams.DigStringOr("mysqlDatabase", "")
-	user := provisionParams.DigStringOr("mysqlUser", rootMysqlUsername)
+	database, err := provisionParams.DigStringOr("mysqlDatabase", "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database name: %w", err)
+	}
+	user, err := provisionParams.DigStringOr("mysqlUser", rootMysqlUsername)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username: %w", err)
+	}
 
 	var passwordKey string
 	if user == rootMysqlUsername {

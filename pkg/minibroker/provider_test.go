@@ -98,10 +98,54 @@ func TestObjectDigString(t *testing.T) {
 	for _, tt := range tests {
 		val, err := tt.obj.DigString(tt.key)
 		if err != tt.expectedErr {
-			t.Errorf("Object.Dig(%s): expected err %v, actual err %v", tt.key, tt.expectedErr, err)
+			t.Errorf("Object.DigString(%s): expected err %v, actual err %v", tt.key, tt.expectedErr, err)
 		}
 		if val != tt.expectedVal {
-			t.Errorf("Object.Dig(%s): expected val %v, actual val %v", tt.key, tt.expectedVal, val)
+			t.Errorf("Object.DigString(%s): expected val %v, actual val %v", tt.key, tt.expectedVal, val)
+		}
+	}
+}
+
+func TestObjectDigStringAlt(t *testing.T) {
+	tests := []struct {
+		obj         Object
+		altKeys     []string
+		expectedVal string
+		expectedErr error
+	}{
+		{
+			Object{"foo": "baz"},
+			[]string{"bar", "baz"},
+			"",
+			ErrDigNotFound,
+		},
+		{
+			Object{"foo": 3},
+			[]string{"bar", "foo"},
+			"",
+			ErrDigNotString,
+		},
+		{
+			Object{"foo": Object{"bar": "baz"}},
+			[]string{"foo", "foo.bar"},
+			"",
+			ErrDigNotString,
+		},
+		{
+			Object{"foo": Object{"bar": "baz"}},
+			[]string{"foo.foo", "foo.bar"},
+			"baz",
+			nil,
+		},
+	}
+
+	for _, tt := range tests {
+		val, err := tt.obj.DigStringAlt(tt.altKeys)
+		if err != tt.expectedErr {
+			t.Errorf("Object.DigStringAlt(%v): expected err %v, actual err %v", tt.altKeys, tt.expectedErr, err)
+		}
+		if val != tt.expectedVal {
+			t.Errorf("Object.DigStringAlt(%v): expected val %v, actual val %v", tt.altKeys, tt.expectedVal, val)
 		}
 	}
 }
@@ -112,25 +156,80 @@ func TestObjectDigStringOr(t *testing.T) {
 		key         string
 		defaultVal  string
 		expectedVal string
+		expectedErr error
 	}{
+		{
+			Object{"foo": 1},
+			"foo",
+			"default",
+			"",
+			ErrDigNotString,
+		},
 		{
 			Object{"foo": "baz"},
 			"bar",
 			"default",
 			"default",
+			nil,
 		},
 		{
 			Object{"foo": "baz"},
 			"foo",
 			"default",
 			"baz",
+			nil,
 		},
 	}
 
 	for _, tt := range tests {
-		val := tt.obj.DigStringOr(tt.key, tt.defaultVal)
+		val, err := tt.obj.DigStringOr(tt.key, tt.defaultVal)
+		if err != tt.expectedErr {
+			t.Errorf("Object.DigStringOr(%s): expected err %v, actual err %v", tt.key, tt.expectedErr, err)
+		}
 		if val != tt.expectedVal {
-			t.Errorf("Object.Dig(%s): expected val %v, actual val %v", tt.key, tt.expectedVal, val)
+			t.Errorf("Object.DigStringOr(%s): expected val %v, actual val %v", tt.key, tt.expectedVal, val)
+		}
+	}
+}
+
+func TestObjectDigStringAltOr(t *testing.T) {
+	tests := []struct {
+		obj         Object
+		altKeys     []string
+		defaultVal  string
+		expectedVal string
+		expectedErr error
+	}{
+		{
+			Object{"foo": 1},
+			[]string{"bar", "foo"},
+			"default",
+			"",
+			ErrDigNotString,
+		},
+		{
+			Object{"foo": "baz"},
+			[]string{"bar", "baz"},
+			"default",
+			"default",
+			nil,
+		},
+		{
+			Object{"foo": "baz"},
+			[]string{"bar", "foo"},
+			"default",
+			"baz",
+			nil,
+		},
+	}
+
+	for _, tt := range tests {
+		val, err := tt.obj.DigStringAltOr(tt.altKeys, tt.defaultVal)
+		if err != tt.expectedErr {
+			t.Errorf("Object.DigStringAltOr(%v): expected err %v, actual err %v", tt.altKeys, tt.expectedErr, err)
+		}
+		if val != tt.expectedVal {
+			t.Errorf("Object.DigStringAltOr(%v): expected val %v, actual val %v", tt.altKeys, tt.expectedVal, val)
 		}
 	}
 }

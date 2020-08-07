@@ -45,8 +45,14 @@ func (p MariadbProvider) Bind(
 
 	host := buildHostFromService(service)
 
-	database := provisionParams.DigStringOr("db.name", "")
-	user := provisionParams.DigStringOr("db.user", rootMariadbUsername)
+	database, err := provisionParams.DigStringOr("db.name", "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database name: %w", err)
+	}
+	user, err := provisionParams.DigStringOr("db.user", rootMariadbUsername)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username: %w", err)
+	}
 
 	var passwordKey string
 	if user == rootMariadbUsername {
