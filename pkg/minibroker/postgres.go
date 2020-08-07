@@ -73,21 +73,11 @@ func (p PostgresProvider) Bind(
 		// See https://github.com/kubernetes-sigs/minibroker/issues/17
 		altPasswordKey = "postgres-password"
 	}
-	password, err := chartSecrets.DigString(passwordKey)
+	password, err := chartSecrets.DigStringAlt([]string{passwordKey, altPasswordKey})
 	if err != nil {
 		switch err {
 		case ErrDigNotFound:
-			password, err = chartSecrets.DigString(altPasswordKey)
-			if err != nil {
-				switch err {
-				case ErrDigNotFound:
-					return nil, fmt.Errorf("password not found in secret keys")
-				case ErrDigNotString:
-					return nil, fmt.Errorf("password not a string")
-				default:
-					return nil, err
-				}
-			}
+			return nil, fmt.Errorf("password not found in secret keys")
 		case ErrDigNotString:
 			return nil, fmt.Errorf("password not a string")
 		default:
