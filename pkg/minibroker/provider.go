@@ -80,7 +80,8 @@ func (o Object) DigString(key string) (string, error) {
 	return valStr, nil
 }
 
-// DigStringAlt digs for the alternative keys. It returns the first found, if any.
+// DigStringAlt digs for any of the given keys, returning the first found. It returns an error if
+// none of the alternative keys are found.
 func (o Object) DigStringAlt(altKeys []string) (string, error) {
 	for _, altKey := range altKeys {
 		valStr, err := o.DigString(altKey)
