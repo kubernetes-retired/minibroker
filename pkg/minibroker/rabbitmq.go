@@ -33,8 +33,8 @@ type RabbitmqProvider struct{}
 
 func (p RabbitmqProvider) Bind(
 	services []corev1.Service,
-	_ BindParams,
-	provisionParams ProvisionParams,
+	_ *BindParams,
+	provisionParams *ProvisionParams,
 	chartSecrets Object,
 ) (Object, error) {
 	if len(services) == 0 {

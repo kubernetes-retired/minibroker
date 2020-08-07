@@ -33,8 +33,8 @@ type MySQLProvider struct{}
 
 func (p MySQLProvider) Bind(
 	services []corev1.Service,
-	_ BindParams,
-	provisionParams ProvisionParams,
+	_ *BindParams,
+	provisionParams *ProvisionParams,
 	chartSecrets Object,
 ) (Object, error) {
 	service := services[0]

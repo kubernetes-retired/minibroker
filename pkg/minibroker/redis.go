@@ -30,8 +30,8 @@ type RedisProvider struct{}
 
 func (p RedisProvider) Bind(
 	services []corev1.Service,
-	_ BindParams,
-	_ ProvisionParams,
+	_ *BindParams,
+	_ *ProvisionParams,
 	chartSecrets Object,
 ) (Object, error) {
 	var masterSvc *corev1.Service

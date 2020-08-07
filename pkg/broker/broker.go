@@ -77,8 +77,8 @@ func (d *ProvisioningSettings) ForService(service string) (*ServiceProvisioningS
 type MinibrokerClient interface {
 	Init(repoURL string) error
 	ListServices() ([]osb.Service, error)
-	Provision(instanceID, serviceID, planID, namespace string, acceptsIncomplete bool, provisionParams map[string]interface{}) (string, error)
-	Bind(instanceID, serviceID, bindingID string, acceptsIncomplete bool, bindParams map[string]interface{}) (string, error)
+	Provision(instanceID, serviceID, planID, namespace string, acceptsIncomplete bool, provisionParams *minibroker.ProvisionParams) (string, error)
+	Bind(instanceID, serviceID, bindingID string, acceptsIncomplete bool, bindParams *minibroker.BindParams) (string, error)
 	Unbind(instanceID, bindingID string) error
 	GetBinding(instanceID, bindingID string) (*osb.GetBindingResponse, error)
 	Deprovision(instanceID string, acceptsIncomplete bool) (string, error)
@@ -182,7 +182,14 @@ func (b *Broker) Provision(request *osb.ProvisionRequest, _ *broker.RequestConte
 		params = request.Parameters
 	}
 
-	operationName, err := b.client.Provision(request.InstanceID, request.ServiceID, request.PlanID, namespace, request.AcceptsIncomplete, params)
+	operationName, err := b.client.Provision(
+		request.InstanceID,
+		request.ServiceID,
+		request.PlanID,
+		namespace,
+		request.AcceptsIncomplete,
+		minibroker.NewProvisionParams(params),
+	)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to provision request %q: %v", request.InstanceID, err)
 		return nil, err
@@ -247,7 +254,13 @@ func (b *Broker) Bind(request *osb.BindRequest, _ *broker.RequestContext) (*brok
 	b.Lock()
 	defer b.Unlock()
 
-	operationName, err := b.client.Bind(request.InstanceID, request.ServiceID, request.BindingID, request.AcceptsIncomplete, request.Parameters)
+	operationName, err := b.client.Bind(
+		request.InstanceID,
+		request.ServiceID,
+		request.BindingID,
+		request.AcceptsIncomplete,
+		minibroker.NewBindParams(request.Parameters),
+	)
 	if err != nil {
 		klog.V(4).Infof("broker: failed to bind %q: %v", request.InstanceID, err)
 		return nil, err

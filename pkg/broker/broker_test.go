@@ -27,6 +27,7 @@ import (
 
 	"github.com/kubernetes-sigs/minibroker/pkg/broker"
 	"github.com/kubernetes-sigs/minibroker/pkg/broker/mocks"
+	"github.com/kubernetes-sigs/minibroker/pkg/minibroker"
 )
 
 //go:generate mockgen -destination=./mocks/mock_broker.go -package=mocks github.com/kubernetes-sigs/minibroker/pkg/broker MinibrokerClient
@@ -80,12 +81,12 @@ var _ = Describe("Broker", func() {
 
 	Describe("Provision", func() {
 		var (
-			provisionParams = map[string]interface{}{
+			provisionParams = minibroker.NewProvisionParams(map[string]interface{}{
 				"key": "value",
-			}
+			})
 			provisionRequest = &osb.ProvisionRequest{
 				ServiceID:  "redis",
-				Parameters: provisionParams,
+				Parameters: provisionParams.Object,
 			}
 			requestContext = &osbbroker.RequestContext{}
 		)
@@ -113,7 +114,7 @@ var _ = Describe("Broker", func() {
 					provisionRequest.ServiceID = service
 					provisioningSettings, found := provisioningSettings.ForService(service)
 					Expect(found).To(BeTrue())
-					params := provisioningSettings.OverrideParams
+					params := minibroker.NewProvisionParams(provisioningSettings.OverrideParams)
 
 					mbclient.EXPECT().
 						Provision(gomock.Any(), gomock.Eq(service), gomock.Any(), gomock.Eq(namespace), gomock.Any(), gomock.Eq(params))

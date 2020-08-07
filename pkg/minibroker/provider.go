@@ -27,8 +27,8 @@ import (
 type Provider interface {
 	Bind(
 		service []corev1.Service,
-		bindParams BindParams,
-		provisionParams ProvisionParams,
+		bindParams *BindParams,
+		provisionParams *ProvisionParams,
 		chartSecrets Object,
 	) (Object, error)
 }
@@ -53,13 +53,11 @@ func (o Object) Dig(key string) (interface{}, bool) {
 	for _, keyPart := range keyParts {
 		switch p := part.(type) {
 		case map[string]interface{}:
-			part, ok = p[keyPart]
-			if !ok {
+			if part, ok = p[keyPart]; !ok {
 				return nil, false
 			}
 		case Object:
-			part, ok = p[keyPart]
-			if !ok {
+			if part, ok = p[keyPart]; !ok {
 				return nil, false
 			}
 		default:
@@ -92,40 +90,25 @@ func (o Object) DigStringOr(key string, defaultValue string) string {
 	return str
 }
 
-// BindParams is a new type that wraps Object.
-type BindParams Object
-
-// Dig wraps Object.Dig.
-func (bp BindParams) Dig(key string) (interface{}, bool) {
-	return Object(bp).Dig(key)
+// BindParams is a specialization of Object for binding parameters, ensuring type checking.
+type BindParams struct {
+	Object
 }
 
-// DigString wraps Object.DigString.
-func (bp BindParams) DigString(key string) (string, error) {
-	return Object(bp).DigString(key)
+// NewBindParams constructs a new BindParams.
+func NewBindParams(m map[string]interface{}) *BindParams {
+	return &BindParams{Object: m}
 }
 
-// DigStringOr wraps Object.DigStringOr.
-func (bp BindParams) DigStringOr(key string, defaultValue string) string {
-	return Object(bp).DigStringOr(key, defaultValue)
+// ProvisionParams is a specialization of Object for provisioning parameters, ensuring type
+// checking.
+type ProvisionParams struct {
+	Object
 }
 
-// ProvisionParams is a new type that wraps Object.
-type ProvisionParams Object
-
-// Dig wraps Object.Dig.
-func (pp ProvisionParams) Dig(key string) (interface{}, bool) {
-	return Object(pp).Dig(key)
-}
-
-// DigString wraps Object.DigString.
-func (pp ProvisionParams) DigString(key string) (string, error) {
-	return Object(pp).DigString(key)
-}
-
-// DigStringOr wraps Object.DigStringOr.
-func (pp ProvisionParams) DigStringOr(key string, defaultValue string) string {
-	return Object(pp).DigStringOr(key, defaultValue)
+// NewProvisionParams constructs a new ProvisionParams.
+func NewProvisionParams(m map[string]interface{}) *ProvisionParams {
+	return &ProvisionParams{Object: m}
 }
 
 func buildHostFromService(service corev1.Service) string {

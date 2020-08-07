@@ -284,7 +284,7 @@ func (c *Client) ListServices() ([]osb.Service, error) {
 
 // Provision a new service instance.  Returns the async operation key (if
 // acceptsIncomplete is set).
-func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acceptsIncomplete bool, provisionParams map[string]interface{}) (string, error) {
+func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acceptsIncomplete bool, provisionParams *ProvisionParams) (string, error) {
 	klog.V(3).Infof("minibroker: provisioning intance %q, service %q, namespace %q, params %v", instanceID, serviceID, namespace, provisionParams)
 	ctx := context.TODO()
 
@@ -369,7 +369,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 }
 
 // provisionSynchronously will provision the service instance synchronously.
-func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams ProvisionParams) error {
+func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams *ProvisionParams) error {
 	klog.V(3).Infof("minibroker: provisioning %s/%s using helm chart %s@%s", serviceID, planID, chartName, chartVersion)
 
 	chartDef, err := c.helm.GetChart(chartName, chartVersion)
@@ -377,7 +377,7 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 		return err
 	}
 
-	release, err := c.helm.ChartClient().Install(chartDef, namespace, provisionParams)
+	release, err := c.helm.ChartClient().Install(chartDef, namespace, provisionParams.Object)
 	if err != nil {
 		return err
 	}
@@ -484,7 +484,7 @@ func (c *Client) labelSecret(secret corev1.Secret, instanceID string) error {
 
 // Bind the given service instance (of the given service) asynchronously; the
 // binding operation key is returned.
-func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete bool, bindParams map[string]interface{}) (string, error) {
+func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete bool, bindParams *BindParams) (string, error) {
 	klog.V(3).Infof("minibroker: binding instance %q, service %q, binding %q, binding params %v", instanceID, serviceID, bindingID, bindParams)
 	config, err := c.getConfigMap(instanceID)
 	if err != nil {
@@ -501,7 +501,7 @@ func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete
 	rawProvisionParams := config.Data[ProvisionParamsKey]
 	operationName := generateOperationName(OperationPrefixBind)
 
-	var provisionParams ProvisionParams
+	var provisionParams *ProvisionParams
 	err = json.Unmarshal([]byte(rawProvisionParams), &provisionParams)
 	if err != nil {
 		return "", errors.Wrapf(err, "could not unmarshall provision parameters for instance %q", instanceID)
@@ -515,7 +515,7 @@ func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete
 				serviceID,
 				bindingID,
 				releaseNamespace,
-				BindParams(bindParams),
+				bindParams,
 				provisionParams,
 			)
 			klog.V(3).Infof("minibroker: asynchronously bound instance %q, service %q, binding %q", instanceID, serviceID, bindingID)
@@ -529,7 +529,7 @@ func (c *Client) Bind(instanceID, serviceID, bindingID string, acceptsIncomplete
 		serviceID,
 		bindingID,
 		releaseNamespace,
-		BindParams(bindParams),
+		bindParams,
 		provisionParams,
 	); err != nil {
 		return "", err
@@ -548,8 +548,8 @@ func (c *Client) bindSynchronously(
 	serviceID,
 	bindingID,
 	releaseNamespace string,
-	bindParams BindParams,
-	provisionParams ProvisionParams,
+	bindParams *BindParams,
+	provisionParams *ProvisionParams,
 ) error {
 	ctx := context.TODO()
 
@@ -608,7 +608,7 @@ func (c *Client) bindSynchronously(
 		// Record the result for later fetching
 		bindingResponse := osb.GetBindingResponse{
 			Credentials: data,
-			Parameters:  bindParams,
+			Parameters:  bindParams.Object,
 		}
 		bindingResponseJSON, err := json.Marshal(bindingResponse)
 		if err != nil {

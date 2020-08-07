@@ -6,6 +6,7 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	minibroker "github.com/kubernetes-sigs/minibroker/pkg/minibroker"
 	v2 "github.com/pmorie/go-open-service-broker-client/v2"
 	reflect "reflect"
 )
@@ -34,7 +35,7 @@ func (m *MockMinibrokerClient) EXPECT() *MockMinibrokerClientMockRecorder {
 }
 
 // Bind mocks base method
-func (m *MockMinibrokerClient) Bind(arg0, arg1, arg2 string, arg3 bool, arg4 map[string]interface{}) (string, error) {
+func (m *MockMinibrokerClient) Bind(arg0, arg1, arg2 string, arg3 bool, arg4 *minibroker.BindParams) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Bind", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(string)
@@ -138,7 +139,7 @@ func (mr *MockMinibrokerClientMockRecorder) ListServices() *gomock.Call {
 }
 
 // Provision mocks base method
-func (m *MockMinibrokerClient) Provision(arg0, arg1, arg2, arg3 string, arg4 bool, arg5 map[string]interface{}) (string, error) {
+func (m *MockMinibrokerClient) Provision(arg0, arg1, arg2, arg3 string, arg4 bool, arg5 *minibroker.ProvisionParams) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Provision", arg0, arg1, arg2, arg3, arg4, arg5)
 	ret0, _ := ret[0].(string)
