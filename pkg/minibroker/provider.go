@@ -47,10 +47,16 @@ var (
 // Dig digs the Object based on the provided key.
 // key must be in the format "foo.bar.baz". Each segment represents a level in the Object.
 func (o Object) Dig(key string) (interface{}, bool) {
+	if key == "" {
+		return nil, false
+	}
 	keyParts := strings.Split(key, ".")
 	var part interface{} = o
 	var ok bool
 	for _, keyPart := range keyParts {
+		if keyPart == "" {
+			return nil, false
+		}
 		switch p := part.(type) {
 		case map[string]interface{}:
 			if part, ok = p[keyPart]; !ok {

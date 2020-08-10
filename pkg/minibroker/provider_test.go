@@ -44,6 +44,36 @@ func TestObjectDig(t *testing.T) {
 			false,
 		},
 		{
+			Object{"foo": Object{"bar": "baz"}},
+			"",
+			nil,
+			false,
+		},
+		{
+			Object{"foo": Object{"": "baz"}},
+			"foo.",
+			nil,
+			false,
+		},
+		{
+			Object{"foo": Object{"bar": "baz"}},
+			"foo.",
+			nil,
+			false,
+		},
+		{
+			Object{"foo": Object{"bar": "baz"}},
+			"foo..bar",
+			nil,
+			false,
+		},
+		{
+			Object{"": Object{"bar": "baz"}},
+			".bar",
+			nil,
+			false,
+		},
+		{
 			Object{"foo": "baz"},
 			"foo",
 			"baz",
