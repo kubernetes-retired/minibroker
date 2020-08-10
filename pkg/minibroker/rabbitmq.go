@@ -60,14 +60,7 @@ func (p RabbitmqProvider) Bind(
 
 	password, err := chartSecrets.DigString("rabbitmq-password")
 	if err != nil {
-		switch err {
-		case ErrDigNotFound:
-			return nil, fmt.Errorf("password not found in secret keys")
-		case ErrDigNotString:
-			return nil, fmt.Errorf("password not a string")
-		default:
-			return nil, err
-		}
+		return nil, fmt.Errorf("failed to get password: %w", err)
 	}
 
 	host := buildHostFromService(service)
