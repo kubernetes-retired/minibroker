@@ -27,10 +27,10 @@ TMP_BUILD_DIR ?= tmp
 WORDPRESS_CHART ?= $(shell pwd)/charts/wordpress
 
 # The base images for the Dockerfile stages.
-BUILDER_IMAGE ?= golang:1.14.2-buster@sha256:6e35cbd04ca339a53194a2542d07dfba0f1ec0185a6f69dc33310540cc38144f
+BUILDER_IMAGE ?= golang:1.14.7-buster@sha256:e17fd889d4d13abaaa9b92685ce94661011b02ee0cb3db0fb8c7ccb729c0c9d7
 DOWNLOADER_IMAGE ?= alpine:latest
-CERT_BUILDER_IMAGE ?= opensuse/leap:15.1@sha256:ace17bbeacb203c4bf1d3d23ce7c9e2639fe0527a87e7c5758387e749943a49a
-RUNNING_IMAGE ?= debian:stable@sha256:e0635a846513de0357689a7dd0c605a538d4ba2093a14b4688a15ed509c88e55
+CERT_BUILDER_IMAGE ?= opensuse/leap:15.2@sha256:48c4dbacfbc8f6200096e6b327f3b346ccff4e4075618017848aa53c44f75eea
+RUNNING_IMAGE ?= debian:stable@sha256:382a945b9064f58f43aa831f2722d3845e34773d93eac1290dc59c78f297243b
 
 lint: lint-go-vet lint-go-mod lint-modified-files
 
