@@ -25,4 +25,11 @@ if [[ "${BUILD_IN_MINIKUBE}" == "1" ]]; then
   eval $(minikube -p minikube docker-env)
 fi
 
-docker build --tag "${IMAGE}:${TAG}" --build-arg "TAG=${TAG}" --file docker/Dockerfile .
+docker build \
+  --tag "${IMAGE}:${TAG}" \
+  ${BUILDER_IMAGE:+--build-arg "BUILDER_IMAGE=${BUILDER_IMAGE}"} \
+  ${DOWNLOADER_IMAGE:+--build-arg "DOWNLOADER_IMAGE=${DOWNLOADER_IMAGE}"} \
+  ${CERT_BUILDER_IMAGE:+--build-arg "CERT_BUILDER_IMAGE=${CERT_BUILDER_IMAGE}"} \
+  ${RUNNING_IMAGE:+--build-arg "RUNNING_IMAGE=${RUNNING_IMAGE}"} \
+  --build-arg "TAG=${TAG}" \
+  --file docker/Dockerfile .

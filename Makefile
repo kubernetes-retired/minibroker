@@ -26,6 +26,12 @@ IMAGE_PULL_POLICY ?= Never
 TMP_BUILD_DIR ?= tmp
 WORDPRESS_CHART ?= $(shell pwd)/charts/wordpress
 
+# The base images for the Dockerfile stages.
+BUILDER_IMAGE ?= golang:1.14.2-buster@sha256:6e35cbd04ca339a53194a2542d07dfba0f1ec0185a6f69dc33310540cc38144f
+DOWNLOADER_IMAGE ?= alpine:latest
+CERT_BUILDER_IMAGE ?= opensuse/leap:15.1@sha256:ace17bbeacb203c4bf1d3d23ce7c9e2639fe0527a87e7c5758387e749943a49a
+RUNNING_IMAGE ?= debian:stable@sha256:e0635a846513de0357689a7dd0c605a538d4ba2093a14b4688a15ed509c88e55
+
 lint: lint-go-vet lint-go-mod lint-modified-files
 
 lint-go-vet:
@@ -45,10 +51,24 @@ build:
 	CGO_ENABLED=0 go build -ldflags="-s -w -X 'main.version=$(TAG)' -X 'main.buildDate=$(DATE)'" -o $(OUTPUT_DIR)/minibroker $(PKG)
 
 image:
-	BUILD_IN_MINIKUBE=0 IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/image.sh
+	BUILD_IN_MINIKUBE=0 \
+	BUILDER_IMAGE="$(BUILDER_IMAGE)" \
+	DOWNLOADER_IMAGE="$(DOWNLOADER_IMAGE)" \
+	CERT_BUILDER_IMAGE="$(CERT_BUILDER_IMAGE)" \
+	RUNNING_IMAGE="$(RUNNING_IMAGE)" \
+	IMAGE="$(IMAGE)" \
+	TAG="$(TAG)" \
+	./build/image.sh
 
 image-in-minikube:
-	BUILD_IN_MINIKUBE=1 IMAGE="$(IMAGE)" TAG="$(TAG)" ./build/image.sh
+	BUILD_IN_MINIKUBE=1 \
+	BUILDER_IMAGE="$(BUILDER_IMAGE)" \
+	DOWNLOADER_IMAGE="$(DOWNLOADER_IMAGE)" \
+	CERT_BUILDER_IMAGE="$(CERT_BUILDER_IMAGE)" \
+	RUNNING_IMAGE="$(RUNNING_IMAGE)" \
+	IMAGE="$(IMAGE)" \
+	TAG="$(TAG)" \
+	./build/image.sh
 
 charts:
 	CHART_SRC="charts/minibroker" \
