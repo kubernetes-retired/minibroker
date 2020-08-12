@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BUILDER_IMAGE=golang:1.14.2-buster@sha256:6e35cbd04ca339a53194a2542d07dfba0f1ec0185a6f69dc33310540cc38144f
-ARG DOWNLOADER_IMAGE=alpine:latest
-ARG CERT_BUILDER_IMAGE=opensuse/leap:15.1@sha256:ace17bbeacb203c4bf1d3d23ce7c9e2639fe0527a87e7c5758387e749943a49a
-ARG RUNNING_IMAGE=debian:stable@sha256:e0635a846513de0357689a7dd0c605a538d4ba2093a14b4688a15ed509c88e55
+ARG BUILDER_IMAGE
+ARG DOWNLOADER_IMAGE
+ARG CERT_BUILDER_IMAGE
+ARG RUNNING_IMAGE
 
 # --------------------------------------------------------------------------------------------------
 # The building stage.
