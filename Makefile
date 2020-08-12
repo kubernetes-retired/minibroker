@@ -30,7 +30,7 @@ WORDPRESS_CHART ?= $(shell pwd)/charts/wordpress
 BUILDER_IMAGE ?= golang:1.14.7-buster@sha256:e17fd889d4d13abaaa9b92685ce94661011b02ee0cb3db0fb8c7ccb729c0c9d7
 DOWNLOADER_IMAGE ?= alpine:latest
 CERT_BUILDER_IMAGE ?= opensuse/leap:15.2@sha256:48c4dbacfbc8f6200096e6b327f3b346ccff4e4075618017848aa53c44f75eea
-RUNNING_IMAGE ?= debian:stable@sha256:382a945b9064f58f43aa831f2722d3845e34773d93eac1290dc59c78f297243b
+RUNNING_IMAGE ?= scratch
 
 lint: lint-go-vet lint-go-mod lint-modified-files
 
