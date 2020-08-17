@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@ limitations under the License.
 package minibroker
 
 import (
+	"fmt"
+	"net/url"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -25,7 +28,12 @@ const redisProtocolName = "redis"
 
 type RedisProvider struct{}
 
-func (p RedisProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+func (p RedisProvider) Bind(
+	services []corev1.Service,
+	_ *BindParams,
+	_ *ProvisionParams,
+	chartSecrets Object,
+) (Object, error) {
 	var masterSvc *corev1.Service
 	for _, svc := range services {
 		if svc.Spec.Selector["role"] == "master" {
@@ -44,23 +52,22 @@ func (p RedisProvider) Bind(services []corev1.Service, params map[string]interfa
 
 	host := buildHostFromService(*masterSvc)
 
-	var password string
-	passwordVal, ok := chartSecrets["redis-password"]
-	if !ok {
-		return nil, errors.Errorf("redis-password not found in secret keys")
-	}
-	password, ok = passwordVal.(string)
-	if !ok {
-		return nil, errors.Errorf("password not a string")
+	password, err := chartSecrets.DigString("redis-password")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get password: %w", err)
 	}
 
-	creds := Credentials{
-		Protocol: redisProtocolName,
-		Port:     svcPort.Port,
-		Host:     host,
-		Password: password,
+	creds := Object{
+		"protocol": redisProtocolName,
+		"port":     svcPort.Port,
+		"host":     host,
+		"password": password,
+		"uri": (&url.URL{
+			Scheme: redisProtocolName,
+			User:   url.UserPassword("", password),
+			Host:   fmt.Sprintf("%s:%d", host, svcPort.Port),
+		}).String(),
 	}
-	creds.URI = buildURI(creds)
 
-	return &creds, nil
+	return creds, nil
 }

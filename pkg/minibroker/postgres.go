@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,15 +17,26 @@ limitations under the License.
 package minibroker
 
 import (
+	"fmt"
+	"net/url"
+
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
-const postgresqlProtocolName = "postgresql"
+const (
+	postgresqlProtocolName    = "postgresql"
+	defaultPostgresqlUsername = "postgres"
+)
 
 type PostgresProvider struct{}
 
-func (p PostgresProvider) Bind(services []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error) {
+func (p PostgresProvider) Bind(
+	services []corev1.Service,
+	_ *BindParams,
+	provisionParams *ProvisionParams,
+	chartSecrets Object,
+) (Object, error) {
 	service := services[0]
 	if len(service.Spec.Ports) == 0 {
 		return nil, errors.Errorf("no ports found")
@@ -34,72 +45,53 @@ func (p PostgresProvider) Bind(services []corev1.Service, params map[string]inte
 
 	host := buildHostFromService(service)
 
-	dbVal, ok := params["postgresqlDatabase"]
-	if !ok {
+	database, err := provisionParams.DigStringAltOr(
 		// Some older chart versions use postgresDatabase instead of postgresqlDatabase.
-		dbVal, ok = params["postgresDatabase"]
-		if !ok {
-			dbVal = ""
-		}
+		[]string{"postgresqlDatabase", "postgresDatabase"},
+		"",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database name: %w", err)
 	}
-	database, ok := dbVal.(string)
-	if !ok {
-		return nil, errors.Errorf("database not a string")
-	}
-
-	userVal, ok := params["postgresqlUsername"]
-	if !ok {
+	user, err := provisionParams.DigStringAltOr(
 		// Some older chart versions use postgresUsername instead of postgresqlUsername.
-		userVal, ok = params["postgresUsername"]
-		if !ok {
-			userVal = "postgres"
-		}
-	}
-	user, ok := userVal.(string)
-	if !ok {
-		return nil, errors.Errorf("username not a string")
+		[]string{"postgresqlUsername", "postgresUsername"},
+		defaultPostgresqlUsername,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get username: %w", err)
 	}
 
-	var password string
-	if user != "postgres" {
-		// postgresql-postgres-password is used when postgresqlPostgresPassword is set and
-		// postgresqlUsername is not 'postgres'.
-		passwordVal, ok := chartSecrets["postgresql-postgres-password"]
-		if !ok {
-			passwordVal, ok = chartSecrets["postgresql-password"]
-			if !ok {
-				return nil, errors.Errorf("password not found in secret keys")
-			}
-		}
-		password, ok = passwordVal.(string)
-		if !ok {
-			return nil, errors.Errorf("password not a string")
-		}
+	var passwordKey, altPasswordKey string
+	// postgresql-postgres-password is used when postgresqlPostgresPassword is set and
+	// postgresqlUsername is not 'postgres'.
+	if _, ok := provisionParams.Dig("postgresqlPostgresPassword"); ok && user != defaultPostgresqlUsername {
+		passwordKey = "postgresql-postgres-password"
 	} else {
-		passwordVal, ok := chartSecrets["postgresql-password"]
-		if !ok {
-			// Chart versions <2.0 use postgres-password instead of postgresql-password.
-			// See https://github.com/kubernetes-sigs/minibroker/issues/17
-			passwordVal, ok = chartSecrets["postgres-password"]
-			if !ok {
-				return nil, errors.Errorf("password not found in secret keys")
-			}
-		}
-		password, ok = passwordVal.(string)
-		if !ok {
-			return nil, errors.Errorf("password not a string")
-		}
+		passwordKey = "postgresql-password"
+		// Chart versions <2.0 use postgres-password instead of postgresql-password.
+		// See https://github.com/kubernetes-sigs/minibroker/issues/17
+		altPasswordKey = "postgres-password"
+	}
+	password, err := chartSecrets.DigStringAlt([]string{passwordKey, altPasswordKey})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get password: %w", err)
 	}
 
-	creds := Credentials{
-		Protocol: postgresqlProtocolName,
-		Port:     svcPort.Port,
-		Host:     host,
-		Username: user,
-		Password: password,
-		Database: database,
+	creds := Object{
+		"protocol": postgresqlProtocolName,
+		"port":     svcPort.Port,
+		"host":     host,
+		"username": user,
+		"password": password,
+		"database": database,
+		"uri": (&url.URL{
+			Scheme: postgresqlProtocolName,
+			User:   url.UserPassword(user, password),
+			Host:   fmt.Sprintf("%s:%d", host, svcPort.Port),
+			Path:   database,
+		}).String(),
 	}
-	creds.URI = buildURI(creds)
 
-	return &creds, nil
+	return creds, nil
 }

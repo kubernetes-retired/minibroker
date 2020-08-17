@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,53 +17,135 @@ limitations under the License.
 package minibroker
 
 import (
-	"encoding/json"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
+// Provider is the interface for the Service Provider. Its methods wrap service-specific logic.
 type Provider interface {
-	Bind(service []corev1.Service, params map[string]interface{}, chartSecrets map[string]interface{}) (*Credentials, error)
+	Bind(
+		service []corev1.Service,
+		bindParams *BindParams,
+		provisionParams *ProvisionParams,
+		chartSecrets Object,
+	) (Object, error)
 }
 
-type Credentials struct {
-	Protocol string
-	URI      string `json:"uri,omitempty"`
-	Username string `json:"username,omitempty"`
-	Password string `json:"password,omitempty"`
-	Host     string `json:"host,omitempty"`
-	Port     int32  `json:"port,omitempty"`
-	Database string `json:"database,omitempty"`
-}
+// Object is a wrapper around map[string]interface{} that implements methods for helping with
+// digging and type asserting.
+type Object map[string]interface{}
 
-// ToMap converts the credentials into the OSB API credentials response
-// see https://github.com/openservicebrokerapi/servicebroker/blob/master/spec.md#device-object
-// {
-//   "credentials": {
-//     "uri": "mysql://mysqluser:pass@mysqlhost:3306/dbname",
-//     "username": "mysqluser",
-//     "password": "pass",
-//     "host": "mysqlhost",
-//     "port": 3306,
-//     "database": "dbname"
-//     }
-// }
-func (c Credentials) ToMap() map[string]interface{} {
-	var result map[string]interface{}
-	j, _ := json.Marshal(c)
-	json.Unmarshal(j, &result)
-	return result
-}
+var (
+	// ErrDigNotFound is the error for a key not found in the Object.
+	ErrDigNotFound = fmt.Errorf("key not found")
+	// ErrDigNotString is the error for a key that is not a string.
+	ErrDigNotString = fmt.Errorf("key is not a string")
+)
 
-func buildURI(c Credentials) string {
-	if c.Database == "" {
-		return fmt.Sprintf("%s://%s:%s@%s:%d",
-			c.Protocol, c.Username, c.Password, c.Host, c.Port)
+// Dig digs the Object based on the provided key.
+// key must be in the format "foo.bar.baz". Each segment represents a level in the Object.
+func (o Object) Dig(key string) (interface{}, bool) {
+	if key == "" {
+		return nil, false
 	}
+	keyParts := strings.Split(key, ".")
+	var part interface{} = o
+	var ok bool
+	for _, keyPart := range keyParts {
+		if keyPart == "" {
+			return nil, false
+		}
+		switch p := part.(type) {
+		case map[string]interface{}:
+			if part, ok = p[keyPart]; !ok {
+				return nil, false
+			}
+		case Object:
+			if part, ok = p[keyPart]; !ok {
+				return nil, false
+			}
+		default:
+			return nil, false
+		}
+	}
+	return part, ok
+}
 
-	return fmt.Sprintf("%s://%s:%s@%s:%d/%s",
-		c.Protocol, c.Username, c.Password, c.Host, c.Port, c.Database)
+// DigString wraps Object.Dig and type-asserts the found key.
+func (o Object) DigString(key string) (string, error) {
+	val, ok := o.Dig(key)
+	if !ok {
+		return "", ErrDigNotFound
+	}
+	valStr, ok := val.(string)
+	if !ok {
+		return "", ErrDigNotString
+	}
+	return valStr, nil
+}
+
+// DigStringAlt digs for any of the given keys, returning the first found. It returns an error if
+// none of the alternative keys are found.
+func (o Object) DigStringAlt(altKeys []string) (string, error) {
+	for _, altKey := range altKeys {
+		valStr, err := o.DigString(altKey)
+		if err == ErrDigNotFound {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		return valStr, nil
+	}
+	return "", ErrDigNotFound
+}
+
+// DigStringOr wraps Object.DigString and returns defaultValue if the value was not found.
+func (o Object) DigStringOr(key string, defaultValue string) (string, error) {
+	str, err := o.DigString(key)
+	if err == ErrDigNotFound {
+		return defaultValue, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return str, nil
+}
+
+// DigStringAltOr wraps Object.DigStringAlt and returns defaultValue if none of the alternative
+// keys are found.
+func (o Object) DigStringAltOr(altKeys []string, defaultValue string) (string, error) {
+	str, err := o.DigStringAlt(altKeys)
+	if err == ErrDigNotFound {
+		return defaultValue, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return str, nil
+}
+
+// BindParams is a specialization of Object for binding parameters, ensuring type checking.
+type BindParams struct {
+	Object
+}
+
+// NewBindParams constructs a new BindParams.
+func NewBindParams(m map[string]interface{}) *BindParams {
+	return &BindParams{Object: m}
+}
+
+// ProvisionParams is a specialization of Object for provisioning parameters, ensuring type
+// checking.
+type ProvisionParams struct {
+	Object
+}
+
+// NewProvisionParams constructs a new ProvisionParams.
+func NewProvisionParams(m map[string]interface{}) *ProvisionParams {
+	return &ProvisionParams{Object: m}
 }
 
 func buildHostFromService(service corev1.Service) string {
