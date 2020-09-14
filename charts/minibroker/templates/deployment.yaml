@@ -75,10 +75,14 @@ spec:
           periodSeconds: 15
           failureThreshold: 2
         volumeMounts:
+        - name: cache
+          mountPath: /home/minibroker/.cache
         - name: provisioning-settings
           mountPath: {{ $configPath | quote}}
           readOnly: true
       volumes:
+      - name: cache
+        emptyDir: {}
       - name: provisioning-settings
         configMap:
           name: {{ printf "%s-provisioning-settings" .Release.Name | quote }}
