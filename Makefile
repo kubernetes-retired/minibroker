@@ -27,7 +27,7 @@ TMP_BUILD_DIR ?= tmp
 WORDPRESS_CHART ?= $(shell pwd)/charts/wordpress
 
 # The base images for the Dockerfile stages.
-BUILDER_IMAGE ?= golang:1.14.7-buster@sha256:e17fd889d4d13abaaa9b92685ce94661011b02ee0cb3db0fb8c7ccb729c0c9d7
+BUILDER_IMAGE ?= golang:1.14.9-buster@sha256:15f72b7c8f18323f8553510a791f68b78ecdf2f1b0acae865fa3d8a1636b3fd4
 DOWNLOADER_IMAGE ?= alpine:latest
 CERT_BUILDER_IMAGE ?= opensuse/leap:15.2@sha256:48c4dbacfbc8f6200096e6b327f3b346ccff4e4075618017848aa53c44f75eea
 RUNNING_IMAGE ?= scratch
