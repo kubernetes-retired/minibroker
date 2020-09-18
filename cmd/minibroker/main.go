@@ -67,7 +67,7 @@ func main() {
 	flag.StringVar(&options.ProvisioningSettingsPath, "provisioningSettings", "",
 		"The path to the YAML file where the optional provisioning settings are stored")
 	flag.StringVar(&options.ClusterDomain, "clusterDomain", "",
-		"The k8s cluster domain - it not set, Minibroker infers from /etc/resolv.conf")
+		"The k8s cluster domain - if not set, Minibroker infers from /etc/resolv.conf")
 	flag.Parse()
 
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
