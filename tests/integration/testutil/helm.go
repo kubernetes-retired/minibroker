@@ -18,6 +18,7 @@ package testutil
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -33,8 +34,9 @@ func NewHelm(ns string) Helm {
 
 func (h Helm) Install(name, chart string) error {
 	cmd := exec.Command("helm", "install", name, chart, "--namespace", h.namespace, "--wait")
-	err := cmd.Run()
-	if err != nil {
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to install helm chart %q: %w", chart, err)
 	}
 	return nil
@@ -42,8 +44,9 @@ func (h Helm) Install(name, chart string) error {
 
 func (h Helm) Uninstall(name string) error {
 	cmd := exec.Command("helm", "delete", name, "--namespace", h.namespace)
-	err := cmd.Run()
-	if err != nil {
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to uninstall helm release %q: %w", name, err)
 	}
 	return nil
