@@ -34,9 +34,9 @@ func ClusterDomain(resolvConf io.Reader) (string, error) {
 	}
 
 	domains := resolvconf.GetSearchDomains(data)
-	for i := 1; i < len(domains); i++ {
-		if strings.HasPrefix(domains[i], "svc.") {
-			return strings.TrimPrefix(domains[i], "svc."), nil
+	for _, domain := range domains {
+		if strings.HasPrefix(domain, "svc.") {
+			return strings.TrimPrefix(domain, "svc."), nil
 		}
 	}
 
