@@ -96,7 +96,7 @@ test-unit:
 test-integration:
 	(cd ./tests/integration; NAMESPACE=minibroker-tests WORDPRESS_CHART="$(WORDPRESS_CHART)" ginkgo --nodes 4 --slowSpecThreshold 180 .)
 
-test: test-unit test-integration test-wordpress
+test: test-unit test-integration
 
 log:
 	kubectl log -n minibroker deploy/minibroker-minibroker -c minibroker
