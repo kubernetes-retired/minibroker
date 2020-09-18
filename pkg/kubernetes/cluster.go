@@ -23,7 +23,7 @@ import (
 	"strings"
 )
 
-// ClusterDomain returns the k8s cluster domain extracted from the
+// ClusterDomain returns the k8s cluster domain extracted from
 // /etc/resolv.conf.
 func ClusterDomain(resolvConf io.Reader) (string, error) {
 	data, err := ioutil.ReadAll(resolvConf)
