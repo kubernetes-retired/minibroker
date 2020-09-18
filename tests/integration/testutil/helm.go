@@ -33,7 +33,12 @@ func NewHelm(ns string) Helm {
 }
 
 func (h Helm) Install(name, chart string) error {
-	cmd := exec.Command("helm", "install", name, chart, "--namespace", h.namespace, "--wait")
+	cmd := exec.Command(
+		"helm", "install", name, chart,
+		"--wait",
+		"--timeout", "15m",
+		"--namespace", h.namespace,
+	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
