@@ -87,6 +87,10 @@ func main() {
 		if err != nil {
 			klog.Fatalln(err)
 		}
+		// An assurance for the future-proof copy-paste of this block! Yes, this
+		// is not necessary here but shall be if other events happen in the
+		// future.
+		defer resolvConf.Close()
 
 		if options.ClusterDomain, err = kubernetes.ClusterDomain(resolvConf); err != nil {
 			klog.Fatalln(err)
