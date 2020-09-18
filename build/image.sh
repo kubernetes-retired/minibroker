@@ -25,7 +25,7 @@ if [[ "${BUILD_IN_MINIKUBE}" == "1" ]]; then
   eval $(minikube -p minikube docker-env)
 fi
 
-docker build \
+docker ${USE_BUILDX:+buildx} build \
   --tag "${IMAGE}:${TAG}" \
   ${BUILDER_IMAGE:+--build-arg "BUILDER_IMAGE=${BUILDER_IMAGE}"} \
   ${DOWNLOADER_IMAGE:+--build-arg "DOWNLOADER_IMAGE=${DOWNLOADER_IMAGE}"} \
