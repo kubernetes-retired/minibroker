@@ -21,6 +21,8 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
+
+	"github.com/containers/libpod/pkg/resolvconf"
 )
 
 // ClusterDomain returns the k8s cluster domain extracted from
@@ -31,20 +33,7 @@ func ClusterDomain(resolvConf io.Reader) (string, error) {
 		return "", fmt.Errorf("failed to get cluster domain: %w", err)
 	}
 
-	lines := strings.Split(string(data), "\n")
-	var searchLine string
-	for _, line := range lines {
-		if strings.HasPrefix(line, "search") {
-			searchLine = line
-		}
-	}
-
-	if searchLine == "" {
-		err := fmt.Errorf("missing the search path from resolv.conf")
-		return "", fmt.Errorf("failed to get cluster domain: %w", err)
-	}
-
-	domains := strings.Split(searchLine, " ")
+	domains := resolvconf.GetSearchDomains(data)
 	for i := 1; i < len(domains); i++ {
 		if strings.HasPrefix(domains[i], "svc.") {
 			return strings.TrimPrefix(domains[i], "svc."), nil

@@ -39,8 +39,8 @@ var _ = Describe("Cluster", func() {
 		fmt.Fprintln(&resolvConf, "nameserver 1.2.3.4")
 		fmt.Fprintln(&resolvConf, "nameserver 4.3.2.1")
 		clusterDomain, err := kubernetes.ClusterDomain(&resolvConf)
-		Ω(clusterDomain).Should(BeZero())
-		Ω(err).Should(MatchError("failed to get cluster domain: missing the search path from resolv.conf"))
+		Ω(clusterDomain).Should(BeEmpty())
+		Ω(err).Should(MatchError("failed to get cluster domain: missing domain starting with 'svc.' in the search path"))
 	})
 
 	It("should fail when the search path is missing a domain starting with svc.", func() {
@@ -50,7 +50,7 @@ var _ = Describe("Cluster", func() {
 		fmt.Fprintln(&resolvConf, "search kubecf.svc.cluster.local cluster.local")
 		fmt.Fprintln(&resolvConf, "options ndots:5")
 		clusterDomain, err := kubernetes.ClusterDomain(&resolvConf)
-		Ω(clusterDomain).Should(BeZero())
+		Ω(clusterDomain).Should(BeEmpty())
 		Ω(err).Should(MatchError("failed to get cluster domain: missing domain starting with 'svc.' in the search path"))
 	})
 
