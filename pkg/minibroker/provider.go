@@ -148,6 +148,14 @@ func NewProvisionParams(m map[string]interface{}) *ProvisionParams {
 	return &ProvisionParams{Object: m}
 }
 
-func buildHostFromService(service corev1.Service) string {
-	return fmt.Sprintf("%s.%s.svc", service.Name, service.Namespace)
+// hostBuilder provides the method for building the OSBAPI service's URI host
+// from a k8s service.
+type hostBuilder struct {
+	clusterDomain string
+}
+
+// hostFromService builds the FQDN for the host using the service name and
+// namespace, appending the cluster domain.
+func (hb *hostBuilder) hostFromService(service *corev1.Service) string {
+	return fmt.Sprintf("%s.%s.svc.%s", service.Name, service.Namespace, hb.clusterDomain)
 }

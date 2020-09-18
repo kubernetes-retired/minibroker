@@ -29,7 +29,9 @@ const (
 	defaultRabbitmqUsername = "user"
 )
 
-type RabbitmqProvider struct{}
+type RabbitmqProvider struct {
+	hostBuilder
+}
 
 func (p RabbitmqProvider) Bind(
 	services []corev1.Service,
@@ -63,7 +65,7 @@ func (p RabbitmqProvider) Bind(
 		return nil, fmt.Errorf("failed to get password: %w", err)
 	}
 
-	host := buildHostFromService(service)
+	host := p.hostFromService(&service)
 	creds := Object{
 		"protocol": amqpProtocolName,
 		"port":     svcPort.Port,

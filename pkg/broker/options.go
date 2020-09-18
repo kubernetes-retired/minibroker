@@ -26,4 +26,5 @@ type Options struct {
 	ServiceCatalogEnabledOnly bool
 	// The YAML file where the optional default chart values are stored.
 	ProvisioningSettingsPath string
+	ClusterDomain            string
 }

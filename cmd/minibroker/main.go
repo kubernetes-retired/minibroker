@@ -27,6 +27,7 @@ import (
 	"syscall"
 
 	"github.com/kubernetes-sigs/minibroker/pkg/broker"
+	"github.com/kubernetes-sigs/minibroker/pkg/kubernetes"
 	"github.com/pmorie/osb-broker-lib/pkg/metrics"
 	prom "github.com/prometheus/client_golang/prometheus"
 	klog "k8s.io/klog/v2"
@@ -65,6 +66,8 @@ func main() {
 		"The default namespace for brokers when the request doesn't specify")
 	flag.StringVar(&options.ProvisioningSettingsPath, "provisioningSettings", "",
 		"The path to the YAML file where the optional provisioning settings are stored")
+	flag.StringVar(&options.ClusterDomain, "clusterDomain", "",
+		"The k8s cluster domain - it not set, Minibroker infers from /etc/resolv.conf")
 	flag.Parse()
 
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
@@ -78,6 +81,18 @@ func main() {
 		}
 	})
 	defer klog.Flush()
+
+	if options.ClusterDomain == "" {
+		resolvConf, err := os.Open("/etc/resolv.conf")
+		if err != nil {
+			klog.Fatalln(err)
+		}
+
+		if options.ClusterDomain, err = kubernetes.ClusterDomain(resolvConf); err != nil {
+			klog.Fatalln(err)
+		}
+		resolvConf.Close()
+	}
 
 	if err := run(); err != nil && err != context.Canceled && err != context.DeadlineExceeded {
 		klog.Fatalln(err)
