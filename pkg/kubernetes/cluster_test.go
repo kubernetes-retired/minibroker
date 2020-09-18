@@ -30,8 +30,8 @@ var _ = Describe("Cluster", func() {
 	It("should fail when reading the resolv.conf reader fails", func() {
 		var resolvConf failReader
 		clusterDomain, err := kubernetes.ClusterDomain(&resolvConf)
-		Ω(clusterDomain).Should(BeEmpty())
-		Ω(err).Should(MatchError("failed to get cluster domain: failed to read"))
+		Expect(clusterDomain).To(BeEmpty())
+		Expect(err).To(MatchError("failed to get cluster domain: failed to read"))
 	})
 
 	It("should fail when the search path is missing", func() {
@@ -39,8 +39,8 @@ var _ = Describe("Cluster", func() {
 		fmt.Fprintln(&resolvConf, "nameserver 1.2.3.4")
 		fmt.Fprintln(&resolvConf, "nameserver 4.3.2.1")
 		clusterDomain, err := kubernetes.ClusterDomain(&resolvConf)
-		Ω(clusterDomain).Should(BeEmpty())
-		Ω(err).Should(MatchError("failed to get cluster domain: missing domain starting with 'svc.' in the search path"))
+		Expect(clusterDomain).To(BeEmpty())
+		Expect(err).To(MatchError("failed to get cluster domain: missing domain starting with 'svc.' in the search path"))
 	})
 
 	It("should fail when the search path is missing a domain starting with svc.", func() {
@@ -50,8 +50,8 @@ var _ = Describe("Cluster", func() {
 		fmt.Fprintln(&resolvConf, "search kubecf.svc.cluster.local cluster.local")
 		fmt.Fprintln(&resolvConf, "options ndots:5")
 		clusterDomain, err := kubernetes.ClusterDomain(&resolvConf)
-		Ω(clusterDomain).Should(BeEmpty())
-		Ω(err).Should(MatchError("failed to get cluster domain: missing domain starting with 'svc.' in the search path"))
+		Expect(clusterDomain).To(BeEmpty())
+		Expect(err).To(MatchError("failed to get cluster domain: missing domain starting with 'svc.' in the search path"))
 	})
 
 	It("should succeed returning the cluster domain", func() {
@@ -61,8 +61,8 @@ var _ = Describe("Cluster", func() {
 		fmt.Fprintln(&resolvConf, "search kubecf.svc.cluster.local svc.cluster.local cluster.local")
 		fmt.Fprintln(&resolvConf, "options ndots:5")
 		clusterDomain, err := kubernetes.ClusterDomain(&resolvConf)
-		Ω(clusterDomain).Should(Equal("cluster.local"))
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(clusterDomain).To(Equal("cluster.local"))
+		Expect(err).ToNot(HaveOccurred())
 	})
 })
 
