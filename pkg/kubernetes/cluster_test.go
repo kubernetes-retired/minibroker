@@ -30,7 +30,7 @@ var _ = Describe("Cluster", func() {
 	It("should fail when reading the resolv.conf reader fails", func() {
 		var resolvConf failReader
 		clusterDomain, err := kubernetes.ClusterDomain(&resolvConf)
-		Ω(clusterDomain).Should(BeZero())
+		Ω(clusterDomain).Should(BeEmpty())
 		Ω(err).Should(MatchError("failed to get cluster domain: failed to read"))
 	})
 
