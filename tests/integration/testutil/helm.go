@@ -17,9 +17,11 @@ limitations under the License.
 package testutil
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
+	"time"
 )
 
 type Helm struct {
@@ -41,6 +43,29 @@ func (h Helm) Install(name, chart string) error {
 	)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start a goroutine to print a waiting message every minute. It stops when
+	// the 'cancel' function is called, which is after the Helm command exits
+	// successfully or not.
+	go func() {
+		for i := 0; ; i++ {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				// Print every minute but still keep the check for readiness
+				// every second.
+				if i%60 == 0 {
+					fmt.Printf("Waiting for %q to be ready...", name)
+				}
+				time.Sleep(time.Second)
+			}
+		}
+	}()
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to install helm chart %q: %w", chart, err)
 	}
