@@ -36,10 +36,10 @@ var _ = Describe("A consumer (wordpress)", func() {
 
 		h := testutil.NewHelm(namespace)
 
-		err = h.Install(releaseName, pathToChart)
+		err = h.Install(GinkgoWriter, GinkgoWriter, releaseName, pathToChart)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = h.Uninstall(releaseName)
+		err = h.Uninstall(GinkgoWriter, GinkgoWriter, releaseName)
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

@@ -19,7 +19,7 @@ package testutil
 import (
 	"context"
 	"fmt"
-	"os"
+	"io"
 	"os/exec"
 	"time"
 )
@@ -34,15 +34,15 @@ func NewHelm(ns string) Helm {
 	}
 }
 
-func (h Helm) Install(name, chart string) error {
+func (h Helm) Install(stdout, stderr io.Writer, name, chart string) error {
 	cmd := exec.Command(
 		"helm", "install", name, chart,
 		"--wait",
 		"--timeout", "15m",
 		"--namespace", h.namespace,
 	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -59,7 +59,7 @@ func (h Helm) Install(name, chart string) error {
 				// Print every minute but still keep the check for readiness
 				// every second.
 				if i%60 == 0 {
-					fmt.Printf("Waiting for %q to be ready...", name)
+					fmt.Printf("Waiting for %q to be ready...\n", name)
 				}
 				time.Sleep(time.Second)
 			}
@@ -72,10 +72,10 @@ func (h Helm) Install(name, chart string) error {
 	return nil
 }
 
-func (h Helm) Uninstall(name string) error {
+func (h Helm) Uninstall(stdout, stderr io.Writer, name string) error {
 	cmd := exec.Command("helm", "delete", name, "--namespace", h.namespace)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to uninstall helm release %q: %w", name, err)
 	}
