@@ -17,8 +17,11 @@ limitations under the License.
 package testutil
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os/exec"
+	"time"
 )
 
 type Helm struct {
@@ -31,19 +34,49 @@ func NewHelm(ns string) Helm {
 	}
 }
 
-func (h Helm) Install(name, chart string) error {
-	cmd := exec.Command("helm", "install", name, chart, "--namespace", h.namespace, "--wait")
-	err := cmd.Run()
-	if err != nil {
+func (h Helm) Install(stdout, stderr io.Writer, name, chart string) error {
+	cmd := exec.Command(
+		"helm", "install", name, chart,
+		"--wait",
+		"--timeout", "15m",
+		"--namespace", h.namespace,
+	)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start a goroutine to print a waiting message every minute. It stops when
+	// the 'cancel' function is called, which is after the Helm command exits
+	// (whether it was successful or not).
+	go func() {
+		for i := 0; ; i++ {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				// Print every minute but still keep the check for readiness
+				// every second.
+				if i%60 == 0 {
+					fmt.Printf("Waiting for %q to be ready...\n", name)
+				}
+				time.Sleep(time.Second)
+			}
+		}
+	}()
+
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to install helm chart %q: %w", chart, err)
 	}
 	return nil
 }
 
-func (h Helm) Uninstall(name string) error {
+func (h Helm) Uninstall(stdout, stderr io.Writer, name string) error {
 	cmd := exec.Command("helm", "delete", name, "--namespace", h.namespace)
-	err := cmd.Run()
-	if err != nil {
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to uninstall helm release %q: %w", name, err)
 	}
 	return nil

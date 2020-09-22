@@ -29,7 +29,9 @@ const (
 	defaultPostgresqlUsername = "postgres"
 )
 
-type PostgresProvider struct{}
+type PostgresProvider struct {
+	hostBuilder
+}
 
 func (p PostgresProvider) Bind(
 	services []corev1.Service,
@@ -43,7 +45,7 @@ func (p PostgresProvider) Bind(
 	}
 	svcPort := service.Spec.Ports[0]
 
-	host := buildHostFromService(service)
+	host := p.hostFromService(&service)
 
 	database, err := provisionParams.DigStringAltOr(
 		// Some older chart versions use postgresDatabase instead of postgresqlDatabase.

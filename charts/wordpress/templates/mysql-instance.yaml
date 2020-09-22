@@ -8,7 +8,7 @@ metadata:
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
 spec:
-  clusterServiceClassExternalName: mysql
+  clusterServiceClassExternalName: {{ .Values.externalDatabase.minibroker.class }}
   clusterServicePlanExternalName: {{ .Values.externalDatabase.minibroker.servicePlan }}
   {{- if .Values.externalDatabase.minibroker.parameters }}
   parameters: {{ toJson .Values.externalDatabase.minibroker.parameters }}

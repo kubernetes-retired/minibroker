@@ -91,7 +91,7 @@ type MinibrokerClient interface {
 // Broker the parameters passed in.
 func NewBrokerFromOptions(o Options) (*Broker, error) {
 	klog.V(5).Infof("broker: creating a new broker with options %+v", o)
-	mb := minibroker.NewClient(o.ConfigNamespace, o.ServiceCatalogEnabledOnly)
+	mb := minibroker.NewClient(o.ConfigNamespace, o.ServiceCatalogEnabledOnly, o.ClusterDomain)
 	err := mb.Init(o.HelmRepoURL)
 	if err != nil {
 		return nil, err

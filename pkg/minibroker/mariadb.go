@@ -29,7 +29,9 @@ const (
 	rootMariadbUsername = "root"
 )
 
-type MariadbProvider struct{}
+type MariadbProvider struct {
+	hostBuilder
+}
 
 func (p MariadbProvider) Bind(
 	services []corev1.Service,
@@ -43,7 +45,7 @@ func (p MariadbProvider) Bind(
 	}
 	svcPort := service.Spec.Ports[0]
 
-	host := buildHostFromService(service)
+	host := p.hostFromService(&service)
 
 	database, err := provisionParams.DigStringOr("db.name", "")
 	if err != nil {

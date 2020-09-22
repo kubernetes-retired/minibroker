@@ -14,32 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package integration_test
+package kubernetes_test
 
 import (
-	"os"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kubernetes-sigs/minibroker/tests/integration/testutil"
 )
 
-var _ = Describe("A consumer (wordpress)", func() {
-	It("comes up and goes down", func() {
-		releaseName := "wordpress"
-		namespace := "minibroker-tests"
-
-		pathToChart := os.Getenv("WORDPRESS_CHART")
-		_, err := os.Stat(pathToChart)
-		Expect(err).ToNot(HaveOccurred())
-
-		h := testutil.NewHelm(namespace)
-
-		err = h.Install(GinkgoWriter, GinkgoWriter, releaseName, pathToChart)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = h.Uninstall(GinkgoWriter, GinkgoWriter, releaseName)
-		Expect(err).ToNot(HaveOccurred())
-	})
-})
+func TestKubernetes(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Kubernetes Suite")
+}

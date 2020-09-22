@@ -21,4 +21,4 @@ timeout 1m kubectl create namespace minibroker-tests
 timeout 10m make image
 timeout 1m make charts
 timeout 3m make deploy
-timeout 8m make test-integration
+timeout 15m make test-integration

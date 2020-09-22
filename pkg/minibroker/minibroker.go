@@ -85,20 +85,25 @@ type Client struct {
 	serviceCatalogEnabledOnly bool
 }
 
-func NewClient(namespace string, serviceCatalogEnabledOnly bool) *Client {
+func NewClient(
+	namespace string,
+	serviceCatalogEnabledOnly bool,
+	clusterDomain string,
+) *Client {
 	klog.V(5).Infof("minibroker: initializing a new client")
+	hb := hostBuilder{clusterDomain}
 	return &Client{
 		helm:                      helm.NewDefaultClient(),
 		coreClient:                loadInClusterClient(),
 		namespace:                 namespace,
 		serviceCatalogEnabledOnly: serviceCatalogEnabledOnly,
 		providers: map[string]Provider{
-			"mysql":      MySQLProvider{},
-			"mariadb":    MariadbProvider{},
-			"postgresql": PostgresProvider{},
-			"mongodb":    MongodbProvider{},
-			"redis":      RedisProvider{},
-			"rabbitmq":   RabbitmqProvider{},
+			"mysql":      MySQLProvider{hb},
+			"mariadb":    MariadbProvider{hb},
+			"postgresql": PostgresProvider{hb},
+			"mongodb":    MongodbProvider{hb},
+			"redis":      RedisProvider{hb},
+			"rabbitmq":   RabbitmqProvider{hb},
 		},
 	}
 }

@@ -39,17 +39,6 @@ To install the chart with the release name `my-release`:
 $ helm install --name my-release charts/wordpress
 ```
 
-Note: when installing the wordpress chart on some versions of Minikube, you
-may encounter issues due to [kubernetes/minikube#2256](https://github.com/kubernetes/minikube/issues/2256). 
-If you're using
-[v0.24.1](https://github.com/kubernetes/minikube/releases/tag/v0.24.1), we recommend setting
-the `persistence.enabled` parameter to `false` using the following command.
-
-```console
-$ helm install --name my-release --namespace wp charts/wordpress \
-  --set persistence.enabled=false
-```
-
 The command deploys WordPress on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
 > **Tip**: List all releases using `helm list`
@@ -96,10 +85,6 @@ The following tables lists the configurable parameters of the WordPress chart an
 | `ingress.secrets[0].name`            | TLS Secret Name                            | `nil`                                                      |
 | `ingress.secrets[0].certificate`     | TLS Secret Certificate                     | `nil`                                                      |
 | `ingress.secrets[0].key`             | TLS Secret Key                             | `nil`                                                      |
-| `persistence.enabled`                | Enable persistence using PVC               | `true`                                                     |
-| `persistence.storageClass`           | PVC Storage Class                          | `nil` (uses alpha storage class annotation)                |
-| `persistence.accessMode`             | PVC Access Mode                            | `ReadWriteOnce`                                            |
-| `persistence.size`                   | PVC Storage Request                        | `10Gi`                                                     |
 | `nodeSelector`                       | Node labels for pod assignment             | `{}`                                                       |
 
 The above parameters map to the env variables defined in [bitnami/wordpress](http://github.com/bitnami/bitnami-docker-wordpress). For more information please refer to the [bitnami/wordpress](http://github.com/bitnami/bitnami-docker-wordpress) image documentation.
@@ -122,13 +107,6 @@ $ helm install --name my-release -f values.yaml stable/wordpress
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
-
-## Persistence
-
-The [Bitnami WordPress](https://github.com/bitnami/bitnami-docker-wordpress) image stores the WordPress data and configurations at the `/bitnami` path of the container.
-
-Persistent Volume Claims are used to keep the data across deployments. This is known to work in GCE, AWS, and minikube.
-See the [Configuration](#configuration) section to configure the PVC or to disable persistence.
 
 ## Ingress
 

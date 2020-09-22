@@ -26,4 +26,7 @@ type Options struct {
 	ServiceCatalogEnabledOnly bool
 	// The YAML file where the optional default chart values are stored.
 	ProvisioningSettingsPath string
+	// The k8s cluster domain. If not set via the CLI flags, Minibroker tries to
+	// infer from the /etc/resolv.conf.
+	ClusterDomain string
 }

@@ -29,7 +29,9 @@ const (
 	rootMongodbUsername = "root"
 )
 
-type MongodbProvider struct{}
+type MongodbProvider struct {
+	hostBuilder
+}
 
 func (p MongodbProvider) Bind(
 	services []corev1.Service,
@@ -43,7 +45,7 @@ func (p MongodbProvider) Bind(
 	}
 	svcPort := service.Spec.Ports[0]
 
-	host := buildHostFromService(service)
+	host := p.hostFromService(&service)
 
 	database, err := provisionParams.DigStringOr("mongodbDatabase", "")
 	if err != nil {

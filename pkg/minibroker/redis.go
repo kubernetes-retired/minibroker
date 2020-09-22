@@ -26,7 +26,9 @@ import (
 
 const redisProtocolName = "redis"
 
-type RedisProvider struct{}
+type RedisProvider struct {
+	hostBuilder
+}
 
 func (p RedisProvider) Bind(
 	services []corev1.Service,
@@ -50,7 +52,7 @@ func (p RedisProvider) Bind(
 	}
 	svcPort := masterSvc.Spec.Ports[0]
 
-	host := buildHostFromService(*masterSvc)
+	host := p.hostFromService(masterSvc)
 
 	password, err := chartSecrets.DigString("redis-password")
 	if err != nil {

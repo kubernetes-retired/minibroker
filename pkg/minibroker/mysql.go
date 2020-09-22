@@ -29,7 +29,9 @@ const (
 	rootMysqlUsername = "root"
 )
 
-type MySQLProvider struct{}
+type MySQLProvider struct {
+	hostBuilder
+}
 
 func (p MySQLProvider) Bind(
 	services []corev1.Service,
@@ -43,7 +45,7 @@ func (p MySQLProvider) Bind(
 	}
 	svcPort := service.Spec.Ports[0]
 
-	host := buildHostFromService(service)
+	host := p.hostFromService(&service)
 
 	database, err := provisionParams.DigStringOr("mysqlDatabase", "")
 	if err != nil {
