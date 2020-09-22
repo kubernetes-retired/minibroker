@@ -49,7 +49,7 @@ func (h Helm) Install(stdout, stderr io.Writer, name, chart string) error {
 
 	// Start a goroutine to print a waiting message every minute. It stops when
 	// the 'cancel' function is called, which is after the Helm command exits
-	// successfully or not.
+	// (whether it was successful or not).
 	go func() {
 		for i := 0; ; i++ {
 			select {
