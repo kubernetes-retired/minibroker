@@ -17,11 +17,32 @@ spec:
       labels:
         app: {{ template "fullname" . }}
     spec:
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - status.localhost
+      securityContext:
+        runAsUser: 1001
+        fsGroup: 1001
       containers:
       - name: {{ template "fullname" . }}
         image: "{{ .Values.image }}"
         imagePullPolicy: {{ default "" .Values.imagePullPolicy | quote }}
         env:
+        - name: ALLOW_EMPTY_PASSWORD
+          value: "yes"
+        - name: WORDPRESS_HTACCESS_OVERRIDE_NONE
+          value: "no"
+        - name: WORDPRESS_HTACCESS_PERSISTENCE_ENABLED
+          value: "no"
+        - name: WORDPRESS_SKIP_INSTALL
+          value: "no"
+        - name: WORDPRESS_TABLE_PREFIX
+          value: "wp_"
+        - name: WORDPRESS_SCHEME
+          value: "http"
+        - name: WORDPRESS_EXTRA_WP_CONFIG_CONTENT
+          value: ""
         - name: MARIADB_HOST
           valueFrom:
             secretKeyRef:
@@ -79,9 +100,9 @@ spec:
           value: {{ default "" .Values.smtpProtocol | quote }}
         ports:
         - name: http
-          containerPort: 80
+          containerPort: 8080
         - name: https
-          containerPort: 443
+          containerPort: 8443
         livenessProbe:
           httpGet:
             path: /wp-login.php
@@ -103,15 +124,9 @@ spec:
           {{- end }}
 {{ toYaml .Values.readinessProbe | indent 10 }}
         volumeMounts:
-        - mountPath: /bitnami/apache
-          name: wordpress-data
-          subPath: apache
         - mountPath: /bitnami/wordpress
           name: wordpress-data
           subPath: wordpress
-        - mountPath: /bitnami/php
-          name: wordpress-data
-          subPath: php
         resources:
 {{ toYaml .Values.resources | indent 10 }}
       volumes:
