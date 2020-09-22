@@ -51,12 +51,15 @@ wordpressBlogName: User's Blog!
 
 externalDatabase:
   minibroker:
-    ## The plan to request from Minibroker, use svcat get plans --class mysql to see your options
-    servicePlan: 5-7-30
+    class: mariadb
+    ## The plan to request from Minibroker, use svcat get plans --class mariadb to see your options.
+    servicePlan: 10-3-22
     parameters:
-      mysqlDatabase: bitnami_wordpress
-      mysqlUser: bn_wordpress
-      placeholder: yarrr
+      db:
+        name: bitnami_wordpress
+        user: bn_wordpress
+      replication:
+        enabled: false
 
 ## Kubernetes configuration
 ## For minikube, set this to NodePort, elsewhere use LoadBalancer
