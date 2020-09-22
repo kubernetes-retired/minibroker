@@ -116,12 +116,7 @@ spec:
 {{ toYaml .Values.resources | indent 10 }}
       volumes:
       - name: wordpress-data
-      {{- if .Values.persistence.enabled }}
-        persistentVolumeClaim:
-          claimName: {{ template "fullname" . }}
-      {{- else }}
         emptyDir: {}
-      {{ end }}
     {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
