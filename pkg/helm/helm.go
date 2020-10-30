@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	stableURL = "https://kubernetes-charts.storage.googleapis.com"
+	stableURL = "https://charts.helm.sh/stable"
 	// As old versions of Kubernetes had a limit on names of 63 characters, Helm uses 53, reserving
 	// 10 characters for charts to add data.
 	helmMaxNameLength = 53
