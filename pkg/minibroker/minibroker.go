@@ -32,10 +32,11 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	klog "k8s.io/klog/v2"
@@ -81,6 +82,7 @@ type Client struct {
 	helm                      *helm.Client
 	namespace                 string
 	coreClient                kubernetes.Interface
+	dynamicClient             dynamic.Interface
 	providers                 map[string]Provider
 	serviceCatalogEnabledOnly bool
 }
@@ -92,9 +94,26 @@ func NewClient(
 ) *Client {
 	klog.V(5).Infof("minibroker: initializing a new client")
 	hb := hostBuilder{clusterDomain}
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	coreClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Client{
 		helm:                      helm.NewDefaultClient(),
-		coreClient:                loadInClusterClient(),
+		coreClient:                coreClient,
+		dynamicClient:             dynamicClient,
 		namespace:                 namespace,
 		serviceCatalogEnabledOnly: serviceCatalogEnabledOnly,
 		providers: map[string]Provider{
@@ -106,20 +125,6 @@ func NewClient(
 			"rabbitmq":   RabbitmqProvider{hb},
 		},
 	}
-}
-
-func loadInClusterClient() kubernetes.Interface {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err)
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
-
-	return clientset
 }
 
 func (c *Client) Init(repoURL string) error {
@@ -345,7 +350,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 			return "", errors.Wrapf(err, "Failed to set operation key when provisioning instance %q", instanceID)
 		}
 		go func() {
-			err = c.provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
+			err = c.provisionSynchronously(ctx, instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
 			if err == nil {
 				err = c.updateConfigMap(instanceID, map[string]interface{}{
 					OperationStateKey:       string(osb.StateSucceeded),
@@ -365,7 +370,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 		return operationKey, nil
 	}
 
-	err = c.provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
+	err = c.provisionSynchronously(ctx, instanceID, namespace, serviceID, planID, chartName, chartVersion, provisionParams)
 	if err != nil {
 		return "", err
 	}
@@ -374,7 +379,7 @@ func (c *Client) Provision(instanceID, serviceID, planID, namespace string, acce
 }
 
 // provisionSynchronously will provision the service instance synchronously.
-func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams *ProvisionParams) error {
+func (c *Client) provisionSynchronously(ctx context.Context, instanceID, namespace, serviceID, planID, chartName, chartVersion string, provisionParams *ProvisionParams) error {
 	klog.V(3).Infof("minibroker: provisioning %s/%s using helm chart %s@%s", serviceID, planID, chartName, chartVersion)
 
 	chartDef, err := c.helm.GetChart(chartName, chartVersion)
@@ -389,29 +394,48 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 
 	// Store any required metadata necessary for bind and deprovision as labels on the resources itself
 	klog.V(3).Infof("minibroker: labeling chart resources with instance %q", instanceID)
-	filterByRelease := metav1.ListOptions{
-		LabelSelector: labels.SelectorFromSet(map[string]string{
-			ReleaseLabel: release.Name,
-		}).String(),
-	}
-	services, err := c.coreClient.CoreV1().Services(namespace).List(context.TODO(), filterByRelease)
+	resources, err := c.helm.ChartClient().ListResources(release)
 	if err != nil {
 		return err
 	}
-	for _, service := range services.Items {
-		err := c.labelService(service, instanceID)
+
+	for _, r := range resources {
+		obj, ok := r.Object.DeepCopyObject().(metav1.Object)
+		if !ok {
+			continue
+		}
+
+		labels := obj.GetLabels()
+		if labels == nil {
+			labels = map[string]string{InstanceLabel: instanceID}
+		} else {
+			labels[InstanceLabel] = instanceID
+		}
+		obj.SetLabels(labels)
+
+		data, err := json.Marshal(obj)
 		if err != nil {
 			return err
 		}
-	}
-	secrets, err := c.coreClient.CoreV1().Secrets(namespace).List(context.TODO(), filterByRelease)
-	if err != nil {
-		return err
-	}
-	for _, secret := range secrets.Items {
-		err := c.labelSecret(secret, instanceID)
+
+		var dr dynamic.ResourceInterface
+		if r.Mapping.Scope.Name() == meta.RESTScopeNameNamespace {
+			// Namespaced resources.
+			dr = c.dynamicClient.Resource(r.Mapping.Resource).Namespace(obj.GetNamespace())
+		} else {
+			// Cluster-wide resources.
+			dr = c.dynamicClient.Resource(r.Mapping.Resource)
+		}
+
+		_, err = dr.Patch(
+			ctx,
+			obj.GetName(),
+			types.StrategicMergePatchType,
+			data,
+			metav1.PatchOptions{},
+		)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to label %s with %s = %s", r.ObjectName(), InstanceLabel, instanceID)
 		}
 	}
 
@@ -425,64 +449,6 @@ func (c *Client) provisionSynchronously(instanceID, namespace, serviceID, planID
 
 	klog.V(4).Infof("minibroker: provisioned %v@%v (%v@%v)",
 		chartName, chartVersion, release.Name, release.Version)
-
-	return nil
-}
-
-func (c *Client) labelService(service corev1.Service, instanceID string) error {
-	ctx := context.TODO()
-
-	labeledService := service.DeepCopy()
-	labeledService.Labels[InstanceLabel] = instanceID
-
-	original, err := json.Marshal(service)
-	if err != nil {
-		return err
-	}
-	modified, err := json.Marshal(labeledService)
-	if err != nil {
-		return err
-	}
-	patch, err := strategicpatch.CreateTwoWayMergePatch(original, modified, labeledService)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.coreClient.CoreV1().
-		Services(service.Namespace).
-		Patch(ctx, service.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to label service %s/%s with service metadata", service.Namespace, service.Name)
-	}
-
-	return nil
-}
-
-func (c *Client) labelSecret(secret corev1.Secret, instanceID string) error {
-	ctx := context.TODO()
-
-	labeledSecret := secret.DeepCopy()
-	labeledSecret.Labels[InstanceLabel] = instanceID
-
-	original, err := json.Marshal(secret)
-	if err != nil {
-		return err
-	}
-	modified, err := json.Marshal(labeledSecret)
-	if err != nil {
-		return err
-	}
-	patch, err := strategicpatch.CreateTwoWayMergePatch(original, modified, labeledSecret)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.coreClient.CoreV1().
-		Secrets(secret.Namespace).
-		Patch(ctx, secret.Name, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to label secret %s/%s with service metadata", secret.Namespace, secret.Name)
-	}
 
 	return nil
 }
@@ -570,20 +536,20 @@ func (c *Client) bindSynchronously(
 			Services(releaseNamespace).
 			List(ctx, filterByInstance)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to get services")
 		}
 		if len(services.Items) == 0 {
-			return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+			return fmt.Errorf("failed to get services: no services found")
 		}
 
 		secrets, err := c.coreClient.CoreV1().
 			Secrets(releaseNamespace).
 			List(ctx, filterByInstance)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to get secrets")
 		}
 		if len(secrets.Items) == 0 {
-			return osb.HTTPStatusCodeError{StatusCode: http.StatusNotFound}
+			return fmt.Errorf("failed to get secrets: no secrets found")
 		}
 
 		data := make(Object)
@@ -617,14 +583,14 @@ func (c *Client) bindSynchronously(
 		}
 		bindingResponseJSON, err := json.Marshal(bindingResponse)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to store binding parameters")
 		}
 
 		err = c.updateConfigMap(instanceID, map[string]interface{}{
 			(BindingKeyPrefix + bindingID): string(bindingResponseJSON),
 		})
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "failed to update binding config")
 		}
 
 		return nil
