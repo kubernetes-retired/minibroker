@@ -47,11 +47,19 @@ func (p MariadbProvider) Bind(
 
 	host := p.hostFromService(&service)
 
-	database, err := provisionParams.DigStringOr("db.name", "")
+	database, err := provisionParams.DigStringAltOr(
+		// Some older chart versions use db.name instead of auth.database.
+		[]string{"auth.database", "db.name"},
+		"",
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database name: %w", err)
 	}
-	user, err := provisionParams.DigStringOr("db.user", rootMariadbUsername)
+	user, err := provisionParams.DigStringAltOr(
+		// Some older chart versions use db.user instead of auth.username.
+		[]string{"auth.username", "db.user"},
+		rootMariadbUsername,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get username: %w", err)
 	}
