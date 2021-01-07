@@ -28,7 +28,6 @@ import (
 )
 
 const (
-	stableURL = "https://charts.helm.sh/stable"
 	// As old versions of Kubernetes had a limit on names of 63 characters, Helm uses 53, reserving
 	// 10 characters for charts to add data.
 	helmMaxNameLength = 53
@@ -80,14 +79,15 @@ func NewClient(
 func (c *Client) Initialize(repoURL string) error {
 	c.log.V(3).Log("helm client: initializing")
 
+	if repoURL == "" {
+		return fmt.Errorf("failed to initialize helm client: repository cannot be empty")
+	}
+
 	// TODO(f0rmiga): Allow private repos with authentication. Entry will need to contain the auth
 	// configuration.
 	chartCfg := repo.Entry{
 		Name: "stable",
 		URL:  repoURL,
-	}
-	if chartCfg.URL == "" {
-		chartCfg.URL = stableURL
 	}
 	chartRepo, err := c.repositoryClient.Initialize(&chartCfg, getter.All(c.settings))
 	if err != nil {

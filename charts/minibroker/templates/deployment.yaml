@@ -34,7 +34,7 @@ spec:
         {{- end }}
         {{- if .Values.helmRepoUrl }}
         - -helmUrl
-        - "{{ .Values.helmRepoUrl }}"
+        - {{ .Values.helmRepoUrl | quote }}
         {{- end }}
         {{- if .Values.defaultNamespace }}
         - -defaultNamespace

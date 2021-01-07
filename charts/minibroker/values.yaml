@@ -1,4 +1,8 @@
 # Default values for the minibroker
+
+# The Helm repository Minibroker will use to provision instances.
+helmRepoUrl: https://charts.bitnami.com/bitnami
+
 # Image to use
 image: <%image%>
 # ImagePullPolicy; valid values are "IfNotPresent", "Never", and "Always"
