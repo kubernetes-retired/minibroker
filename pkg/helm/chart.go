@@ -17,6 +17,7 @@ limitations under the License.
 package helm
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 
@@ -128,6 +130,19 @@ func (cc *ChartClient) Uninstall(releaseName, namespace string) error {
 	return nil
 }
 
+// ListResources lists the desired state of the Kubernetes resources for a given Helm release.
+func (cc *ChartClient) ListResources(rel *release.Release) (kube.ResourceList, error) {
+	cfg, err := cc.ChartHelmClientProvider.ProvideConfig(rel.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list resources for Helm release %q: %w", rel.Name, err)
+	}
+	current, err := cfg.KubeClient.Build(bytes.NewBufferString(rel.Manifest), false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list resources for Helm release %q: %w", rel.Name, err)
+	}
+	return current, nil
+}
+
 // ChartLoader is the interface that wraps the Load method.
 type ChartLoader interface {
 	Load(chartURL string) (*chart.Chart, error)
@@ -178,6 +193,7 @@ func (cm *ChartManager) Load(chartURL string) (*chart.Chart, error) {
 // ChartHelmClientProvider is the interface that wraps the methods for providing Helm action clients
 // for installing and uninstalling charts.
 type ChartHelmClientProvider interface {
+	ProvideConfig(namespace string) (*action.Configuration, error)
 	ProvideInstaller(releaseName, namespace string) (ChartInstallRunner, error)
 	ProvideUninstaller(namespace string) (ChartUninstallRunner, error)
 }
@@ -209,6 +225,15 @@ func NewChartHelm(
 		actionNewInstall:   actionNewInstall,
 		actionNewUninstall: actionNewUninstall,
 	}
+}
+
+// ProvideConfig provides a Helm configuration.
+func (ch *ChartHelm) ProvideConfig(namespace string) (*action.Configuration, error) {
+	cfg, err := ch.configProvider(namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to provide config: %w", err)
+	}
+	return cfg, nil
 }
 
 // ProvideInstaller provides a Helm action client for installing charts.
