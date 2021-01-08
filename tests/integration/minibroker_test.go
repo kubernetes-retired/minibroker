@@ -83,11 +83,11 @@ var _ = Describe("classes", func() {
 	}{
 		{
 			name: "mariadb",
-			plan: "10-3-22",
+			plan: "10-5-8",
 			params: map[string]interface{}{
-				"db": map[string]interface{}{
-					"name": "mydb",
-					"user": "admin",
+				"auth": map[string]interface{}{
+					"database": "mydb",
+					"username": "admin",
 				},
 			},
 			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
