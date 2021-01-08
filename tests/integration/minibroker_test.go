@@ -343,15 +343,23 @@ var _ = Describe("classes", func() {
 		},
 		{
 			name:   "rabbitmq",
-			plan:   "3-8-2",
+			plan:   "3-8-9",
 			params: map[string]interface{}{},
 			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
 				By("rendering and loading the rabbitmq client template")
 				tmplPath := path.Join(testDir, "resources", "rabbitmq_client.tmpl.yaml")
 				values := map[string]interface{}{
-					"SecretName": binding.Spec.SecretName,
+					"DatabaseVersion": "3.8.9",
+					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
-						"sh", "-c", "amqp-declare-queue -u ${DATABASE_URL} -q test-queue",
+						"sh", "-c",
+						"rabbitmqadmin " +
+							`--host="${AMQP_HOST}" ` +
+							`--port="${AMQP_PORT}" ` +
+							`--username="${AMQP_USERNAME}" ` +
+							`--password="${AMQP_PASSWORD}" ` +
+							`--ssl ` +
+							`list exchanges`,
 					},
 				}
 				obj, err := testutil.LoadKubeSpec(tmplPath, values)

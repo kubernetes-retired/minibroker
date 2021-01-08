@@ -6,13 +6,28 @@ metadata:
 spec:
   containers:
   - name: rabbitmq-client
-    image: toolbelt/amqp
+    image: rabbitmq:{{ .DatabaseVersion }}-management
     imagePullPolicy: IfNotPresent
     command: {{ .Command | toJson }}
     env:
-    - name: DATABASE_URL
+    - name: AMQP_HOST
       valueFrom:
         secretKeyRef:
           name: {{ .SecretName }}
-          key: uri
+          key: host
+    - name: AMQP_PORT
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: port
+    - name: AMQP_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: username
+    - name: AMQP_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: {{ .SecretName }}
+          key: password
   restartPolicy: Never
