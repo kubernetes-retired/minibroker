@@ -192,13 +192,13 @@ var _ = Describe("classes", func() {
 		},
 		{
 			name:   "mysql",
-			plan:   "5-7-30",
+			plan:   "8-0-22",
 			params: map[string]interface{}{},
 			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
 				By("rendering and loading the mysql client template")
 				tmplPath := path.Join(testDir, "resources", "mysql_client.tmpl.yaml")
 				values := map[string]interface{}{
-					"DatabaseVersion": "5.7.30",
+					"DatabaseVersion": "8.0.22",
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
 						"sh", "-c",
