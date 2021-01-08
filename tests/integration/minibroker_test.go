@@ -294,13 +294,13 @@ var _ = Describe("classes", func() {
 		},
 		{
 			name:   "redis",
-			plan:   "5-0-7",
+			plan:   "6-0-9",
 			params: map[string]interface{}{},
 			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
 				By("rendering and loading the redis client template")
 				tmplPath := path.Join(testDir, "resources", "redis_client.tmpl.yaml")
 				values := map[string]interface{}{
-					"DatabaseVersion": "5.0.7",
+					"DatabaseVersion": "6.0.9",
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
 						"sh", "-c",
