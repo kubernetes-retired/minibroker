@@ -94,7 +94,7 @@ var _ = Describe("classes", func() {
 				By("rendering and loading the mariadb client template")
 				tmplPath := path.Join(testDir, "resources", "mariadb_client.tmpl.yaml")
 				values := map[string]interface{}{
-					"DatabaseVersion": "10.3",
+					"DatabaseVersion": "10.5",
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
 						"sh", "-c",
@@ -149,7 +149,7 @@ var _ = Describe("classes", func() {
 				By("rendering and loading the mongodb client template")
 				tmplPath := path.Join(testDir, "resources", "mongodb_client.tmpl.yaml")
 				values := map[string]interface{}{
-					"DatabaseVersion": "4.2.7",
+					"DatabaseVersion": "4.4.3",
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
 						"sh", "-xc",
