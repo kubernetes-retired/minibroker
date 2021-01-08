@@ -246,13 +246,13 @@ var _ = Describe("classes", func() {
 		},
 		{
 			name:   "postgresql",
-			plan:   "11-7-0",
+			plan:   "11-10-0",
 			params: map[string]interface{}{},
 			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
 				By("rendering and loading the postgresql client template")
 				tmplPath := path.Join(testDir, "resources", "postgresql_client.tmpl.yaml")
 				values := map[string]interface{}{
-					"DatabaseVersion": "11.7",
+					"DatabaseVersion": "11.10",
 					"SecretName":      binding.Spec.SecretName,
 					"Command": []string{
 						"psql", "-c", "SELECT 1",
