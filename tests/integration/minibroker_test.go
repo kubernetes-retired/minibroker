@@ -349,18 +349,7 @@ var _ = Describe("classes", func() {
 				By("rendering and loading the rabbitmq client template")
 				tmplPath := path.Join(testDir, "resources", "rabbitmq_client.tmpl.yaml")
 				values := map[string]interface{}{
-					"DatabaseVersion": "3.8.9",
-					"SecretName":      binding.Spec.SecretName,
-					"Command": []string{
-						"sh", "-c",
-						"rabbitmqadmin " +
-							`--host="${AMQP_HOST}" ` +
-							`--port="${AMQP_PORT}" ` +
-							`--username="${AMQP_USERNAME}" ` +
-							`--password="${AMQP_PASSWORD}" ` +
-							`--ssl ` +
-							`list exchanges`,
-					},
+					"SecretName": binding.Spec.SecretName,
 				}
 				obj, err := testutil.LoadKubeSpec(tmplPath, values)
 				Expect(err).NotTo(HaveOccurred())

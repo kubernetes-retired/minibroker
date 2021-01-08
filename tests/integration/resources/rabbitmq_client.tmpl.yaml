@@ -6,28 +6,19 @@ metadata:
 spec:
   containers:
   - name: rabbitmq-client
-    image: rabbitmq:{{ .DatabaseVersion }}-management
-    imagePullPolicy: IfNotPresent
-    command: {{ .Command | toJson }}
+    image: rabbitmqapp:latest
+    imagePullPolicy: Never
     env:
-    - name: AMQP_HOST
+    - name: DATABASE_URI
       valueFrom:
         secretKeyRef:
           name: {{ .SecretName }}
-          key: host
-    - name: AMQP_PORT
-      valueFrom:
-        secretKeyRef:
-          name: {{ .SecretName }}
-          key: port
-    - name: AMQP_USERNAME
-      valueFrom:
-        secretKeyRef:
-          name: {{ .SecretName }}
-          key: username
-    - name: AMQP_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: {{ .SecretName }}
-          key: password
+          key: uri
+    - name: PORT
+      value: "8080"
+    readinessProbe:
+      httpGet:
+        port: 8080
+      initialDelaySeconds: 5
+      periodSeconds: 1
   restartPolicy: Never

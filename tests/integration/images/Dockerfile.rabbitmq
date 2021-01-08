@@ -1,0 +1,10 @@
+FROM golang AS builder
+
+WORKDIR /build/rabbitmqapp
+COPY ./rabbitmqapp .
+RUN CGO_ENABLED=0 go build -o rabbitmqapp main.go
+
+FROM scratch
+
+COPY --from=builder /build/rabbitmqapp/rabbitmqapp /rabbitmqapp
+ENTRYPOINT ["/rabbitmqapp"]

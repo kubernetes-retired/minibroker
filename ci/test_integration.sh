@@ -37,4 +37,5 @@ timeout 10m make image
 timeout 1m make charts
 timeout 1m make minikube-load-image
 timeout 5m make deploy
+timeout 5m make test-integration-images-minikube
 timeout 15m make test-integration

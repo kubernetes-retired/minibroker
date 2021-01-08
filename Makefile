@@ -96,6 +96,15 @@ test-unit:
 test-integration:
 	(cd ./tests/integration; NAMESPACE=minibroker-tests WORDPRESS_CHART="$(WORDPRESS_CHART)" ginkgo --nodes 4 -v --stream --slowSpecThreshold 180 .)
 
+test-integration-images:
+	docker build --tag rabbitmqapp --file ./tests/integration/images/Dockerfile.rabbitmq ./tests/integration/assets/
+
+test-integration-images-minikube:
+	eval $$(minikube docker-env); \
+	docker build --tag rabbitmqapp --file ./tests/integration/images/Dockerfile.rabbitmq ./tests/integration/assets/
+
+test-integration-minikube:
+
 test: test-unit test-integration
 
 log:
@@ -134,4 +143,4 @@ release-images: image
 release-charts: charts
 	OUTPUT_CHARTS_DIR="$(OUTPUT_CHARTS_DIR)" ./build/release-charts.sh
 
-.PHONY: build log test image charts clean push create-cluster deploy release
+.PHONY: build log test image charts clean push create-cluster deploy release test-integration-images-minikube
