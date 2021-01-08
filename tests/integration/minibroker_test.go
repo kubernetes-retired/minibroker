@@ -143,7 +143,7 @@ var _ = Describe("classes", func() {
 		},
 		{
 			name:   "mongodb",
-			plan:   "4-2-4",
+			plan:   "4-4-3",
 			params: map[string]interface{}{},
 			assert: func(instance *apiv1beta1.ServiceInstance, binding *apiv1beta1.ServiceBinding) {
 				By("rendering and loading the mongodb client template")
