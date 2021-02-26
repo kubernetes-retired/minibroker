@@ -44,7 +44,7 @@ helm install catalog --namespace svc-cat svc-cat/catalog
 # Install Minibroker
 
 ```
-helm repo add minibroker https://minibroker.blob.core.windows.net/charts
+helm repo add minibroker https://github.com/wyyxd2017/minibroker/tree/master/charts/minibroker
 kubectl create namespace minibroker
 helm install minibroker --namespace minibroker minibroker/minibroker
 ```
@@ -84,7 +84,7 @@ which is part of the CFAR (Clouf Foundry Application Runtime), is the Platform
 as specified in the OSBAPI.
 
 ```
-helm repo add minibroker https://minibroker.blob.core.windows.net/charts
+helm repo add minibroker https://github.com/wyyxd2017/minibroker/tree/master/charts/minibroker
 kubectl create namespace minibroker
 helm install minibroker minibroker/minibroker \
   --namespace minibroker \
