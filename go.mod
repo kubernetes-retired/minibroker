@@ -7,14 +7,12 @@ require (
 	github.com/containers/libpod v1.9.3
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/golang/mock v1.2.0
-	github.com/golang/protobuf v1.4.1 // indirect
-	github.com/onsi/ginkgo v1.12.0
-	github.com/onsi/gomega v1.10.0
+	github.com/onsi/ginkgo v1.15.0
+	github.com/onsi/gomega v1.10.1
 	github.com/pkg/errors v0.9.1
 	github.com/pmorie/go-open-service-broker-client v0.0.0-20180304212357-e8aa16c90363
 	github.com/pmorie/osb-broker-lib v0.0.0-20180516212803-87d71cfbf342
 	github.com/prometheus/client_golang v1.6.0
-	gopkg.in/yaml.v2 v2.3.0 // indirect
 	helm.sh/helm/v3 v3.2.3
 	k8s.io/api v0.18.0
 	k8s.io/apimachinery v0.18.0
