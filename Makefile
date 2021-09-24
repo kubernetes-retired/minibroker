@@ -99,7 +99,7 @@ test-integration:
 test: test-unit test-integration
 
 log:
-	kubectl log -n minibroker deploy/minibroker-minibroker -c minibroker
+	kubectl logs -n minibroker deploy/minibroker-minibroker -c minibroker
 
 create-cluster:
 	./hack/create-cluster.sh
