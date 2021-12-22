@@ -7,7 +7,7 @@ on:
     branches: [master]
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -24,6 +24,16 @@ jobs:
         set -o errexit
         go install github.com/golang/mock/mockgen@v1.5.0
         make lint
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
     - name: Unit Tests
       run: |-
         set -o errexit
