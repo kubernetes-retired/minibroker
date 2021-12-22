@@ -1,0 +1,29 @@
+name: Default
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - name: Verify
+      run: make verify
+    - name: Lint
+      run: |-
+        set -o errexit
+        go install github.com/golang/mock/mockgen
+        make lint
+    - name: Unit Tests
+      run: |-
+        set -o errexit
+        go install github.com/onsi/ginkgo/ginkgo
+        make test-unit
