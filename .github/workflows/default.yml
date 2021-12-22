@@ -55,3 +55,10 @@ jobs:
         set -o errexit
         go install github.com/onsi/ginkgo/ginkgo@v1.15.0
         make test-unit
+    - name: Integration Tests
+      run: |-
+        set -o errexit
+        go install github.com/onsi/ginkgo/ginkgo@v1.15.0
+        sudo apt-get -qq -y install conntrack
+        ci/install/integration.sh
+        ci/test_integration.sh
