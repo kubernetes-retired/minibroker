@@ -26,7 +26,7 @@ export MINIKUBE_WANTUPDATENOTIFICATION=false
 if [[ "$(minikube status)" != *"Running"* ]]; then
     set -o xtrace
     minikube start \
-      --vm-driver="${VM_DRIVER}" \
+      --driver="${VM_DRIVER}" \
       --cpus="${VM_CPUS}" \
       --memory="${VM_MEMORY}" \
       --kubernetes-version="${KUBERNETES_VERSION}"

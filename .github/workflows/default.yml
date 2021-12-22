@@ -83,7 +83,6 @@ jobs:
     - name: Integration Tests
       env:
         CHANGE_MINIKUBE_NONE_USER: "false"
-        MINIKUBE_HOME: "${HOME}"
         TEST_ASSERT_TIMEOUT: 2m
         TEST_BIND_TIMEOUT: 5m
         TEST_PROVISION_TIMEOUT: 5m
