@@ -73,6 +73,13 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/binaries
+        key: ${{ runner.os }}-binaries-${{ hashFiles('ci/install/**') }}
+        restore-keys: |
+          ${{ runner.os }}-binaries-
     - name: Integration Tests
       run: |-
         set -o errexit
