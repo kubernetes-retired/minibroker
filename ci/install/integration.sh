@@ -20,7 +20,7 @@ set -o errexit -o nounset -o pipefail
 version="v1.18.1"
 sha256="f5144823e6d8a0b78611a8d12e7a25202126d079c3a232b18f37e61e872ff563"
 asset_path="${HOME}/assets/kubectl"
-asset_url="https://storage.googleapis.com/kubernetes-release/release/${version}/bin/linux/amd64/kubectl"
+asset_url="https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl"
 if [ ! -f "${asset_path}" ] || [[ "$(sha256sum "${asset_path}" | awk '{ print $1 }')" != "${sha256}" ]]; then
   curl -Lo "${asset_path}" "${asset_url}"
   chmod +x "${asset_path}"
