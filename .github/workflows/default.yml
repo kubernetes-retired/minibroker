@@ -32,7 +32,7 @@ jobs:
         set -o errexit
         go install github.com/golang/mock/mockgen@v1.5.0
         make lint
-  test:
+  test-unit:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -55,6 +55,24 @@ jobs:
         set -o errexit
         go install github.com/onsi/ginkgo/ginkgo@v1.15.0
         make test-unit
+  test-integration:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
     - name: Integration Tests
       run: |-
         set -o errexit
