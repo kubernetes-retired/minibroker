@@ -16,7 +16,7 @@
 
 set -o errexit -o nounset -o pipefail
 
-VM_DRIVER=none sudo timeout 3m make create-cluster
+sudo timeout 3m make create-cluster
 timeout 1m kubectl create namespace minibroker-tests
 timeout 10m make image
 timeout 1m make charts
