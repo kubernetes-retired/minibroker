@@ -31,8 +31,8 @@ fi
 sudo cp "${asset_path}" /usr/local/bin/kubectl
 
 # Install minikube.
-version="v1.10.1"
-sha256="acc67ea2ff1ca261269a702a6d998367f65c86d9024c20bbf5ac3922bfca1aaa"
+version="v1.24.0"
+sha256="3bc218476cf205acf11b078d45210a4882e136d24a3cbb7d8d645408e423b8fe"
 asset_path="${cache_dir}/minikube"
 asset_url="https://storage.googleapis.com/minikube/releases/${version}/minikube-linux-amd64"
 if [ ! -f "${asset_path}" ] || [[ "$(sha256sum "${asset_path}" | awk '{ print $1 }')" != "${sha256}" ]]; then

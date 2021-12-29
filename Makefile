@@ -104,6 +104,9 @@ log:
 create-cluster:
 	./hack/create-cluster.sh
 
+minikube-load-image:
+	minikube image load "$(IMAGE):$(TAG)"
+
 deploy:
 	IMAGE="$(IMAGE)" \
 	TAG="$(TAG)" \
