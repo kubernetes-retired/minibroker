@@ -5,36 +5,37 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	chart "helm.sh/helm/v3/pkg/chart"
 	release "helm.sh/helm/v3/pkg/release"
-	reflect "reflect"
 )
 
-// MockChartInstallRunner is a mock of ChartInstallRunner interface
+// MockChartInstallRunner is a mock of ChartInstallRunner interface.
 type MockChartInstallRunner struct {
 	ctrl     *gomock.Controller
 	recorder *MockChartInstallRunnerMockRecorder
 }
 
-// MockChartInstallRunnerMockRecorder is the mock recorder for MockChartInstallRunner
+// MockChartInstallRunnerMockRecorder is the mock recorder for MockChartInstallRunner.
 type MockChartInstallRunnerMockRecorder struct {
 	mock *MockChartInstallRunner
 }
 
-// NewMockChartInstallRunner creates a new mock instance
+// NewMockChartInstallRunner creates a new mock instance.
 func NewMockChartInstallRunner(ctrl *gomock.Controller) *MockChartInstallRunner {
 	mock := &MockChartInstallRunner{ctrl: ctrl}
 	mock.recorder = &MockChartInstallRunnerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockChartInstallRunner) EXPECT() *MockChartInstallRunnerMockRecorder {
 	return m.recorder
 }
 
-// ChartInstallRunner mocks base method
+// ChartInstallRunner mocks base method.
 func (m *MockChartInstallRunner) ChartInstallRunner(arg0 *chart.Chart, arg1 map[string]interface{}) (*release.Release, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChartInstallRunner", arg0, arg1)
@@ -43,36 +44,36 @@ func (m *MockChartInstallRunner) ChartInstallRunner(arg0 *chart.Chart, arg1 map[
 	return ret0, ret1
 }
 
-// ChartInstallRunner indicates an expected call of ChartInstallRunner
+// ChartInstallRunner indicates an expected call of ChartInstallRunner.
 func (mr *MockChartInstallRunnerMockRecorder) ChartInstallRunner(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChartInstallRunner", reflect.TypeOf((*MockChartInstallRunner)(nil).ChartInstallRunner), arg0, arg1)
 }
 
-// MockChartUninstallRunner is a mock of ChartUninstallRunner interface
+// MockChartUninstallRunner is a mock of ChartUninstallRunner interface.
 type MockChartUninstallRunner struct {
 	ctrl     *gomock.Controller
 	recorder *MockChartUninstallRunnerMockRecorder
 }
 
-// MockChartUninstallRunnerMockRecorder is the mock recorder for MockChartUninstallRunner
+// MockChartUninstallRunnerMockRecorder is the mock recorder for MockChartUninstallRunner.
 type MockChartUninstallRunnerMockRecorder struct {
 	mock *MockChartUninstallRunner
 }
 
-// NewMockChartUninstallRunner creates a new mock instance
+// NewMockChartUninstallRunner creates a new mock instance.
 func NewMockChartUninstallRunner(ctrl *gomock.Controller) *MockChartUninstallRunner {
 	mock := &MockChartUninstallRunner{ctrl: ctrl}
 	mock.recorder = &MockChartUninstallRunnerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockChartUninstallRunner) EXPECT() *MockChartUninstallRunnerMockRecorder {
 	return m.recorder
 }
 
-// ChartUninstallRunner mocks base method
+// ChartUninstallRunner mocks base method.
 func (m *MockChartUninstallRunner) ChartUninstallRunner(arg0 string) (*release.UninstallReleaseResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ChartUninstallRunner", arg0)
@@ -81,7 +82,7 @@ func (m *MockChartUninstallRunner) ChartUninstallRunner(arg0 string) (*release.U
 	return ret0, ret1
 }
 
-// ChartUninstallRunner indicates an expected call of ChartUninstallRunner
+// ChartUninstallRunner indicates an expected call of ChartUninstallRunner.
 func (mr *MockChartUninstallRunnerMockRecorder) ChartUninstallRunner(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChartUninstallRunner", reflect.TypeOf((*MockChartUninstallRunner)(nil).ChartUninstallRunner), arg0)

@@ -5,35 +5,36 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	http "net/http"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockHTTPGetter is a mock of HTTPGetter interface
+// MockHTTPGetter is a mock of HTTPGetter interface.
 type MockHTTPGetter struct {
 	ctrl     *gomock.Controller
 	recorder *MockHTTPGetterMockRecorder
 }
 
-// MockHTTPGetterMockRecorder is the mock recorder for MockHTTPGetter
+// MockHTTPGetterMockRecorder is the mock recorder for MockHTTPGetter.
 type MockHTTPGetterMockRecorder struct {
 	mock *MockHTTPGetter
 }
 
-// NewMockHTTPGetter creates a new mock instance
+// NewMockHTTPGetter creates a new mock instance.
 func NewMockHTTPGetter(ctrl *gomock.Controller) *MockHTTPGetter {
 	mock := &MockHTTPGetter{ctrl: ctrl}
 	mock.recorder = &MockHTTPGetterMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockHTTPGetter) EXPECT() *MockHTTPGetterMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method
+// Get mocks base method.
 func (m *MockHTTPGetter) Get(arg0 string) (*http.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0)
@@ -42,7 +43,7 @@ func (m *MockHTTPGetter) Get(arg0 string) (*http.Response, error) {
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get
+// Get indicates an expected call of Get.
 func (mr *MockHTTPGetterMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockHTTPGetter)(nil).Get), arg0)

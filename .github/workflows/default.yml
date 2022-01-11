@@ -1,0 +1,95 @@
+name: Default
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Verify
+      run: make verify
+    - name: Lint
+      run: |-
+        set -o errexit
+        go install github.com/golang/mock/mockgen@v1.5.0
+        make lint
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Unit Tests
+      run: |-
+        set -o errexit
+        go install github.com/onsi/ginkgo/ginkgo@v1.15.0
+        make test-unit
+  test-integration:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cache/binaries
+        key: ${{ runner.os }}-binaries-${{ hashFiles('ci/install/**') }}
+        restore-keys: |
+          ${{ runner.os }}-binaries-
+    - name: Integration Tests
+      env:
+        CHANGE_MINIKUBE_NONE_USER: "false"
+        TEST_ASSERT_TIMEOUT: 2m
+        TEST_BIND_TIMEOUT: 5m
+        TEST_PROVISION_TIMEOUT: 5m
+        VERSION_FORCE_TAG_FETCH: "true"
+      run: |-
+        set -o errexit
+        go install github.com/onsi/ginkgo/ginkgo@v1.15.0
+        sudo apt-get -qq -y install conntrack
+        ci/install/integration.sh
+        ci/test_integration.sh

@@ -5,34 +5,35 @@
 package mocks
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockGenerator is a mock of Generator interface
+// MockGenerator is a mock of Generator interface.
 type MockGenerator struct {
 	ctrl     *gomock.Controller
 	recorder *MockGeneratorMockRecorder
 }
 
-// MockGeneratorMockRecorder is the mock recorder for MockGenerator
+// MockGeneratorMockRecorder is the mock recorder for MockGenerator.
 type MockGeneratorMockRecorder struct {
 	mock *MockGenerator
 }
 
-// NewMockGenerator creates a new mock instance
+// NewMockGenerator creates a new mock instance.
 func NewMockGenerator(ctrl *gomock.Controller) *MockGenerator {
 	mock := &MockGenerator{ctrl: ctrl}
 	mock.recorder = &MockGeneratorMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockGenerator) EXPECT() *MockGeneratorMockRecorder {
 	return m.recorder
 }
 
-// Generate mocks base method
+// Generate mocks base method.
 func (m *MockGenerator) Generate(arg0 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Generate", arg0)
@@ -41,7 +42,7 @@ func (m *MockGenerator) Generate(arg0 string) (string, error) {
 	return ret0, ret1
 }
 
-// Generate indicates an expected call of Generate
+// Generate indicates an expected call of Generate.
 func (mr *MockGeneratorMockRecorder) Generate(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Generate", reflect.TypeOf((*MockGenerator)(nil).Generate), arg0)

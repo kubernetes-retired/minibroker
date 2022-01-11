@@ -36,7 +36,7 @@ Run the following commands to set up a cluster:
 ```
 minikube start
 
-helm repo add svc-cat https://svc-catalog-charts.storage.googleapis.com
+helm repo add svc-cat https://kubernetes-sigs.github.io/service-catalog
 kubectl create namespace svc-cat
 helm install catalog --namespace svc-cat svc-cat/catalog
 ```

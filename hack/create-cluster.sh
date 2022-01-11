@@ -26,7 +26,7 @@ export MINIKUBE_WANTUPDATENOTIFICATION=false
 if [[ "$(minikube status)" != *"Running"* ]]; then
     set -o xtrace
     minikube start \
-      --vm-driver="${VM_DRIVER}" \
+      --driver="${VM_DRIVER}" \
       --cpus="${VM_CPUS}" \
       --memory="${VM_MEMORY}" \
       --kubernetes-version="${KUBERNETES_VERSION}"
@@ -38,7 +38,7 @@ fi
 catalog_repository="svc-cat"
 catalog_release="catalog"
 catalog_namespace="svc-cat"
-helm repo add "${catalog_repository}" https://svc-catalog-charts.storage.googleapis.com
+helm repo add "${catalog_repository}" https://kubernetes-sigs.github.io/service-catalog
 helm repo update
 kubectl create namespace "${catalog_namespace}"
 helm install "${catalog_release}" \

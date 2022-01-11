@@ -154,7 +154,7 @@ func runWithContext(ctx context.Context) error {
 }
 
 func cancelOnInterrupt(ctx context.Context, f context.CancelFunc) {
-	term := make(chan os.Signal)
+	term := make(chan os.Signal, 1)
 	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
 
 	for {

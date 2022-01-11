@@ -5,37 +5,38 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	helm "github.com/kubernetes-sigs/minibroker/pkg/helm"
 	getter "helm.sh/helm/v3/pkg/getter"
 	repo "helm.sh/helm/v3/pkg/repo"
-	reflect "reflect"
 )
 
-// MockRepositoryInitializer is a mock of RepositoryInitializer interface
+// MockRepositoryInitializer is a mock of RepositoryInitializer interface.
 type MockRepositoryInitializer struct {
 	ctrl     *gomock.Controller
 	recorder *MockRepositoryInitializerMockRecorder
 }
 
-// MockRepositoryInitializerMockRecorder is the mock recorder for MockRepositoryInitializer
+// MockRepositoryInitializerMockRecorder is the mock recorder for MockRepositoryInitializer.
 type MockRepositoryInitializerMockRecorder struct {
 	mock *MockRepositoryInitializer
 }
 
-// NewMockRepositoryInitializer creates a new mock instance
+// NewMockRepositoryInitializer creates a new mock instance.
 func NewMockRepositoryInitializer(ctrl *gomock.Controller) *MockRepositoryInitializer {
 	mock := &MockRepositoryInitializer{ctrl: ctrl}
 	mock.recorder = &MockRepositoryInitializerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepositoryInitializer) EXPECT() *MockRepositoryInitializerMockRecorder {
 	return m.recorder
 }
 
-// Initialize mocks base method
+// Initialize mocks base method.
 func (m *MockRepositoryInitializer) Initialize(arg0 *repo.Entry, arg1 getter.Providers) (*repo.ChartRepository, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Initialize", arg0, arg1)
@@ -44,36 +45,36 @@ func (m *MockRepositoryInitializer) Initialize(arg0 *repo.Entry, arg1 getter.Pro
 	return ret0, ret1
 }
 
-// Initialize indicates an expected call of Initialize
+// Initialize indicates an expected call of Initialize.
 func (mr *MockRepositoryInitializerMockRecorder) Initialize(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockRepositoryInitializer)(nil).Initialize), arg0, arg1)
 }
 
-// MockRepositoryDownloader is a mock of RepositoryDownloader interface
+// MockRepositoryDownloader is a mock of RepositoryDownloader interface.
 type MockRepositoryDownloader struct {
 	ctrl     *gomock.Controller
 	recorder *MockRepositoryDownloaderMockRecorder
 }
 
-// MockRepositoryDownloaderMockRecorder is the mock recorder for MockRepositoryDownloader
+// MockRepositoryDownloaderMockRecorder is the mock recorder for MockRepositoryDownloader.
 type MockRepositoryDownloaderMockRecorder struct {
 	mock *MockRepositoryDownloader
 }
 
-// NewMockRepositoryDownloader creates a new mock instance
+// NewMockRepositoryDownloader creates a new mock instance.
 func NewMockRepositoryDownloader(ctrl *gomock.Controller) *MockRepositoryDownloader {
 	mock := &MockRepositoryDownloader{ctrl: ctrl}
 	mock.recorder = &MockRepositoryDownloaderMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepositoryDownloader) EXPECT() *MockRepositoryDownloaderMockRecorder {
 	return m.recorder
 }
 
-// DownloadIndex mocks base method
+// DownloadIndex mocks base method.
 func (m *MockRepositoryDownloader) DownloadIndex(arg0 helm.ChartRepo) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadIndex", arg0)
@@ -82,36 +83,36 @@ func (m *MockRepositoryDownloader) DownloadIndex(arg0 helm.ChartRepo) (string, e
 	return ret0, ret1
 }
 
-// DownloadIndex indicates an expected call of DownloadIndex
+// DownloadIndex indicates an expected call of DownloadIndex.
 func (mr *MockRepositoryDownloaderMockRecorder) DownloadIndex(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadIndex", reflect.TypeOf((*MockRepositoryDownloader)(nil).DownloadIndex), arg0)
 }
 
-// MockRepositoryLoader is a mock of RepositoryLoader interface
+// MockRepositoryLoader is a mock of RepositoryLoader interface.
 type MockRepositoryLoader struct {
 	ctrl     *gomock.Controller
 	recorder *MockRepositoryLoaderMockRecorder
 }
 
-// MockRepositoryLoaderMockRecorder is the mock recorder for MockRepositoryLoader
+// MockRepositoryLoaderMockRecorder is the mock recorder for MockRepositoryLoader.
 type MockRepositoryLoaderMockRecorder struct {
 	mock *MockRepositoryLoader
 }
 
-// NewMockRepositoryLoader creates a new mock instance
+// NewMockRepositoryLoader creates a new mock instance.
 func NewMockRepositoryLoader(ctrl *gomock.Controller) *MockRepositoryLoader {
 	mock := &MockRepositoryLoader{ctrl: ctrl}
 	mock.recorder = &MockRepositoryLoaderMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepositoryLoader) EXPECT() *MockRepositoryLoaderMockRecorder {
 	return m.recorder
 }
 
-// Load mocks base method
+// Load mocks base method.
 func (m *MockRepositoryLoader) Load(arg0 string) (*repo.IndexFile, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Load", arg0)
@@ -120,36 +121,36 @@ func (m *MockRepositoryLoader) Load(arg0 string) (*repo.IndexFile, error) {
 	return ret0, ret1
 }
 
-// Load indicates an expected call of Load
+// Load indicates an expected call of Load.
 func (mr *MockRepositoryLoaderMockRecorder) Load(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockRepositoryLoader)(nil).Load), arg0)
 }
 
-// MockRepositoryInitializeDownloadLoader is a mock of RepositoryInitializeDownloadLoader interface
+// MockRepositoryInitializeDownloadLoader is a mock of RepositoryInitializeDownloadLoader interface.
 type MockRepositoryInitializeDownloadLoader struct {
 	ctrl     *gomock.Controller
 	recorder *MockRepositoryInitializeDownloadLoaderMockRecorder
 }
 
-// MockRepositoryInitializeDownloadLoaderMockRecorder is the mock recorder for MockRepositoryInitializeDownloadLoader
+// MockRepositoryInitializeDownloadLoaderMockRecorder is the mock recorder for MockRepositoryInitializeDownloadLoader.
 type MockRepositoryInitializeDownloadLoaderMockRecorder struct {
 	mock *MockRepositoryInitializeDownloadLoader
 }
 
-// NewMockRepositoryInitializeDownloadLoader creates a new mock instance
+// NewMockRepositoryInitializeDownloadLoader creates a new mock instance.
 func NewMockRepositoryInitializeDownloadLoader(ctrl *gomock.Controller) *MockRepositoryInitializeDownloadLoader {
 	mock := &MockRepositoryInitializeDownloadLoader{ctrl: ctrl}
 	mock.recorder = &MockRepositoryInitializeDownloadLoaderMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRepositoryInitializeDownloadLoader) EXPECT() *MockRepositoryInitializeDownloadLoaderMockRecorder {
 	return m.recorder
 }
 
-// DownloadIndex mocks base method
+// DownloadIndex mocks base method.
 func (m *MockRepositoryInitializeDownloadLoader) DownloadIndex(arg0 helm.ChartRepo) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadIndex", arg0)
@@ -158,13 +159,13 @@ func (m *MockRepositoryInitializeDownloadLoader) DownloadIndex(arg0 helm.ChartRe
 	return ret0, ret1
 }
 
-// DownloadIndex indicates an expected call of DownloadIndex
+// DownloadIndex indicates an expected call of DownloadIndex.
 func (mr *MockRepositoryInitializeDownloadLoaderMockRecorder) DownloadIndex(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadIndex", reflect.TypeOf((*MockRepositoryInitializeDownloadLoader)(nil).DownloadIndex), arg0)
 }
 
-// Initialize mocks base method
+// Initialize mocks base method.
 func (m *MockRepositoryInitializeDownloadLoader) Initialize(arg0 *repo.Entry, arg1 getter.Providers) (*repo.ChartRepository, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Initialize", arg0, arg1)
@@ -173,13 +174,13 @@ func (m *MockRepositoryInitializeDownloadLoader) Initialize(arg0 *repo.Entry, ar
 	return ret0, ret1
 }
 
-// Initialize indicates an expected call of Initialize
+// Initialize indicates an expected call of Initialize.
 func (mr *MockRepositoryInitializeDownloadLoaderMockRecorder) Initialize(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockRepositoryInitializeDownloadLoader)(nil).Initialize), arg0, arg1)
 }
 
-// Load mocks base method
+// Load mocks base method.
 func (m *MockRepositoryInitializeDownloadLoader) Load(arg0 string) (*repo.IndexFile, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Load", arg0)
@@ -188,36 +189,36 @@ func (m *MockRepositoryInitializeDownloadLoader) Load(arg0 string) (*repo.IndexF
 	return ret0, ret1
 }
 
-// Load indicates an expected call of Load
+// Load indicates an expected call of Load.
 func (mr *MockRepositoryInitializeDownloadLoaderMockRecorder) Load(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockRepositoryInitializeDownloadLoader)(nil).Load), arg0)
 }
 
-// MockChartRepo is a mock of ChartRepo interface
+// MockChartRepo is a mock of ChartRepo interface.
 type MockChartRepo struct {
 	ctrl     *gomock.Controller
 	recorder *MockChartRepoMockRecorder
 }
 
-// MockChartRepoMockRecorder is the mock recorder for MockChartRepo
+// MockChartRepoMockRecorder is the mock recorder for MockChartRepo.
 type MockChartRepoMockRecorder struct {
 	mock *MockChartRepo
 }
 
-// NewMockChartRepo creates a new mock instance
+// NewMockChartRepo creates a new mock instance.
 func NewMockChartRepo(ctrl *gomock.Controller) *MockChartRepo {
 	mock := &MockChartRepo{ctrl: ctrl}
 	mock.recorder = &MockChartRepoMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockChartRepo) EXPECT() *MockChartRepoMockRecorder {
 	return m.recorder
 }
 
-// DownloadIndexFile mocks base method
+// DownloadIndexFile mocks base method.
 func (m *MockChartRepo) DownloadIndexFile() (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadIndexFile")
@@ -226,7 +227,7 @@ func (m *MockChartRepo) DownloadIndexFile() (string, error) {
 	return ret0, ret1
 }
 
-// DownloadIndexFile indicates an expected call of DownloadIndexFile
+// DownloadIndexFile indicates an expected call of DownloadIndexFile.
 func (mr *MockChartRepoMockRecorder) DownloadIndexFile() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadIndexFile", reflect.TypeOf((*MockChartRepo)(nil).DownloadIndexFile))

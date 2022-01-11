@@ -16,9 +16,25 @@
 
 set -o errexit -o nounset -o pipefail
 
-VM_DRIVER=none sudo timeout 3m make create-cluster
+timeout 3m minikube start \
+    --cpus="$(nproc)" \
+    --memory=6g \
+    --kubernetes-version=v1.21.8
+
+catalog_repository="svc-cat"
+catalog_release="catalog"
+catalog_namespace="svc-cat"
+helm repo add "${catalog_repository}" https://kubernetes-sigs.github.io/service-catalog
+timeout 30s helm repo update
+timeout 1m helm install "${catalog_release}" \
+    --namespace "${catalog_namespace}" \
+    --create-namespace \
+    --wait \
+    "${catalog_repository}/catalog"
+
 timeout 1m kubectl create namespace minibroker-tests
 timeout 10m make image
 timeout 1m make charts
-timeout 3m make deploy
+timeout 1m make minikube-load-image
+timeout 5m make deploy
 timeout 15m make test-integration
