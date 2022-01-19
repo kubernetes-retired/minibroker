@@ -51,6 +51,16 @@ var _ = Describe("Helm", func() {
 		})
 
 		Describe("Initialize", func() {
+			It("should fail when repoURL is empty", func() {
+				client := helm.NewClient(
+					log.NewNoop(),
+					nil,
+					nil,
+				)
+				err := client.Initialize("")
+				Expect(err).To(Equal(fmt.Errorf("failed to initialize helm client: repository cannot be empty")))
+			})
+
 			It("should fail when repoInitializer.Initialize fails", func() {
 				repoClient := mocks.NewMockRepositoryInitializeDownloadLoader(ctrl)
 				repoClient.EXPECT().
@@ -63,7 +73,7 @@ var _ = Describe("Helm", func() {
 					repoClient,
 					nil,
 				)
-				err := client.Initialize("")
+				err := client.Initialize("https://repository")
 				Expect(err).To(Equal(fmt.Errorf("failed to initialize helm client: amazing repoInitializer failure")))
 			})
 
@@ -84,7 +94,7 @@ var _ = Describe("Helm", func() {
 					repoClient,
 					nil,
 				)
-				err := client.Initialize("")
+				err := client.Initialize("https://repository")
 				Expect(err).To(Equal(fmt.Errorf("failed to initialize helm client: awesome repoDownloader error")))
 			})
 
@@ -110,7 +120,7 @@ var _ = Describe("Helm", func() {
 					repoClient,
 					nil,
 				)
-				err := client.Initialize("")
+				err := client.Initialize("https://repository")
 				Expect(err).To(Equal(fmt.Errorf("failed to initialize helm client: marvelous repoLoader fault")))
 			})
 
@@ -136,7 +146,7 @@ var _ = Describe("Helm", func() {
 					repoClient,
 					nil,
 				)
-				err := client.Initialize("")
+				err := client.Initialize("https://repository")
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -149,7 +159,7 @@ var _ = Describe("Helm", func() {
 				}
 				repoClient := newRepoClient(ctrl, expectedCharts)
 				client := helm.NewClient(log.NewNoop(), repoClient, nil)
-				err := client.Initialize("")
+				err := client.Initialize("https://repository")
 				Expect(err).NotTo(HaveOccurred())
 
 				charts := client.ListCharts()
@@ -162,7 +172,7 @@ var _ = Describe("Helm", func() {
 				charts := map[string]repo.ChartVersions{"foo": make(repo.ChartVersions, 0)}
 				repoClient := newRepoClient(ctrl, charts)
 				client := helm.NewClient(log.NewNoop(), repoClient, nil)
-				err := client.Initialize("")
+				err := client.Initialize("https://repository")
 				Expect(err).NotTo(HaveOccurred())
 
 				chart, err := client.GetChart("bar", "")
@@ -174,7 +184,7 @@ var _ = Describe("Helm", func() {
 				charts := map[string]repo.ChartVersions{"bar": make(repo.ChartVersions, 0)}
 				repoClient := newRepoClient(ctrl, charts)
 				client := helm.NewClient(log.NewNoop(), repoClient, nil)
-				err := client.Initialize("")
+				err := client.Initialize("https://repository")
 				Expect(err).NotTo(HaveOccurred())
 
 				chart, err := client.GetChart("bar", "1.2.3")
@@ -189,7 +199,7 @@ var _ = Describe("Helm", func() {
 				charts := map[string]repo.ChartVersions{"bar": versions}
 				repoClient := newRepoClient(ctrl, charts)
 				client := helm.NewClient(log.NewNoop(), repoClient, nil)
-				err := client.Initialize("")
+				err := client.Initialize("https://repository")
 				Expect(err).NotTo(HaveOccurred())
 
 				chart, err := client.GetChart("bar", "1.2.3")
