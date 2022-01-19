@@ -9,6 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	helm "github.com/kubernetes-sigs/minibroker/pkg/helm"
+	action "helm.sh/helm/v3/pkg/action"
 	chart "helm.sh/helm/v3/pkg/chart"
 )
 
@@ -71,6 +72,21 @@ func NewMockChartHelmClientProvider(ctrl *gomock.Controller) *MockChartHelmClien
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockChartHelmClientProvider) EXPECT() *MockChartHelmClientProviderMockRecorder {
 	return m.recorder
+}
+
+// ProvideConfig mocks base method.
+func (m *MockChartHelmClientProvider) ProvideConfig(arg0 string) (*action.Configuration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProvideConfig", arg0)
+	ret0, _ := ret[0].(*action.Configuration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ProvideConfig indicates an expected call of ProvideConfig.
+func (mr *MockChartHelmClientProviderMockRecorder) ProvideConfig(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProvideConfig", reflect.TypeOf((*MockChartHelmClientProvider)(nil).ProvideConfig), arg0)
 }
 
 // ProvideInstaller mocks base method.
